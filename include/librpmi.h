@@ -153,6 +153,7 @@ enum rpmi_queue_type {
 enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_ID_MIN = 0,
 	RPMI_SRVGRP_BASE = 0x00001,
+	RPMI_SRVGRP_SYSTEM_RESET = 0x00002,
 	RPMI_SRVGRP_ID_MAX_COUNT,
 };
 
@@ -184,6 +185,20 @@ enum rpmi_base_service_id {
 
 #define RPMI_BASE_FLAGS_F0_EV_NOTIFY		(1U << 31)
 #define RPMI_BASE_FLAGS_F0_MSI_EN		(1U << 30)
+
+/** RPMI System Reset ServiceGroup Service IDs */
+enum rpmi_sysreset_service_id {
+	RPMI_SYSRST_SRV_ENABLE_NOTIFICATION = 0x01,
+	RPMI_SYSRST_SRV_GET_SYSTEM_RESET_ATTRIBUTES = 0x02,
+	RPMI_SYSRST_SRV_SYSTEM_RESET = 0x03,
+	RPMI_SYSRST_SRV_MAX = 0x04,
+};
+
+#define RPMI_SYSRST_TYPE_SHUTDOWN		0U
+#define RPMI_SYSRST_TYPE_COLD_REBOOT		1U
+#define RPMI_SYSRST_TYPE_WARM_REBOOT		2U
+
+#define RPMI_SYSRST_ATTRIBUTES_FLAGS_SUPPORTED	(1U << 31)
 
 /** @} */
 
@@ -516,6 +531,35 @@ struct rpmi_service_group {
 	/** Private data of the service group implementation */
 	void *priv;
 };
+
+/** Platform specific system reset operations */
+struct rpmi_sysreset_platform_ops {
+	/**
+	 * Do system reset
+	 * Note: this function is not expected to return
+	 */
+	void (*do_system_reset)(void *priv, rpmi_uint32_t sysreset_type);
+};
+
+/**
+ * @brief Create a system reset service group instance
+ *
+ * @param[in] ops		pointer to platform specific system reset operations
+ * @param[in] ops_priv		pointer to private data of platform operations
+ * @return pointer to RPMI service group instance upon success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_sysreset_create(rpmi_uint32_t sysreset_type_count,
+				   const rpmi_uint32_t *sysreset_types,
+				   const struct rpmi_sysreset_platform_ops *ops,
+				   void *ops_priv);
+
+/**
+ * @brief Destroy (of free) a system reset service group instance
+ *
+ * @param[in] group		pointer to RPMI service group instance
+ */
+void rpmi_service_group_sysreset_destroy(struct rpmi_service_group *group);
 
 /** @} */
 

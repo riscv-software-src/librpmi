@@ -6,5 +6,6 @@
 
 lib-objs-y += rpmi_common.o
 lib-objs-y += rpmi_context.o
+lib-objs-y += rpmi_service_group_sysreset.o
 lib-objs-y += rpmi_transport.o
 lib-objs-y += rpmi_transport_shmem.o
