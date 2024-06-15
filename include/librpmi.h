@@ -154,6 +154,7 @@ enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_ID_MIN = 0,
 	RPMI_SRVGRP_BASE = 0x00001,
 	RPMI_SRVGRP_SYSTEM_RESET = 0x00002,
+	RPMI_SRVGRP_HSM = 0x00004,
 	RPMI_SRVGRP_ID_MAX_COUNT,
 };
 
@@ -199,6 +200,19 @@ enum rpmi_sysreset_service_id {
 #define RPMI_SYSRST_TYPE_WARM_REBOOT		2U
 
 #define RPMI_SYSRST_ATTRIBUTES_FLAGS_SUPPORTED	(1U << 31)
+
+/** RPMI Hart State Management (HSM) ServiceGroup Service IDs */
+enum rpmi_hsm_service_id {
+	RPMI_HSM_SRV_ENABLE_NOTIFICATION = 0x01,
+	RPMI_HSM_SRV_HART_START = 0x02,
+	RPMI_HSM_SRV_HART_STOP = 0x03,
+	RPMI_HSM_SRV_HART_SUSPEND = 0x04,
+	RPMI_HSM_SRV_GET_HART_STATUS = 0x05,
+	RPMI_HSM_SRV_GET_HART_LIST = 0x06,
+	RPMI_HSM_SRV_GET_SUSPEND_TYPES = 0x07,
+	RPMI_HSM_SRV_GET_SUSPEND_INFO = 0x08,
+	RPMI_HSM_SRV_ID_MAX = 0x09,
+};
 
 /** @} */
 
@@ -774,6 +788,21 @@ rpmi_service_group_sysreset_create(rpmi_uint32_t sysreset_type_count,
  * @param[in] group		pointer to RPMI service group instance
  */
 void rpmi_service_group_sysreset_destroy(struct rpmi_service_group *group);
+
+/**
+ * @brief Create a hart state managment (HSM) service group instance
+ *
+ * @param[in] hsm		pointer to HSM instance
+ * @return pointer to RPMI service group instance upon success and NULL upon failure
+ */
+struct rpmi_service_group *rpmi_service_group_hsm_create(struct rpmi_hsm *hsm);
+
+/**
+ * @brief Destroy (of free) a hart state managment (HSM) service group instance
+ *
+ * @param[in] group		pointer to RPMI service group instance
+ */
+void rpmi_service_group_hsm_destroy(struct rpmi_service_group *group);
 
 /** @} */
 
