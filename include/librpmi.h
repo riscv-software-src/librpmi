@@ -215,7 +215,6 @@ enum rpmi_sysreset_service_id {
 #define LIBRPMI_IMPL_VERSION_MAJOR			0
 #define LIBRPMI_IMPL_VERSION_MINOR			1
 
-
 #define LIBRPMI_TRANSPORT_SHMEM_MIN_SLOTS		16
 #define LIBRPMI_TRANSPORT_SHMEM_MIN_SIZE(__slot_size)	\
 	((__slot_size) * LIBRPMI_TRANSPORT_SHMEM_MIN_SLOTS * RPMI_QUEUE_MAX)
@@ -333,6 +332,221 @@ struct rpmi_shmem *rpmi_shmem_simple_create(const char *name,
  * @param[in] shmem		pointer to shared memory instance
  */
 void rpmi_shmem_simple_destroy(struct rpmi_shmem *shmem);
+
+/** @} */
+
+/******************************************************************************/
+
+/**
+ * \defgroup LIBRPMI_HSM_INTERFACE RPMI hart state management library interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for RPMI hart state management. This is shared by multiple RPMI service groups.
+ * @{
+ */
+
+/** Hart ID considered invalid by RPMI library */
+#define LIBRPMI_HSM_INVALID_HART_ID	(-1U)
+
+/** Hart index considered invalid by RPMI library */
+#define LIBRPMI_HSM_INVALID_HART_INDEX	(-1U)
+
+/** RPMI HSM hart states (based on SBI specification) */
+enum rpmi_hsm_hart_state {
+	RPMI_HSM_HART_STATE_STARTED = 0x0,
+	RPMI_HSM_HART_STATE_STOPPED = 0x1,
+	RPMI_HSM_HART_STATE_START_PENDING = 0x2,
+	RPMI_HSM_HART_STATE_STOP_PENDING = 0x3,
+	RPMI_HSM_HART_STATE_SUSPENDED = 0x4,
+	RPMI_HSM_HART_STATE_SUSPEND_PENDING = 0x5,
+	RPMI_HSM_HART_STATE_RESUME_PENDING = 0x6,
+};
+
+/** RPMI HW hart states */
+enum rpmi_hart_hw_state {
+	/** Hart is stopped or inactive (i.e. not executing instructions) */
+	RPMI_HART_HW_STATE_STOPPED = 0x0,
+	/** Hart is started or active (i.e. executing instructions) */
+	RPMI_HART_HW_STATE_STARTED = 0x1,
+	/** Hart is suspended or idle (i.e. WFI or equivalent state) */
+	RPMI_HART_HW_STATE_SUSPENDED = 0x2,
+};
+
+/** RPMI HSM suspend type */
+struct rpmi_hsm_suspend_type {
+	rpmi_uint32_t type;
+	struct {
+		rpmi_uint32_t flags;
+#define RPMI_HSM_SUSPEND_INFO_FLAGS_TIMER_STOP	(1U << 31)
+		rpmi_uint32_t entry_latency_us;
+		rpmi_uint32_t exit_latency_us;
+		rpmi_uint32_t wakeup_latency_us;
+		rpmi_uint32_t min_residency_us;
+	} info;
+};
+
+/** RPMI hart state managment (HSM) structure to manage a set of RISC-V harts. */
+struct rpmi_hsm;
+
+/** Platform specific RPMI hart state managment (HSM) operations */
+struct rpmi_hsm_platform_ops {
+	/** Get hart HW state (mandatory) */
+	enum rpmi_hart_hw_state (*hart_get_hw_state)(void *priv,
+						     rpmi_uint32_t hart_index);
+
+	/** Prepare a hart to start (optional) */
+	enum rpmi_error (*hart_start_prepare)(void *priv, rpmi_uint32_t hart_index,
+					      rpmi_uint64_t start_addr);
+
+	/** Finalize hart stop (optional) */
+	void (*hart_start_finalize)(void *priv, rpmi_uint32_t hart_index,
+				    rpmi_uint64_t start_addr);
+
+	/** Perpare a hart to stop (optional) */
+	enum rpmi_error (*hart_stop_prepare)(void *priv, rpmi_uint32_t hart_index);
+
+	/** Finalize hart stop (optional) */
+	void (*hart_stop_finalize)(void *priv, rpmi_uint32_t hart_index);
+
+	/** Prepare a hart to suspend (optional) */
+	enum rpmi_error (*hart_suspend_prepare)(void *priv, rpmi_uint32_t hart_index,
+					const struct rpmi_hsm_suspend_type *suspend_type,
+					rpmi_uint64_t resume_addr);
+
+	/** Finalize hart suspend (optional) */
+	void (*hart_suspend_finalize)(void *priv, rpmi_uint32_t hart_index,
+				      const struct rpmi_hsm_suspend_type *suspend_type,
+				      rpmi_uint64_t resume_addr);
+};
+
+/**
+ * @brief Get number of harts managed by HSM instance
+ *
+ * @param[in] hsm		pointer to HSM instance
+ * @return number of harts
+ */
+rpmi_uint32_t rpmi_hsm_hart_count(struct rpmi_hsm *hsm);
+
+/**
+ * @brief Get hart ID from hart index for HSM instance
+ *
+ * @param[in] hsm		pointer to HSM instance
+ * @param[in] hart_index	index of the array of hart IDs
+ * @return hart ID upon success and LIBRPMI_HSM_INVALID_HART_ID upon failure
+ */
+rpmi_uint32_t rpmi_hsm_hart_index2id(struct rpmi_hsm *hsm, rpmi_uint32_t hart_index);
+
+/**
+ * @brief Get hart index from hart ID for HSM instance
+ *
+ * @param[in] hsm		pointer to HSM instance
+ * @param[in] hart_id		hart ID
+ * @return hart index upon success and LIBRPMI_HSM_INVALID_HART_INDEX upon failure
+ */
+rpmi_uint32_t rpmi_hsm_hart_id2index(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id);
+
+/**
+ * @brief Get number of hart suspend types handled by HSM instance
+ *
+ * @param[in] hsm		pointer to HSM instance
+ * @return number of hart suspend types
+ */
+rpmi_uint32_t rpmi_hsm_get_suspend_type_count(struct rpmi_hsm *hsm);
+
+/**
+ * @brief Get hart suspend type from index in HSM instance
+ *
+ * @param[in] hsm			pointer to HSM instance
+ * @param[in] suspend_type_index	index of the array of hart suspend types
+ * @return pointer to hart suspend type upon success or NULL upon failure
+ */
+const struct rpmi_hsm_suspend_type *rpmi_hsm_get_suspend_type(struct rpmi_hsm *hsm,
+							rpmi_uint32_t suspend_type_index);
+
+/**
+ * @brief Find hart suspend type based on type value in HSM instance
+ *
+ * @param[in] hsm			pointer to HSM instance
+ * @param[in] type			type value of hart suspend type
+ * @return pointer to hart suspend type upon success or NULL upon failure
+ */
+const struct rpmi_hsm_suspend_type *rpmi_hsm_find_suspend_type(struct rpmi_hsm *hsm,
+							       rpmi_uint32_t type);
+
+/**
+ * @brief Start a hart in HSM instance
+ *
+ * @param[in] hsm			pointer to HSM instance
+ * @param[in] hart_id			hart ID of the hart to start
+ * @param[in] start_addr		address where the hart will start executing
+ * @return enum rpmi_error
+ */
+enum rpmi_error rpmi_hsm_hart_start(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id,
+				    rpmi_uint64_t start_addr);
+
+/**
+ * @brief Stop a hart
+ *
+ * @param[in] hsm			pointer to HSM instance
+ * @param[in] hart_id			hart ID of the hart to stop
+ * @return enum rpmi_error
+ */
+enum rpmi_error rpmi_hsm_hart_stop(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id);
+
+/**
+ * @brief Suspend a hart
+ *
+ * @param[in] hsm			pointer to HSM instance
+ * @param[in] hart_id			hart ID of the hart to suspend
+ * @param[in] suspend_type		pointer to hart suspend type
+ * @param[in] resume_addr		address where the hart will resume executing
+ *					for non-retentive suspend
+ * @return enum rpmi_error
+ */
+enum rpmi_error rpmi_hsm_hart_suspend(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id,
+				const struct rpmi_hsm_suspend_type *suspend_type,
+				rpmi_uint64_t resume_addr);
+
+/**
+ * @brief Get the current HSM hart state
+ *
+ * @param[in] hsm			pointer to HSM instance
+ * @param[in] hart_id			hart ID of the hart
+ * @return returns current HSM hart state (>= 0) upon success and negative
+ * error (< 0) upon failure
+ */
+int rpmi_hsm_get_hart_state(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id);
+
+/**
+ * @brief Synchronize state of each hart with HW state
+ *
+ * @param[in] hsm		pointer to HSM instance
+ */
+void rpmi_hsm_process_state_changes(struct rpmi_hsm *hsm);
+
+/**
+ * @brief Create a HSM instance
+ *
+ * @param[in] hart_count		number of harts to manage
+ * @param[in] hart_ids			array of hart IDs
+ * @param[in] suspend_type_count	number of hart suspend types
+ * @param[in] suspend_types		array of hart suspend types
+ * @param[in] ops			pointer to platform specific HSM operations
+ * @param[in] ops_priv			pointer to private data of platform operations
+ * @return pointer to RPMI HSM instance upon success and NULL upon failure
+ */
+struct rpmi_hsm *rpmi_hsm_create(rpmi_uint32_t hart_count,
+				 const rpmi_uint32_t *hart_ids,
+				 rpmi_uint32_t suspend_type_count,
+				 const struct rpmi_hsm_suspend_type *suspend_types,
+				 const struct rpmi_hsm_platform_ops *ops,
+				 void *ops_priv);
+
+/**
+ * @brief Destroy (of free) a HSM instance
+ *
+ * @param[in] hsm		pointer to HSM instance
+ */
+void rpmi_hsm_destroy(struct rpmi_hsm *hsm);
 
 /** @} */
 
