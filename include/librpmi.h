@@ -154,6 +154,7 @@ enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_ID_MIN = 0,
 	RPMI_SRVGRP_BASE = 0x00001,
 	RPMI_SRVGRP_SYSTEM_RESET = 0x00002,
+	RPMI_SRVGRP_SYSTEM_SUSPEND = 0x00003,
 	RPMI_SRVGRP_HSM = 0x00004,
 	RPMI_SRVGRP_ID_MAX_COUNT,
 };
@@ -200,6 +201,19 @@ enum rpmi_sysreset_service_id {
 #define RPMI_SYSRST_TYPE_WARM_REBOOT		2U
 
 #define RPMI_SYSRST_ATTRIBUTES_FLAGS_SUPPORTED	(1U << 31)
+
+/** RPMI System Suspend ServiceGroup Service IDs */
+enum rpmi_system_suspend_service_id {
+	RPMI_SYSSUSP_SRV_ENABLE_NOTIFICATION = 0x01,
+	RPMI_SYSSUSP_SRV_GET_SYSTEM_SUSPEND_ATTRIBUTES = 0x02,
+	RPMI_SYSSUSP_SRV_SYSTEM_SUSPEND = 0x03,
+	RPMI_SYSSUSP_SRV_MAX = 0x04,
+};
+
+#define RPMI_SYSSUSP_TYPE_SUSPEND_TO_RAM		0U
+
+#define RPMI_SYSSUSP_ATTRIBUTES_FLAGS_CUSTOM_RESUME	(1U << 31)
+#define RPMI_SYSSUSP_ATTRIBUTES_FLAGS_SUPPORTED		(1U << 30)
 
 /** RPMI Hart State Management (HSM) ServiceGroup Service IDs */
 enum rpmi_hsm_service_id {
@@ -788,6 +802,56 @@ rpmi_service_group_sysreset_create(rpmi_uint32_t sysreset_type_count,
  * @param[in] group		pointer to RPMI service group instance
  */
 void rpmi_service_group_sysreset_destroy(struct rpmi_service_group *group);
+
+/** RPMI system suspend type */
+struct rpmi_system_suspend_type {
+	rpmi_uint32_t type;
+	rpmi_uint32_t attr;
+};
+
+/** Platform specific system suspend operations */
+struct rpmi_syssusp_platform_ops {
+	/** Prepare for system suspend */
+	enum rpmi_error (*system_suspend_prepare)(void *priv, rpmi_uint32_t hart_index,
+					const struct rpmi_system_suspend_type *syssusp_type,
+					rpmi_uint64_t resume_addr);
+	/** Check if the system is ready to suspend */
+	rpmi_bool_t (*system_suspend_ready)(void *priv, rpmi_uint32_t hart_index);
+	/** Finalize system suspend */
+	void (*system_suspend_finalize)(void *priv, rpmi_uint32_t hart_index,
+					const struct rpmi_system_suspend_type *syssusp_type,
+					rpmi_uint64_t resume_addr);
+	/** Check if the system is ready to resume */
+	rpmi_bool_t (*system_suspend_can_resume)(void *priv, rpmi_uint32_t hart_index);
+	/** Resume from system suspend */
+	enum rpmi_error (*system_suspend_resume)(void *priv, rpmi_uint32_t hart_index,
+					const struct rpmi_system_suspend_type *syssusp_type,
+					rpmi_uint64_t resume_addr);
+};
+
+/**
+ * @brief Create a system suspend service group instance
+ *
+ * @param[in] hsm			pointer to HSM instance
+ * @param[in] syssusp_type_count	number of system suspend types
+ * @param[in] syssusp_types		array of system suspend type values
+ * @param[in] ops			pointer to platform specific system suspend operations
+ * @param[in] ops_priv			pointer to private data of platform operations
+ * @return pointer to RPMI service group instance upon success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_syssusp_create(struct rpmi_hsm *hsm,
+				  rpmi_uint32_t syssusp_type_count,
+				  const struct rpmi_system_suspend_type *syssusp_types,
+				  const struct rpmi_syssusp_platform_ops *ops,
+				  void *ops_priv);
+
+/**
+ * @brief Destroy (of free) a system suspend service group instance
+ *
+ * @param[in] group		pointer to RPMI service group instance
+ */
+void rpmi_service_group_syssusp_destroy(struct rpmi_service_group *group);
 
 /**
  * @brief Create a hart state managment (HSM) service group instance
