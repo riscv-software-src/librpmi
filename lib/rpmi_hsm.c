@@ -46,7 +46,7 @@ struct rpmi_hsm {
 	const struct rpmi_hsm_suspend_type *suspend_types;
 
 	/**
-	 * Platform HSM opertations
+	 * Platform HSM operations
 	 *
 	 * Note: These operations are called with harts[i]->lock held
 	 */

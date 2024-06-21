@@ -32,7 +32,8 @@ static enum rpmi_error rpmi_shmem_simple_read(struct rpmi_shmem *shmem,
 
 static enum rpmi_error rpmi_shmem_simple_write(struct rpmi_shmem *shmem,
 					       rpmi_uint32_t offset,
-					       const void *out, rpmi_uint32_t len)
+					       const void *out,
+					       rpmi_uint32_t len)
 {
 	struct rpmi_shmem_simple *sshmem = shmem->priv;
 	void *dest = (void *)(unsigned long)(sshmem->base + offset);

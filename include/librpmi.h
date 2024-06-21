@@ -112,7 +112,7 @@ enum rpmi_error {
 	RPMI_ERR_NOTSUPP	= -2,
 	/* Invalid Parameter  */
 	RPMI_ERR_INVAL		= -3,
-	/* Insufficier permissions  */
+	/* Insufficient permissions  */
 	RPMI_ERR_DENIED		= -4,
 	/* Requested resource not found */
 	RPMI_ERR_NOTFOUND	= -5,
@@ -129,11 +129,11 @@ enum rpmi_error {
 	/* Error in communication, retry later */
 	RPMI_ERR_COMMS		= -11,
 	/*
-	 * Operation failed as it was already in progress or the state has changed
-	 * already for which the operation was carried out.
+	 * Operation failed as it was already in progress or the state has
+	 * changed already for which the operation was carried out.
 	 */
 	RPMI_ERR_ALREADY	= -12,
-	/* Error in implementsation which violates the specification version */
+	/* Error in implementation which violates the specification version */
 	RPMI_ERR_IMPL		= -13,
 	RPMI_ERR_RESERVED_START	= -14,
 	RPMI_ERR_RESERVED_END	= -127,
@@ -230,7 +230,7 @@ enum rpmi_hsm_service_id {
 
 /** @} */
 
-/******************************************************************************/
+/****************************************************************************/
 
 /**
  * \defgroup LIBRPMI_COMMON_INTERFACE RPMI common library.interface
@@ -256,15 +256,18 @@ struct rpmi_shmem {
 	rpmi_uint32_t size;
 
 	/** Read from a shared memory */
-	enum rpmi_error (*read)(struct rpmi_shmem *shmem, rpmi_uint32_t offset,
+	enum rpmi_error (*read)(struct rpmi_shmem *shmem,
+				rpmi_uint32_t offset,
 				void *in, rpmi_uint32_t len);
 
 	/** Write to a shared memory */
-	enum rpmi_error (*write)(struct rpmi_shmem *shmem, rpmi_uint32_t offset,
+	enum rpmi_error (*write)(struct rpmi_shmem *shmem,
+				 rpmi_uint32_t offset,
 				 const void *out, rpmi_uint32_t len);
 
 	/** Fill a shared memory with a fixed character */
-	enum rpmi_error (*fill)(struct rpmi_shmem *shmem, rpmi_uint32_t offset,
+	enum rpmi_error (*fill)(struct rpmi_shmem *shmem,
+				rpmi_uint32_t offset,
 				char ch, rpmi_uint32_t len);
 
 	/** Private data of the shared memory implementation */
@@ -287,7 +290,7 @@ static inline rpmi_uint32_t rpmi_shmem_size(struct rpmi_shmem *shmem)
  *
  * @param[in] shmem		pointer to shared memory instance
  * @param[in] offset		source offset within shared memory
- * @param[in] in		destinetion buffer pointer
+ * @param[in] in		destination buffer pointer
  * @param[in] len		number of bytes to read
  * @return enum rpmi_error
  */
@@ -306,14 +309,15 @@ static inline enum rpmi_error rpmi_shmem_read(struct rpmi_shmem *shmem,
  * @brief Write a buffer to shared memory
  *
  * @param[in] shmem		pointer to shared memory instance
- * @param[in] offset		destinetion offset within shared memory
+ * @param[in] offset		destination offset within shared memory
  * @param[in] out		source buffer pointer
  * @param[in] len		number of bytes to write
  * @return enum rpmi_error
  */
 static inline enum rpmi_error rpmi_shmem_write(struct rpmi_shmem *shmem,
 					       rpmi_uint32_t offset,
-					       const void *out, rpmi_uint32_t len)
+					       const void *out,
+					       rpmi_uint32_t len)
 {
 	if (!shmem || !shmem->write || !out)
 		return RPMI_ERR_INVAL;
@@ -348,7 +352,8 @@ static inline enum rpmi_error rpmi_shmem_fill(struct rpmi_shmem *shmem,
  * @param[in] name		name of the shared memory instance
  * @param[in] base		base address of the shared memory
  * @param[in] size		size of the shared memory
- * @return pointer to RPMI shared memory instance upon success and NULL upon failure
+ * @return pointer to RPMI shared memory instance upon success and NULL upon
+ * failure
  */
 struct rpmi_shmem *rpmi_shmem_simple_create(const char *name,
 					    rpmi_uint64_t base,
@@ -363,12 +368,13 @@ void rpmi_shmem_simple_destroy(struct rpmi_shmem *shmem);
 
 /** @} */
 
-/******************************************************************************/
+/*****************************************************************************/
 
 /**
  * \defgroup LIBRPMI_HSM_INTERFACE RPMI hart state management library interface
  * @brief Global functions and data structures implemented by the RPMI library
- * for RPMI hart state management. This is shared by multiple RPMI service groups.
+ * for RPMI hart state management. This is shared by multiple RPMI service 
+ * groups.
  * @{
  */
 
@@ -412,37 +418,42 @@ struct rpmi_hsm_suspend_type {
 	} info;
 };
 
-/** RPMI hart state managment (HSM) structure to manage a set of RISC-V harts. */
+/** RPMI hart state management (HSM) structure to manage a set of RISC-V harts.*/
 struct rpmi_hsm;
 
-/** Platform specific RPMI hart state managment (HSM) operations */
+/** Platform specific RPMI hart state management (HSM) operations */
 struct rpmi_hsm_platform_ops {
 	/** Get hart HW state (mandatory) */
 	enum rpmi_hart_hw_state (*hart_get_hw_state)(void *priv,
 						     rpmi_uint32_t hart_index);
 
 	/** Prepare a hart to start (optional) */
-	enum rpmi_error (*hart_start_prepare)(void *priv, rpmi_uint32_t hart_index,
+	enum rpmi_error (*hart_start_prepare)(void *priv,
+					      rpmi_uint32_t hart_index,
 					      rpmi_uint64_t start_addr);
 
 	/** Finalize hart stop (optional) */
-	void (*hart_start_finalize)(void *priv, rpmi_uint32_t hart_index,
+	void (*hart_start_finalize)(void *priv,
+				    rpmi_uint32_t hart_index,
 				    rpmi_uint64_t start_addr);
 
-	/** Perpare a hart to stop (optional) */
-	enum rpmi_error (*hart_stop_prepare)(void *priv, rpmi_uint32_t hart_index);
+	/** Prepare a hart to stop (optional) */
+	enum rpmi_error (*hart_stop_prepare)(void *priv,
+					     rpmi_uint32_t hart_index);
 
 	/** Finalize hart stop (optional) */
 	void (*hart_stop_finalize)(void *priv, rpmi_uint32_t hart_index);
 
 	/** Prepare a hart to suspend (optional) */
-	enum rpmi_error (*hart_suspend_prepare)(void *priv, rpmi_uint32_t hart_index,
-					const struct rpmi_hsm_suspend_type *suspend_type,
-					rpmi_uint64_t resume_addr);
+	enum rpmi_error (*hart_suspend_prepare)(void *priv,
+						rpmi_uint32_t hart_index,
+			const struct rpmi_hsm_suspend_type *suspend_type,
+						rpmi_uint64_t resume_addr);
 
 	/** Finalize hart suspend (optional) */
-	void (*hart_suspend_finalize)(void *priv, rpmi_uint32_t hart_index,
-				      const struct rpmi_hsm_suspend_type *suspend_type,
+	void (*hart_suspend_finalize)(void *priv,
+				      rpmi_uint32_t hart_index,
+			const struct rpmi_hsm_suspend_type *suspend_type,
 				      rpmi_uint64_t resume_addr);
 };
 
@@ -461,7 +472,8 @@ rpmi_uint32_t rpmi_hsm_hart_count(struct rpmi_hsm *hsm);
  * @param[in] hart_index	index of the array of hart IDs
  * @return hart ID upon success and LIBRPMI_HSM_INVALID_HART_ID upon failure
  */
-rpmi_uint32_t rpmi_hsm_hart_index2id(struct rpmi_hsm *hsm, rpmi_uint32_t hart_index);
+rpmi_uint32_t rpmi_hsm_hart_index2id(struct rpmi_hsm *hsm,
+				     rpmi_uint32_t hart_index);
 
 /**
  * @brief Get hart index from hart ID for HSM instance
@@ -470,7 +482,8 @@ rpmi_uint32_t rpmi_hsm_hart_index2id(struct rpmi_hsm *hsm, rpmi_uint32_t hart_in
  * @param[in] hart_id		hart ID
  * @return hart index upon success and LIBRPMI_HSM_INVALID_HART_INDEX upon failure
  */
-rpmi_uint32_t rpmi_hsm_hart_id2index(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id);
+rpmi_uint32_t rpmi_hsm_hart_id2index(struct rpmi_hsm *hsm,
+				     rpmi_uint32_t hart_id);
 
 /**
  * @brief Get number of hart suspend types handled by HSM instance
@@ -487,8 +500,9 @@ rpmi_uint32_t rpmi_hsm_get_suspend_type_count(struct rpmi_hsm *hsm);
  * @param[in] suspend_type_index	index of the array of hart suspend types
  * @return pointer to hart suspend type upon success or NULL upon failure
  */
-const struct rpmi_hsm_suspend_type *rpmi_hsm_get_suspend_type(struct rpmi_hsm *hsm,
-							rpmi_uint32_t suspend_type_index);
+const struct rpmi_hsm_suspend_type *
+		rpmi_hsm_get_suspend_type(struct rpmi_hsm *hsm,
+					  rpmi_uint32_t suspend_type_index);
 
 /**
  * @brief Find hart suspend type based on type value in HSM instance
@@ -497,8 +511,9 @@ const struct rpmi_hsm_suspend_type *rpmi_hsm_get_suspend_type(struct rpmi_hsm *h
  * @param[in] type			type value of hart suspend type
  * @return pointer to hart suspend type upon success or NULL upon failure
  */
-const struct rpmi_hsm_suspend_type *rpmi_hsm_find_suspend_type(struct rpmi_hsm *hsm,
-							       rpmi_uint32_t type);
+const struct rpmi_hsm_suspend_type *
+			rpmi_hsm_find_suspend_type(struct rpmi_hsm *hsm,
+						   rpmi_uint32_t type);
 
 /**
  * @brief Start a hart in HSM instance
@@ -508,7 +523,8 @@ const struct rpmi_hsm_suspend_type *rpmi_hsm_find_suspend_type(struct rpmi_hsm *
  * @param[in] start_addr		address where the hart will start executing
  * @return enum rpmi_error
  */
-enum rpmi_error rpmi_hsm_hart_start(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id,
+enum rpmi_error rpmi_hsm_hart_start(struct rpmi_hsm *hsm,
+				    rpmi_uint32_t hart_id,
 				    rpmi_uint64_t start_addr);
 
 /**
@@ -518,7 +534,8 @@ enum rpmi_error rpmi_hsm_hart_start(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id,
  * @param[in] hart_id			hart ID of the hart to stop
  * @return enum rpmi_error
  */
-enum rpmi_error rpmi_hsm_hart_stop(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id);
+enum rpmi_error rpmi_hsm_hart_stop(struct rpmi_hsm *hsm,
+				   rpmi_uint32_t hart_id);
 
 /**
  * @brief Suspend a hart
@@ -530,9 +547,10 @@ enum rpmi_error rpmi_hsm_hart_stop(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id);
  *					for non-retentive suspend
  * @return enum rpmi_error
  */
-enum rpmi_error rpmi_hsm_hart_suspend(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id,
-				const struct rpmi_hsm_suspend_type *suspend_type,
-				rpmi_uint64_t resume_addr);
+enum rpmi_error rpmi_hsm_hart_suspend(struct rpmi_hsm *hsm,
+				      rpmi_uint32_t hart_id,
+			const struct rpmi_hsm_suspend_type *suspend_type,
+				      rpmi_uint64_t resume_addr);
 
 /**
  * @brief Get the current HSM hart state
@@ -661,7 +679,7 @@ rpmi_bool_t rpmi_transport_is_empty(struct rpmi_transport *trans,
  * @param[in] qtype		type of the RPMI queue
  * @return true if full and false if not full
  */
-rpmi_bool_t rpmi_tranport_is_full(struct rpmi_transport *trans,
+rpmi_bool_t rpmi_transport_is_full(struct rpmi_transport *trans,
 				  enum rpmi_queue_type qtype);
 
 /**
@@ -672,7 +690,7 @@ rpmi_bool_t rpmi_tranport_is_full(struct rpmi_transport *trans,
  * @param[in] msg		pointer to the enqueued RPMI message
  * @return enum rpmi_error
  */
-enum rpmi_error rpmi_tranport_enqueue(struct rpmi_transport *trans,
+enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
 				      enum rpmi_queue_type qtype,
 				      struct rpmi_message *msg);
 
@@ -812,21 +830,26 @@ struct rpmi_system_suspend_type {
 /** Platform specific system suspend operations */
 struct rpmi_syssusp_platform_ops {
 	/** Prepare for system suspend */
-	enum rpmi_error (*system_suspend_prepare)(void *priv, rpmi_uint32_t hart_index,
-					const struct rpmi_system_suspend_type *syssusp_type,
-					rpmi_uint64_t resume_addr);
+	enum rpmi_error (*system_suspend_prepare)(void *priv,
+						  rpmi_uint32_t hart_index,
+			const struct rpmi_system_suspend_type *syssusp_type,
+						  rpmi_uint64_t resume_addr);
 	/** Check if the system is ready to suspend */
-	rpmi_bool_t (*system_suspend_ready)(void *priv, rpmi_uint32_t hart_index);
+	rpmi_bool_t (*system_suspend_ready)(void *priv,
+					    rpmi_uint32_t hart_index);
 	/** Finalize system suspend */
-	void (*system_suspend_finalize)(void *priv, rpmi_uint32_t hart_index,
-					const struct rpmi_system_suspend_type *syssusp_type,
+	void (*system_suspend_finalize)(void *priv,
+					rpmi_uint32_t hart_index,
+			const struct rpmi_system_suspend_type *syssusp_type,
 					rpmi_uint64_t resume_addr);
 	/** Check if the system is ready to resume */
-	rpmi_bool_t (*system_suspend_can_resume)(void *priv, rpmi_uint32_t hart_index);
+	rpmi_bool_t (*system_suspend_can_resume)(void *priv,
+						 rpmi_uint32_t hart_index);
 	/** Resume from system suspend */
-	enum rpmi_error (*system_suspend_resume)(void *priv, rpmi_uint32_t hart_index,
-					const struct rpmi_system_suspend_type *syssusp_type,
-					rpmi_uint64_t resume_addr);
+	enum rpmi_error (*system_suspend_resume)(void *priv,
+						 rpmi_uint32_t hart_index,
+			const struct rpmi_system_suspend_type *syssusp_type,
+						 rpmi_uint64_t resume_addr);
 };
 
 /**
@@ -842,7 +865,7 @@ struct rpmi_syssusp_platform_ops {
 struct rpmi_service_group *
 rpmi_service_group_syssusp_create(struct rpmi_hsm *hsm,
 				  rpmi_uint32_t syssusp_type_count,
-				  const struct rpmi_system_suspend_type *syssusp_types,
+			const struct rpmi_system_suspend_type *syssusp_types,
 				  const struct rpmi_syssusp_platform_ops *ops,
 				  void *ops_priv);
 
@@ -854,7 +877,7 @@ rpmi_service_group_syssusp_create(struct rpmi_hsm *hsm,
 void rpmi_service_group_syssusp_destroy(struct rpmi_service_group *group);
 
 /**
- * @brief Create a hart state managment (HSM) service group instance
+ * @brief Create a hart state management (HSM) service group instance
  *
  * @param[in] hsm		pointer to HSM instance
  * @return pointer to RPMI service group instance upon success and NULL upon failure
@@ -862,7 +885,7 @@ void rpmi_service_group_syssusp_destroy(struct rpmi_service_group *group);
 struct rpmi_service_group *rpmi_service_group_hsm_create(struct rpmi_hsm *hsm);
 
 /**
- * @brief Destroy (of free) a hart state managment (HSM) service group instance
+ * @brief Destroy (of free) a hart state management (HSM) service group instance
  *
  * @param[in] group		pointer to RPMI service group instance
  */
@@ -917,7 +940,7 @@ void rpmi_context_process_all_events(struct rpmi_context *cntx);
  * @return pointer to RPMI service group upon success and NULL upon failure
  */
 struct rpmi_service_group *rpmi_context_find_group(struct rpmi_context *cntx,
-						   rpmi_uint16_t servicegroup_id);
+						rpmi_uint16_t servicegroup_id);
 
 /**
  * @brief Add a RPMI service group to a RPMI context

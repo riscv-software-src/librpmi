@@ -102,7 +102,7 @@ static enum rpmi_error shmem_enqueue(struct rpmi_transport *trans,
 	rc = rpmi_shmem_write(shmem, queue_base + ((tailidx + 2) * trans->slot_size),
 			      msg, trans->slot_size);
 	if (rc) {
-		DPRINTF("%s: %s: faild to write message at tailidx %d for qtype %d\n",
+		DPRINTF("%s: %s: failed to write message at tailidx %d for qtype %d\n",
 			__func__, trans->name, tailidx, qtype);
 		return RPMI_ERR_FAILED;
 	}
@@ -140,7 +140,7 @@ static enum rpmi_error shmem_dequeue(struct rpmi_transport *trans,
 	rc = rpmi_shmem_read(shmem, queue_base + ((headidx + 2) * trans->slot_size),
 			     out_msg, trans->slot_size);
 	if (rc) {
-		DPRINTF("%s: %s: faild to read message at headidx %d for qtype %d\n",
+		DPRINTF("%s: %s: failed to read message at headidx %d for qtype %d\n",
 			__func__, trans->name, headidx, qtype);
 		return RPMI_ERR_FAILED;
 	}
