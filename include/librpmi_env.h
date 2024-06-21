@@ -202,7 +202,8 @@ static inline void rpmi_env_unlock(void *lptr)
  * @param[in] divisor
  * @return rpmi_uint32_t
  */
-static inline rpmi_uint32_t rpmi_env_div32(rpmi_uint32_t dividend, rpmi_uint32_t divisor)
+static inline rpmi_uint32_t rpmi_env_div32(rpmi_uint32_t dividend,
+					   rpmi_uint32_t divisor)
 {
 	return dividend / divisor;
 }
@@ -214,7 +215,8 @@ static inline rpmi_uint32_t rpmi_env_div32(rpmi_uint32_t dividend, rpmi_uint32_t
  * @param[in] divisor
  * @return rpmi_uint32_t
  */
-static inline rpmi_uint32_t rpmi_env_mod32(rpmi_uint32_t dividend, rpmi_uint32_t divisor)
+static inline rpmi_uint32_t rpmi_env_mod32(rpmi_uint32_t dividend,
+					   rpmi_uint32_t divisor)
 {
 	return dividend % divisor;
 }

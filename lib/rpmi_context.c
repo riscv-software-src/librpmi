@@ -20,7 +20,7 @@ struct rpmi_context {
 	/** Name of the context */
 	const char *name;
 
-	/** Underlying tranport instance of the context */
+	/** Underlying transport instance of the context */
 	struct rpmi_transport *trans;
 
 	/** Maximum number of service groups handled by the context */
@@ -408,7 +408,7 @@ void rpmi_context_process_a2p_request(struct rpmi_context *cntx)
 			continue;
 
 		do {
-			rc = rpmi_tranport_enqueue(trans, RPMI_QUEUE_P2A_ACK, amsg);
+			rc = rpmi_transport_enqueue(trans, RPMI_QUEUE_P2A_ACK, amsg);
 		} while (rc == RPMI_ERR_OUTOFRES);
 		if (rc) {
 			DPRINTF("%s: %s: group %s p2a acknowledgment failed (error %d)\n",
