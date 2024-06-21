@@ -1,0 +1,14 @@
+# Object files
+*.o
+*.a
+*.dep
+
+#Build & install directories
+build/
+install/
+.vscode/
+
+# Development friendly files
+.tags
+.gdb_history
+compile_flags.txt
