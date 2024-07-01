@@ -146,7 +146,7 @@ static enum rpmi_error shmem_dequeue(struct rpmi_transport *trans,
 	}
 
 	headidx = rpmi_to_le32(rpmi_env_mod32(headidx + 1, shtrans->data_slots));
-	rc = rpmi_shmem_write(shmem, queue_base + trans->slot_size,
+	rc = rpmi_shmem_write(shmem, queue_base,
 			      &headidx, sizeof(headidx));
 	if (rc) {
 		DPRINTF("%s: %s: failed to write head index for qtype %d\n",
