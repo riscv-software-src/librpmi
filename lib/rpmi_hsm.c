@@ -207,7 +207,7 @@ static void __rpmi_hsm_process_hart_state_changes(struct rpmi_hsm *hsm,
 		return;
 
 	hw_state = hsm->leaf.ops->hart_get_hw_state(hsm->leaf.ops_priv, hart_index);
-	if (hart->state < 0) {
+	if ((rpmi_int32_t)hart->state < 0) {
 		switch (hw_state) {
 		case RPMI_HART_HW_STATE_STARTED:
 			hart->state = RPMI_HSM_HART_STATE_STARTED;
