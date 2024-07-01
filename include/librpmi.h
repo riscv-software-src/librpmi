@@ -570,7 +570,7 @@ int rpmi_hsm_get_hart_state(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id);
 void rpmi_hsm_process_state_changes(struct rpmi_hsm *hsm);
 
 /**
- * @brief Create a HSM instance
+ * @brief Create a leaf HSM instance to manage a set of harts
  *
  * @param[in] hart_count		number of harts to manage
  * @param[in] hart_ids			array of hart IDs
@@ -586,6 +586,16 @@ struct rpmi_hsm *rpmi_hsm_create(rpmi_uint32_t hart_count,
 				 const struct rpmi_hsm_suspend_type *suspend_types,
 				 const struct rpmi_hsm_platform_ops *ops,
 				 void *ops_priv);
+
+/**
+ * @brief Create a non-leaf HSM instance to manage a set of HSM instances
+ *
+ * @param[in] child_count		number of child HSM instances to manage
+ * @param[in] child_array		array of child HSM instances
+ * @return pointer to RPMI HSM instance upon success and NULL upon failure
+ */
+struct rpmi_hsm *rpmi_hsm_nonleaf_create(rpmi_uint32_t child_count,
+					 struct rpmi_hsm **child_array);
 
 /**
  * @brief Destroy (of free) a HSM instance
