@@ -25,54 +25,61 @@
 
 /*
  * 31                                            0
- * +------------------+--------------+-----------+
- * |  SERVICEGROUP_ID |  SERVICE_ID  |   FLAGS   |
- * +------------------+--+-----------+-----------+
+ * +---------------------+-----------------------+
+ * | FLAGS | SERVICE_ID  |   SERVICEGROUP_ID     |
+ * +---------------------+-----------------------+
  * |        TOKEN        |     DATA LENGTH       |
  * +---------------------+-----------------------+
  * |                 DATA/PAYLOAD                |
  * +---------------------------------------------+
  */
 
-/** Message Header Offset */
+/** Message Header byte offset */
 #define RPMI_MSG_HDR_OFFSET			(0x0)
+/** Message Header Size in bytes */
 #define RPMI_MSG_HDR_SIZE			(8)
 
-/** Flags field */
-#define RPMI_MSG_FLAGS_OFFSET			(0x0)
+/** ServiceGroup ID field byte offset */
+#define RPMI_MSG_SERVICEGROUP_ID_OFFSET		(0x0)
+/** ServiceGroup ID field size in bytes */
+#define RPMI_MSG_SERVICEGROUP_ID_SIZE		(2)
+
+/** Service ID field byte offset */
+#define RPMI_MSG_SERVICE_ID_OFFSET		(0x2)
+/** Service ID field size in bytes */
+#define RPMI_MSG_SERVICE_ID_SIZE		(1)
+
+/** Flags field byte offset */
+#define RPMI_MSG_FLAGS_OFFSET			(0x3)
+/** Flags field size in bytes */
 #define RPMI_MSG_FLAGS_SIZE			(1)
 
 #define RPMI_MSG_FLAGS_TYPE_POS			(0U)
-#define RPMI_MSG_FLAGS_TYPE_MASK		0x3
+#define RPMI_MSG_FLAGS_TYPE_MASK		0x7
 #define RPMI_MSG_FLAGS_TYPE			\
-	((0x3) << RPMI_MSG_FLAGS_TYPE_POS)
+	((0x7) << RPMI_MSG_FLAGS_TYPE_POS)
 
 #define RPMI_MSG_FLAGS_DOORBELL_POS		(3U)
 #define RPMI_MSG_FLAGS_DOORBELL_MASK		0x1
 #define RPMI_MSG_FLAGS_DOORBELL			\
 	((0x1) << RPMI_MSG_FLAGS_DOORBELL_POS)
 
-/** Service ID field */
-#define RPMI_MSG_SERVICE_ID_OFFSET		(0x1)
-#define RPMI_MSG_SERVICE_ID_SIZE		(1)
-
-/** ServiceGroup ID field */
-#define RPMI_MSG_SERVICEGROUP_ID_OFFSET		(0x2)
-#define RPMI_MSG_SERVICEGROUP_ID_SIZE		(2)
-
-/** Data length field */
+/** Data length field byte offset */
 #define RPMI_MSG_DATALEN_OFFSET			(0x4)
+/** Data length field size in bytes */
 #define RPMI_MSG_DATALEN_SIZE			(2)
 
-/** Token is unique message identifier in the system */
-#define RPMI_MSG_TOKEN_OFFSET			(0xa)
+/** Token field byte offset */
+#define RPMI_MSG_TOKEN_OFFSET			(0x6)
+/** Token field size in bytes */
 #define RPMI_MSG_TOKEN_SIZE			(2)
 
-/** Data field */
+/** Data field byte offset */
 #define RPMI_MSG_DATA_OFFSET			(RPMI_MSG_HDR_SIZE)
+/** Data field size in bytes */
 #define RPMI_MSG_DATA_SIZE(__slot_size)		((__slot_size) - RPMI_MSG_HDR_SIZE)
 
-/** Minimum slot size */
+/** Minimum slot size in bytes */
 #define RPMI_SLOT_SIZE_MIN			(64)
 
 /** RPMI Messages Types */
