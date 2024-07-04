@@ -81,6 +81,27 @@ static inline void *rpmi_env_memcpy(void *dest, const void *src, rpmi_size_t n)
 }
 
 /**
+ * @brief Write a hw memory range with buffer
+ *
+ * @param[in] dest 	destination hw address
+ * @param[in] buf 	buffer pinter
+ * @param[in] n 	number of bytes to write
+ * @return void *	Pointer to destination
+ */
+void *rpmi_env_mem_write(char *dest, const void *buf, rpmi_size_t n);
+
+
+/**
+ * @brief read a hw memory range to buffer
+ *
+ * @param[in] src 	srour hw address
+ * @param[in] buf 	buffer pinter
+ * @param[in] n 	number of bytes to write
+ * @return void *	Pointer to destination
+ */
+void *rpmi_env_mem_read(const void *src, char* buf, rpmi_size_t n);
+
+/**
  * @brief Write or fill a memory range with a character
  *
  * @param[in] dest 	pointer to destination
@@ -94,7 +115,7 @@ static inline void *rpmi_env_memset(void *dest, int c, rpmi_size_t n)
 
 	while (n > 0) {
 		n--;
-		*temp++ = c;
+		rpmi_env_mem_write(temp++, &c, 1);
 	}
 
 	return dest;
