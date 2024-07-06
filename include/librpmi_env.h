@@ -100,6 +100,46 @@ static inline void *rpmi_env_memset(void *dest, int c, rpmi_size_t n)
 	return dest;
 }
 
+/**
+ * @brief Get length of a fixed size string
+ *
+ * @param[in] dest	pointer to string buffer
+ * @param[in] count	number of max chars to count
+ * @return rpmi_size_t  number of chars in string limited by count
+ */
+rpmi_size_t rpmi_env_strnlen(const char *str, rpmi_size_t count)
+{
+	unsigned long ret = 0;
+
+	while (*str != '\0' && ret < count) {
+		ret++;
+		str++;
+	}
+
+	return ret;
+}
+
+/**
+ * @brief Copy string limited by count
+ *
+ * @param[in] dest	pointer to string destination buffer
+ * @param[in] src	pointer to string source buffer
+ * @param[in] count	number of max chars to count
+ * @return char *	pointer to string destination buffer
+ */
+char *rpmi_env_strncpy(char *dest, const char *src, rpmi_size_t count)
+{
+	char *ret = dest;
+
+	while (count && *src != '\0') {
+		*dest++ = *src++;
+		count -= 1;
+	}
+
+	rpmi_env_memset(dest, '\0', count);
+	return ret;
+}
+
 /** @} */
 
 /******************************************************************************/
