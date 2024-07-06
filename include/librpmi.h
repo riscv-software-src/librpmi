@@ -163,6 +163,7 @@ enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_SYSTEM_RESET = 0x00002,
 	RPMI_SRVGRP_SYSTEM_SUSPEND = 0x00003,
 	RPMI_SRVGRP_HSM = 0x00004,
+	RPMI_SRVGRP_CLOCK = 0x00007,
 	RPMI_SRVGRP_ID_MAX_COUNT,
 };
 
@@ -233,6 +234,19 @@ enum rpmi_hsm_service_id {
 	RPMI_HSM_SRV_GET_SUSPEND_TYPES = 0x07,
 	RPMI_HSM_SRV_GET_SUSPEND_INFO = 0x08,
 	RPMI_HSM_SRV_ID_MAX = 0x09,
+};
+
+/** RPMI Clock (CLK) ServiceGroup Service IDs */
+enum rpmi_clock_service_id {
+	RPMI_CLK_SRV_ENABLE_NOTIFICATION = 0x01,
+	RPMI_CLK_SRV_GET_NUM_CLOCKS = 0x02,
+	RPMI_CLK_SRV_GET_ATTRIBUTES = 0x03,
+	RPMI_CLK_SRV_GET_SUPPORTED_RATES = 0x04,
+	RPMI_CLK_SRV_SET_CONFIG = 0x05,
+	RPMI_CLK_SRV_GET_CONFIG = 0x06,
+	RPMI_CLK_SRV_SET_RATE = 0x07,
+	RPMI_CLK_SRV_GET_RATE = 0x08,
+	RPMI_CLK_SRV_ID_MAX,
 };
 
 /** @} */
@@ -782,6 +796,139 @@ struct rpmi_service_group {
 	/** Private data of the service group implementation */
 	void *priv;
 };
+
+/** Clock rate match mode */
+enum rpmi_clock_rate_match {
+	RPMI_CLK_RATE_MATCH_INVALID = -1,
+	RPMI_CLK_RATE_MATCH_PLATFORM = 0,
+	RPMI_CLK_RATE_MATCH_ROUND_DOWN = 1,
+	RPMI_CLK_RATE_MATCH_ROUND_UP = 2,
+	RPMI_CLK_RATE_MATCH_MAX_IDX,
+};
+
+/** Supported clock states */
+enum rpmi_clock_state {
+	RPMI_CLK_STATE_INVALID = -1,
+	RPMI_CLK_STATE_DISABLED = 0,
+	RPMI_CLK_STATE_ENABLED = 1,
+	RPMI_CLK_STATE_MAX_IDX,
+};
+
+/** Clock type based on rate format */
+enum rpmi_clock_type {
+	RPMI_CLK_TYPE_INVALID = -1,
+	RPMI_CLK_TYPE_DISCRETE = 0,
+	RPMI_CLK_TYPE_LINEAR = 1,
+	RPMI_CLK_TYPE_MAX_IDX,
+};
+
+/** A clock rate representation in RPMI */
+struct rpmi_clock_rate {
+	rpmi_uint32_t lo;
+	rpmi_uint32_t hi;
+};
+
+/**
+ * Clock Data and Tree details
+ *
+ * This structure represents the static
+ * clock data which platform has to maintain
+ * and pass to create the clock service group.
+ */
+struct rpmi_clock_data {
+	/* Parent clock ID */
+	rpmi_uint32_t parent_id;
+	/* Clock transition latency(milli-seconds) */
+	rpmi_uint32_t transition_latency_ms;
+	/* Number of rates supported as per the clock format type */
+	rpmi_uint32_t rate_count;
+	/* Clock rate format type */
+	enum rpmi_clock_type clock_type;
+	/* Clock name */
+	const char *name;
+	/* Clock rate array */
+	const rpmi_uint64_t *clock_rate_array;
+};
+
+/** Clock Attributes */
+struct rpmi_clock_attrs {
+	/** clock transition latency in milli-seconds */
+	rpmi_uint32_t transition_latency;
+	/** clock rate format type */
+	enum rpmi_clock_type type;
+	/** number of supported rates */
+	rpmi_uint32_t rate_count;
+	/** array of supported rates */
+	const rpmi_uint64_t *rate_array;
+	/* Clock name */
+	const char *name;
+};
+
+/** Platform specific clock operations(synchronous) */
+struct rpmi_clock_platform_ops {
+	/** Set the clock state enable/disable/others */
+	enum rpmi_error (*set_state)(void *priv,
+				      rpmi_uint32_t clock_id,
+				      enum rpmi_clock_state state);
+
+	/**
+	 * Get state and rate together
+	 **/
+	enum rpmi_error (*get_state_and_rate)(void *priv,
+				       rpmi_uint32_t clock_id,
+				       enum rpmi_clock_state *state,
+				       rpmi_uint64_t *rate);
+
+	/**
+	 * Check if the requested rate is not in the allowed margin(Hz)
+	 * which require change in clock rate.
+	 **/
+	rpmi_bool_t (*rate_change_match)(void *priv,
+				  rpmi_uint32_t clock_id,
+				  rpmi_uint64_t rate);
+
+	/**
+	 * Set clock rate.
+	 * Also based on the rate match mode and PLL lock frequency
+	 * the actual frequency set may have +-margin with requested rate.
+	 * Return the set rate in new_rate buffer
+	 * */
+	enum rpmi_error (*set_rate)(void *priv,
+				    rpmi_uint32_t clock_id,
+				    enum rpmi_clock_rate_match match,
+				    rpmi_uint64_t rate,
+				    rpmi_uint64_t *new_rate);
+
+	/**
+	 * Recalculate and set rate.
+	 * Recalculate and set the clock rate based on the new input(parent)
+	 * clock and return the new rate in buffer.
+	 */
+	enum rpmi_error (*set_rate_recalc)(void *priv,
+					rpmi_uint32_t clock_id,
+					rpmi_uint64_t parent_rate,
+					rpmi_uint64_t *new_rate);
+};
+
+/**
+ * @brief Create a clock service group instance
+ *
+ * @param[in] clock_mod		pointer to clock module
+ * @return rpmi_service_group *	pointer to RPMI service group instance upon
+ * success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_clock_create(rpmi_uint32_t clock_count,
+				const struct rpmi_clock_data *clock_tree_data,
+				const struct rpmi_clock_platform_ops *ops,
+				void *ops_priv);
+
+/**
+ * @brief Destroy(free) a clock service group instance
+ *
+ * @param[in] group	pointer to RPMI service group instance
+ */
+void rpmi_service_group_clock_destroy(struct rpmi_service_group *group);
 
 /** Platform specific system reset operations */
 struct rpmi_sysreset_platform_ops {
