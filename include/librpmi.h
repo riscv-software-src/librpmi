@@ -254,32 +254,30 @@ enum rpmi_hsm_service_id {
 #define LIBRPMI_TRANSPORT_SHMEM_MIN_SIZE(__slot_size)	\
 	((__slot_size) * LIBRPMI_TRANSPORT_SHMEM_MIN_SLOTS * RPMI_QUEUE_MAX)
 
-/** RPMI shared memory instance */
-struct rpmi_shmem {
-	/** Name of the shared memory */
-	const char *name;
+/** RPMI shared memory structure to access a platform shared memory */
+struct rpmi_shmem;
 
-	/** Size of the shared memory */
-	rpmi_uint32_t size;
-
-	/** Read from a shared memory */
-	enum rpmi_error (*read)(struct rpmi_shmem *shmem,
-				rpmi_uint32_t offset,
+/** Platform specific shared memory operations */
+struct rpmi_shmem_platform_ops {
+	/** Read from a physical address range (mandatory) */
+	enum rpmi_error (*read)(void *priv, rpmi_uint64_t addr,
 				void *in, rpmi_uint32_t len);
 
-	/** Write to a shared memory */
-	enum rpmi_error (*write)(struct rpmi_shmem *shmem,
-				 rpmi_uint32_t offset,
+	/** Write to a physical address range (mandatory) */
+	enum rpmi_error (*write)(void *priv, rpmi_uint64_t addr,
 				 const void *out, rpmi_uint32_t len);
 
-	/** Fill a shared memory with a fixed character */
-	enum rpmi_error (*fill)(struct rpmi_shmem *shmem,
-				rpmi_uint32_t offset,
+	/** Fill a physical address range (mandatory) */
+	enum rpmi_error (*fill)(void *priv, rpmi_uint64_t addr,
 				char ch, rpmi_uint32_t len);
-
-	/** Private data of the shared memory implementation */
-	void *priv;
 };
+
+/**
+ * Simple platform specific shared memory operations which use environment functions.
+ *
+ * Note: These operations don't require any platform specific data.
+ */
+extern struct rpmi_shmem_platform_ops rpmi_shmem_simple_ops;
 
 /**
  * @brief Get size of a shared memory
@@ -287,10 +285,7 @@ struct rpmi_shmem {
  * @param[in] shmem		pointer to shared memory instance
  * @return size of shared memory in bytes
  */
-static inline rpmi_uint32_t rpmi_shmem_size(struct rpmi_shmem *shmem)
-{
-	return (shmem) ? shmem->size : 0;
-}
+rpmi_uint32_t rpmi_shmem_size(struct rpmi_shmem *shmem);
 
 /**
  * @brief Read a buffer from shared memory
@@ -301,16 +296,8 @@ static inline rpmi_uint32_t rpmi_shmem_size(struct rpmi_shmem *shmem)
  * @param[in] len		number of bytes to read
  * @return enum rpmi_error
  */
-static inline enum rpmi_error rpmi_shmem_read(struct rpmi_shmem *shmem,
-					      rpmi_uint32_t offset,
-					      void *in, rpmi_uint32_t len)
-{
-	if (!shmem || !shmem->read || !in)
-		return RPMI_ERR_INVAL;
-	if ((offset + len) > shmem->size)
-		return RPMI_ERR_OUTOFRANGE;
-	return shmem->read(shmem, offset, in, len);
-}
+enum rpmi_error rpmi_shmem_read(struct rpmi_shmem *shmem, rpmi_uint32_t offset,
+				void *in, rpmi_uint32_t len);
 
 /**
  * @brief Write a buffer to shared memory
@@ -321,17 +308,8 @@ static inline enum rpmi_error rpmi_shmem_read(struct rpmi_shmem *shmem,
  * @param[in] len		number of bytes to write
  * @return enum rpmi_error
  */
-static inline enum rpmi_error rpmi_shmem_write(struct rpmi_shmem *shmem,
-					       rpmi_uint32_t offset,
-					       const void *out,
-					       rpmi_uint32_t len)
-{
-	if (!shmem || !shmem->write || !out)
-		return RPMI_ERR_INVAL;
-	if ((offset + len) > shmem->size)
-		return RPMI_ERR_OUTOFRANGE;
-	return shmem->write(shmem, offset, out, len);
-}
+enum rpmi_error rpmi_shmem_write(struct rpmi_shmem *shmem, rpmi_uint32_t offset,
+				 const void *out, rpmi_uint32_t len);
 
 /**
  * @brief Fill a part of shared memory with fixed character
@@ -342,36 +320,32 @@ static inline enum rpmi_error rpmi_shmem_write(struct rpmi_shmem *shmem,
  * @param[in] len		number of characters to fill
  * @return enum rpmi_error
  */
-static inline enum rpmi_error rpmi_shmem_fill(struct rpmi_shmem *shmem,
-					      rpmi_uint32_t offset,
-					      char ch, rpmi_uint32_t len)
-{
-	if (!shmem || !shmem->fill)
-		return RPMI_ERR_INVAL;
-	if ((offset + len) > shmem->size)
-		return RPMI_ERR_OUTOFRANGE;
-	return shmem->fill(shmem, offset, ch, len);
-}
+enum rpmi_error rpmi_shmem_fill(struct rpmi_shmem *shmem, rpmi_uint32_t offset,
+				char ch, rpmi_uint32_t len);
 
 /**
- * @brief Create a simple shared memory instance
+ * @brief Create a shared memory instance
  *
  * @param[in] name		name of the shared memory instance
  * @param[in] base		base address of the shared memory
  * @param[in] size		size of the shared memory
+ * @param[in] ops		pointer to platform specific shared memory operations
+ * @param[in] ops_priv		pointer to private data of platform operations
  * @return pointer to RPMI shared memory instance upon success and NULL upon
  * failure
  */
-struct rpmi_shmem *rpmi_shmem_simple_create(const char *name,
-					    rpmi_uint64_t base,
-					    rpmi_uint32_t size);
+struct rpmi_shmem *rpmi_shmem_create(const char *name,
+				     rpmi_uint64_t base,
+				     rpmi_uint32_t size,
+				     const struct rpmi_shmem_platform_ops *ops,
+				     void *ops_priv);
 
 /**
  * @brief Destroy (of free) a shared memory instance
  *
  * @param[in] shmem		pointer to shared memory instance
  */
-void rpmi_shmem_simple_destroy(struct rpmi_shmem *shmem);
+void rpmi_shmem_destroy(struct rpmi_shmem *shmem);
 
 /** @} */
 

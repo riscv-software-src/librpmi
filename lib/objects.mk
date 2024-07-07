@@ -4,11 +4,11 @@
 # Copyright (c) 2024 Ventana Micro Systems Inc.
 #
 
-lib-objs-y += rpmi_common.o
 lib-objs-y += rpmi_context.o
 lib-objs-y += rpmi_hsm.o
 lib-objs-y += rpmi_service_group_hsm.o
 lib-objs-y += rpmi_service_group_sysreset.o
 lib-objs-y += rpmi_service_group_syssusp.o
+lib-objs-y += rpmi_shmem.o
 lib-objs-y += rpmi_transport.o
 lib-objs-y += rpmi_transport_shmem.o
