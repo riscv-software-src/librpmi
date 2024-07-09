@@ -214,8 +214,8 @@ static enum rpmi_error rpmi_hsm_sg_get_suspend_types(struct rpmi_service_group *
 
 	*response_datalen = (returned + 3) * sizeof(*resp);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)status);
-	resp[1] = rpmi_to_xe32(trans->is_be, returned);
-	resp[2] = rpmi_to_xe32(trans->is_be, remaining);
+	resp[1] = rpmi_to_xe32(trans->is_be, remaining);
+	resp[2] = rpmi_to_xe32(trans->is_be, returned);
 
 	return RPMI_SUCCESS;
 }
