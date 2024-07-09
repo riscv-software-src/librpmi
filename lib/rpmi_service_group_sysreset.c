@@ -79,8 +79,8 @@ static enum rpmi_error rpmi_sysreset_do_reset(struct rpmi_service_group *group,
 
 	sysreset_type = rpmi_sysreset_find_type(sgrst, reset_type);
 	if (sysreset_type) {
+		DPRINTF("%s: Entering platform sysreset ..\n", __func__);
 		sgrst->ops->do_system_reset(sgrst->ops_priv, reset_type);
-		while (1) ;
 	}
 
 	*response_datalen = sizeof(*resp);
