@@ -96,9 +96,9 @@ enum rpmi_message_type {
 
 /** RPMI Message Header */
 struct rpmi_message_header {
-	rpmi_uint8_t flags;
-	rpmi_uint8_t service_id;
 	rpmi_uint16_t servicegroup_id;
+	rpmi_uint8_t service_id;
+	rpmi_uint8_t flags;
 	rpmi_uint16_t datalen;
 	rpmi_uint16_t token;
 };
