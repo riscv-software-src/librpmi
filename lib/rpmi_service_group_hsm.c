@@ -153,7 +153,7 @@ static enum rpmi_error rpmi_hsm_sg_get_hart_list(struct rpmi_service_group *grou
 
 	start_index = rpmi_to_xe32(trans->is_be, ((const rpmi_uint32_t *)request_data)[0]);
 
-	if (start_index < hart_count) {
+	if (start_index <= hart_count) {
 		returned = max_entries < (hart_count - start_index) ?
 			   max_entries : (hart_count - start_index);
 		for (i = 0; i < returned; i++) {
@@ -197,7 +197,7 @@ static enum rpmi_error rpmi_hsm_sg_get_suspend_types(struct rpmi_service_group *
 
 	start_index = rpmi_to_xe32(trans->is_be, ((const rpmi_uint32_t *)request_data)[0]);
 
-	if (start_index < type_count) {
+	if (start_index <= type_count) {
 		returned = max_entries < (type_count - start_index) ?
 			   max_entries : (type_count - start_index);
 		for (i = 0; i < returned; i++) {
