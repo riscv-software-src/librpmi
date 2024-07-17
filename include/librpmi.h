@@ -254,7 +254,7 @@ enum rpmi_clock_service_id {
 /****************************************************************************/
 
 /**
- * \defgroup LIBRPMI_COMMON_INTERFACE RPMI common library.interface
+ * \defgroup LIBRPMI_COMMON_INTERFACE RPMI Common Library Interface
  * @brief Common defines and structures for the RPMI library.
  * @{
  */
@@ -366,7 +366,302 @@ void rpmi_shmem_destroy(struct rpmi_shmem *shmem);
 /*****************************************************************************/
 
 /**
- * \defgroup LIBRPMI_HSM_INTERFACE RPMI hart state management library interface
+ * \defgroup LIBRPMI_CONTEXT_INTERFACE RPMI Context Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for managing RPMI context.
+ * @{
+ */
+
+/**
+ * @brief Opaque RPMI execution context which groups together a RPMI transport
+ * instance and a set of RPMI service groups. The RPMI base service group is
+ * a built-in service group of the RPMI context and is always available.
+ */
+struct rpmi_context;
+
+/**
+ * @brief Process requests from application processors for a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ */
+void rpmi_context_process_a2p_request(struct rpmi_context *cntx);
+
+/**
+ * @brief Process events of RPMI service group in a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ * @param[in] servicegroup_id	ID of the service group
+ */
+void rpmi_context_process_group_events(struct rpmi_context *cntx,
+				       rpmi_uint16_t servicegroup_id);
+
+/**
+ * @brief Process events of all RPMI service groups in a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ */
+void rpmi_context_process_all_events(struct rpmi_context *cntx);
+
+/**
+ * @brief Find a RPMI service group in a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ * @param[in] servicegroup_id	ID of the service group
+ * @return pointer to RPMI service group upon success and NULL upon failure
+ */
+struct rpmi_service_group *rpmi_context_find_group(struct rpmi_context *cntx,
+						rpmi_uint16_t servicegroup_id);
+
+/**
+ * @brief Add a RPMI service group to a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ * @param[in] group		pointer to the RPMI service group
+ * @return enum rpmi_error
+ */
+enum rpmi_error rpmi_context_add_group(struct rpmi_context *cntx,
+				       struct rpmi_service_group *group);
+
+/**
+ * @brief Remove a RPMI service group from a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ * @param[in] group		pointer to the RPMI service group
+ */
+void rpmi_context_remove_group(struct rpmi_context *cntx,
+			       struct rpmi_service_group *group);
+
+/**
+ * @brief Create a RPMI context
+ *
+ * @param[in] name		name of the context instance
+ * @param[in] trans		pointer to RPMI transport instance
+ * @param[in] max_num_groups	maximum number of service groups
+ * @param[in] vendor_id		vendor ID of HW
+ * @param[in] vendor_sub_id	vendor SUB-ID of HW
+ * @param[in] hw_info_len	length of the HW info string
+ * @param[in] hw_info		pointer to the HW info string
+ * @return pointer to RPMI context upon success and NULL upon failure
+ */
+struct rpmi_context *rpmi_context_create(const char *name,
+					 struct rpmi_transport *trans,
+					 rpmi_uint32_t max_num_groups,
+					 rpmi_uint16_t vendor_id,
+					 rpmi_uint16_t vendor_sub_id,
+					 rpmi_uint32_t hw_info_len,
+					 const rpmi_uint8_t *hw_info);
+
+/**
+ * @brief Destroy (of free) a RPMI context
+ *
+ * @param[in] cntx		pointer to RPMI context instance
+ */
+void rpmi_context_destroy(struct rpmi_context *cntx);
+
+/** @} */
+
+/*****************************************************************************/
+
+/**
+ * \defgroup LIBRPMI_TRANSPORT_INTERFACE RPMI Transport Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for managing RPMI transport.
+ * @{
+ */
+
+/**
+ * RPMI transport instance
+ *
+ * @brief Structure representing a RPMI transport between the platform firmware
+ * and application processors.
+ */
+struct rpmi_transport {
+	/** Name of the transport */
+	const char *name;
+
+	/** Endianness of the messages transferred through this transport */
+	rpmi_bool_t is_be;
+
+	/** Slot (or max message) size in transport queues */
+	rpmi_size_t slot_size;
+
+	/**
+	 * Callback to check if a RPMI queue type is empty
+	 *
+	 * Note: This function must be called with transport lock held.
+	 */
+	rpmi_bool_t (*is_empty)(struct rpmi_transport *trans,
+				enum rpmi_queue_type qtype);
+
+	/**
+	 * Callback to check if a RPMI queue type is full
+	 *
+	 * Note: This function must be called with transport lock held.
+	 */
+	rpmi_bool_t (*is_full)(struct rpmi_transport *trans,
+			       enum rpmi_queue_type qtype);
+
+	/**
+	 * Callback to enqueue a RPMI message to a specified RPMI queue type
+	 *
+	 * Note: This function must be called with transport lock held.
+	 */
+	enum rpmi_error (*enqueue)(struct rpmi_transport *trans,
+				   enum rpmi_queue_type qtype,
+				   const struct rpmi_message *msg);
+
+	/**
+	 * Callback to dequeue a RPMI message from a specified RPMI queue type
+	 *
+	 * Note: This function must be called with transport lock held.
+	 */
+	enum rpmi_error (*dequeue)(struct rpmi_transport *trans,
+				   enum rpmi_queue_type qtype,
+				   struct rpmi_message *out_msg);
+
+	/** Lock to synchronize transport access (optional) */
+	void *lock;
+
+	/** Private data of the transport implementation */
+	void *priv;
+};
+
+/**
+ * @brief Check if a specified RPMI queue type of a RPMI transport is empty
+ *
+ * @param[in] trans		pointer to RPMI transport instance
+ * @param[in] qtype		type of the RPMI queue
+ * @return true if empty and false if not empty
+ */
+rpmi_bool_t rpmi_transport_is_empty(struct rpmi_transport *trans,
+				    enum rpmi_queue_type qtype);
+
+/**
+ * @brief Check if a specified RPMI queue type of a RPMI transport is full
+ *
+ * @param[in] trans		pointer to RPMI transport instance
+ * @param[in] qtype		type of the RPMI queue
+ * @return true if full and false if not full
+ */
+rpmi_bool_t rpmi_transport_is_full(struct rpmi_transport *trans,
+				  enum rpmi_queue_type qtype);
+
+/**
+ * @brief Enqueue a RPMI message to a specified RPMI queue type of a RPMI transport
+ *
+ * @param[in] trans		pointer to RPMI transport instance
+ * @param[in] qtype		type of the RPMI queue
+ * @param[in] msg		pointer to the enqueued RPMI message
+ * @return enum rpmi_error
+ */
+enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
+				      enum rpmi_queue_type qtype,
+				      struct rpmi_message *msg);
+
+/**
+ * @brief Dequeue a RPMI message from a specified RPMI queue type of a RPMI transport
+ *
+ * @param[in] trans		pointer to RPMI transport instance
+ * @param[in] qtype		type of the RPMI queue
+ * @param[out] out_msg		pointer to the dequeued RPMI message
+ * @return enum rpmi_error
+ */
+enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
+				       enum rpmi_queue_type qtype,
+				       struct rpmi_message *out_msg);
+
+/**
+ * @brief Create a shared memory transport instance
+ *
+ * @param[in] name		name of the shared memory transport instance
+ * @param[in] slot_size		size of message slot for queues in shared memory
+ * @param[in] shmem		pointer to a RPMI shared memory instance
+ * @return pointer to RPMI transport upon success and NULL upon failure
+ */
+struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
+						   rpmi_uint32_t slot_size,
+						   struct rpmi_shmem *shmem);
+
+/**
+ * @brief Destroy (of free) a shared memory transport instance
+ *
+ * @param[in] trans		pointer to RPMI transport instance
+ */
+void rpmi_transport_shmem_destroy(struct rpmi_transport *trans);
+
+/** @} */
+
+/******************************************************************************/
+
+/**
+ * \defgroup LIBRPMI_SERVICEGROUP_INTERFACE RPMI Service Group Library Interface
+ * @brief Data structures implemented by the RPMI library for managing RPMI 
+ * service groups.
+ * @{
+ */
+
+struct rpmi_service_group;
+
+/** RPMI service instance */
+struct rpmi_service {
+	/** ID of the service */
+	rpmi_uint8_t service_id;
+
+	/** Minimum data length for handling request */
+	rpmi_uint16_t min_a2p_request_datalen;
+
+	/**
+	 * Callback to process a2p request
+	 *
+	 * Note: This function must be called with service group lock held.
+	 */
+	enum rpmi_error (*process_a2p_request)(struct rpmi_service_group *group,
+					       struct rpmi_service *service,
+					       struct rpmi_transport *trans,
+					       rpmi_uint16_t request_data_len,
+					       const rpmi_uint8_t *request_data,
+					       rpmi_uint16_t *response_data_len,
+					       rpmi_uint8_t *response_data);
+};
+
+/** RPMI service group instance */
+struct rpmi_service_group {
+	/** Name of the service group */
+	const char *name;
+
+	/** ID of the service group */
+	rpmi_uint16_t servicegroup_id;
+
+	/** Maximum service ID of the service group */
+	rpmi_uint8_t max_service_id;
+
+	/** Array of services indexed by service ID */
+	struct rpmi_service *services;
+
+	/**
+	 * Callback to process events for a service group. This events can be:
+	 *
+	 * 1) Fast-channel requests from application processors
+	 * 2) Pending HW interrupts relevant to a service group
+	 * 3) HW state changes relevant to a service group
+	 *
+	 * Note: This function must be called with service group lock held.
+	 */
+	enum rpmi_error (*process_events)(struct rpmi_service_group *group);
+
+	/** Lock to synchronize service group access (optional) */
+	void *lock;
+
+	/** Private data of the service group implementation */
+	void *priv;
+};
+
+/** @} */
+
+/******************************************************************************/
+
+/**
+ * \defgroup LIBRPMI_HSM_INTERFACE RPMI Hart State Management Library Interface
  * @brief Global functions and data structures implemented by the RPMI library
  * for RPMI hart state management. This is shared by multiple RPMI service 
  * groups.
@@ -604,198 +899,132 @@ void rpmi_hsm_destroy(struct rpmi_hsm *hsm);
 /******************************************************************************/
 
 /**
- * \defgroup LIBRPMI_TRANSPORT_INTERFACE RPMI transport library interface
+ * \defgroup LIBRPMI_SYSRESETSRVGRP_INTERFACE RPMI System Reset Service Group Library Interface
  * @brief Global functions and data structures implemented by the RPMI library
- * for managing RPMI transport.
+ * for RPMI system reset service group.
  * @{
  */
 
-/**
- * RPMI transport instance
- *
- * @brief Structure representing a RPMI transport between the platform firmware
- * and application processors.
- */
-struct rpmi_transport {
-	/** Name of the transport */
-	const char *name;
-
-	/** Endianness of the messages transferred through this transport */
-	rpmi_bool_t is_be;
-
-	/** Slot (or max message) size in transport queues */
-	rpmi_size_t slot_size;
-
+/** Platform specific system reset operations */
+struct rpmi_sysreset_platform_ops {
 	/**
-	 * Callback to check if a RPMI queue type is empty
-	 *
-	 * Note: This function must be called with transport lock held.
+	 * Do system reset
+	 * Note: this function is not expected to return
 	 */
-	rpmi_bool_t (*is_empty)(struct rpmi_transport *trans,
-				enum rpmi_queue_type qtype);
-
-	/**
-	 * Callback to check if a RPMI queue type is full
-	 *
-	 * Note: This function must be called with transport lock held.
-	 */
-	rpmi_bool_t (*is_full)(struct rpmi_transport *trans,
-			       enum rpmi_queue_type qtype);
-
-	/**
-	 * Callback to enqueue a RPMI message to a specified RPMI queue type
-	 *
-	 * Note: This function must be called with transport lock held.
-	 */
-	enum rpmi_error (*enqueue)(struct rpmi_transport *trans,
-				   enum rpmi_queue_type qtype,
-				   const struct rpmi_message *msg);
-
-	/**
-	 * Callback to dequeue a RPMI message from a specified RPMI queue type
-	 *
-	 * Note: This function must be called with transport lock held.
-	 */
-	enum rpmi_error (*dequeue)(struct rpmi_transport *trans,
-				   enum rpmi_queue_type qtype,
-				   struct rpmi_message *out_msg);
-
-	/** Lock to synchronize transport access (optional) */
-	void *lock;
-
-	/** Private data of the transport implementation */
-	void *priv;
+	void (*do_system_reset)(void *priv, rpmi_uint32_t sysreset_type);
 };
 
 /**
- * @brief Check if a specified RPMI queue type of a RPMI transport is empty
+ * @brief Create a system reset service group instance
  *
- * @param[in] trans		pointer to RPMI transport instance
- * @param[in] qtype		type of the RPMI queue
- * @return true if empty and false if not empty
+ * @param[in] ops		pointer to platform specific system reset operations
+ * @param[in] ops_priv		pointer to private data of platform operations
+ * @return pointer to RPMI service group instance upon success and NULL upon failure
  */
-rpmi_bool_t rpmi_transport_is_empty(struct rpmi_transport *trans,
-				    enum rpmi_queue_type qtype);
+struct rpmi_service_group *
+rpmi_service_group_sysreset_create(rpmi_uint32_t sysreset_type_count,
+				   const rpmi_uint32_t *sysreset_types,
+				   const struct rpmi_sysreset_platform_ops *ops,
+				   void *ops_priv);
 
 /**
- * @brief Check if a specified RPMI queue type of a RPMI transport is full
+ * @brief Destroy (of free) a system reset service group instance
  *
- * @param[in] trans		pointer to RPMI transport instance
- * @param[in] qtype		type of the RPMI queue
- * @return true if full and false if not full
+ * @param[in] group		pointer to RPMI service group instance
  */
-rpmi_bool_t rpmi_transport_is_full(struct rpmi_transport *trans,
-				  enum rpmi_queue_type qtype);
-
-/**
- * @brief Enqueue a RPMI message to a specified RPMI queue type of a RPMI transport
- *
- * @param[in] trans		pointer to RPMI transport instance
- * @param[in] qtype		type of the RPMI queue
- * @param[in] msg		pointer to the enqueued RPMI message
- * @return enum rpmi_error
- */
-enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
-				      enum rpmi_queue_type qtype,
-				      struct rpmi_message *msg);
-
-/**
- * @brief Dequeue a RPMI message from a specified RPMI queue type of a RPMI transport
- *
- * @param[in] trans		pointer to RPMI transport instance
- * @param[in] qtype		type of the RPMI queue
- * @param[out] out_msg		pointer to the dequeued RPMI message
- * @return enum rpmi_error
- */
-enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
-				       enum rpmi_queue_type qtype,
-				       struct rpmi_message *out_msg);
-
-/**
- * @brief Create a shared memory transport instance
- *
- * @param[in] name		name of the shared memory transport instance
- * @param[in] slot_size		size of message slot for queues in shared memory
- * @param[in] shmem		pointer to a RPMI shared memory instance
- * @return pointer to RPMI transport upon success and NULL upon failure
- */
-struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
-						   rpmi_uint32_t slot_size,
-						   struct rpmi_shmem *shmem);
-
-/**
- * @brief Destroy (of free) a shared memory transport instance
- *
- * @param[in] trans		pointer to RPMI transport instance
- */
-void rpmi_transport_shmem_destroy(struct rpmi_transport *trans);
+void rpmi_service_group_sysreset_destroy(struct rpmi_service_group *group);
 
 /** @} */
 
 /******************************************************************************/
 
 /**
- * \defgroup LIBRPMI_SERVICEGROUP_INTERFACE RPMI service group library interface
+ * \defgroup LIBRPMI_SYSSUSPENDSRVGRP_INTERFACE RPMI System Suspend Service Group Library Interface
  * @brief Global functions and data structures implemented by the RPMI library
- * for managing RPMI service groups.
+ * for RPMI system suspend service group.
  * @{
  */
 
-struct rpmi_service_group;
-
-/** RPMI service instance */
-struct rpmi_service {
-	/** ID of the service */
-	rpmi_uint8_t service_id;
-
-	/** Minimum data length for handling request */
-	rpmi_uint16_t min_a2p_request_datalen;
-
-	/**
-	 * Callback to process a2p request
-	 *
-	 * Note: This function must be called with service group lock held.
-	 */
-	enum rpmi_error (*process_a2p_request)(struct rpmi_service_group *group,
-					       struct rpmi_service *service,
-					       struct rpmi_transport *trans,
-					       rpmi_uint16_t request_data_len,
-					       const rpmi_uint8_t *request_data,
-					       rpmi_uint16_t *response_data_len,
-					       rpmi_uint8_t *response_data);
+/** RPMI system suspend type */
+struct rpmi_system_suspend_type {
+	rpmi_uint32_t type;
+	rpmi_uint32_t attr;
 };
 
-/** RPMI service group instance */
-struct rpmi_service_group {
-	/** Name of the service group */
-	const char *name;
-
-	/** ID of the service group */
-	rpmi_uint16_t servicegroup_id;
-
-	/** Maximum service ID of the service group */
-	rpmi_uint8_t max_service_id;
-
-	/** Array of services indexed by service ID */
-	struct rpmi_service *services;
-
-	/**
-	 * Callback to process events for a service group. This events can be:
-	 *
-	 * 1) Fast-channel requests from application processors
-	 * 2) Pending HW interrupts relevant to a service group
-	 * 3) HW state changes relevant to a service group
-	 *
-	 * Note: This function must be called with service group lock held.
-	 */
-	enum rpmi_error (*process_events)(struct rpmi_service_group *group);
-
-	/** Lock to synchronize service group access (optional) */
-	void *lock;
-
-	/** Private data of the service group implementation */
-	void *priv;
+/** Platform specific system suspend operations */
+struct rpmi_syssusp_platform_ops {
+	/** Prepare for system suspend */
+	enum rpmi_error (*system_suspend_prepare)(void *priv,
+						  rpmi_uint32_t hart_index,
+			const struct rpmi_system_suspend_type *syssusp_type,
+						  rpmi_uint64_t resume_addr);
+	/** Check if the system is ready to suspend */
+	rpmi_bool_t (*system_suspend_ready)(void *priv,
+					    rpmi_uint32_t hart_index);
+	/** Finalize system suspend */
+	void (*system_suspend_finalize)(void *priv,
+					rpmi_uint32_t hart_index,
+			const struct rpmi_system_suspend_type *syssusp_type,
+					rpmi_uint64_t resume_addr);
+	/** Check if the system is ready to resume */
+	rpmi_bool_t (*system_suspend_can_resume)(void *priv,
+						 rpmi_uint32_t hart_index);
+	/** Resume from system suspend */
+	enum rpmi_error (*system_suspend_resume)(void *priv,
+						 rpmi_uint32_t hart_index,
+			const struct rpmi_system_suspend_type *syssusp_type,
+						 rpmi_uint64_t resume_addr);
 };
+
+/**
+ * @brief Create a system suspend service group instance
+ *
+ * @param[in] hsm			pointer to HSM instance
+ * @param[in] syssusp_type_count	number of system suspend types
+ * @param[in] syssusp_types		array of system suspend type values
+ * @param[in] ops			pointer to platform specific system suspend operations
+ * @param[in] ops_priv			pointer to private data of platform operations
+ * @return pointer to RPMI service group instance upon success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_syssusp_create(struct rpmi_hsm *hsm,
+				  rpmi_uint32_t syssusp_type_count,
+			const struct rpmi_system_suspend_type *syssusp_types,
+				  const struct rpmi_syssusp_platform_ops *ops,
+				  void *ops_priv);
+
+/**
+ * @brief Destroy (of free) a system suspend service group instance
+ *
+ * @param[in] group		pointer to RPMI service group instance
+ */
+void rpmi_service_group_syssusp_destroy(struct rpmi_service_group *group);
+
+/**
+ * @brief Create a hart state management (HSM) service group instance
+ *
+ * @param[in] hsm		pointer to HSM instance
+ * @return pointer to RPMI service group instance upon success and NULL upon failure
+ */
+struct rpmi_service_group *rpmi_service_group_hsm_create(struct rpmi_hsm *hsm);
+
+/**
+ * @brief Destroy (of free) a hart state management (HSM) service group instance
+ *
+ * @param[in] group		pointer to RPMI service group instance
+ */
+void rpmi_service_group_hsm_destroy(struct rpmi_service_group *group);
+
+/** @} */
+
+/******************************************************************************/
+
+/**
+ * \defgroup LIBRPMI_CLOCKSRVGRP_INTERFACE RPMI Clock Service Group Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for RPMI clock service group.
+ * @{
+ */
 
 /** Clock rate match mode */
 enum rpmi_clock_rate_match {
@@ -929,202 +1158,6 @@ rpmi_service_group_clock_create(rpmi_uint32_t clock_count,
  * @param[in] group	pointer to RPMI service group instance
  */
 void rpmi_service_group_clock_destroy(struct rpmi_service_group *group);
-
-/** Platform specific system reset operations */
-struct rpmi_sysreset_platform_ops {
-	/**
-	 * Do system reset
-	 * Note: this function is not expected to return
-	 */
-	void (*do_system_reset)(void *priv, rpmi_uint32_t sysreset_type);
-};
-
-/**
- * @brief Create a system reset service group instance
- *
- * @param[in] ops		pointer to platform specific system reset operations
- * @param[in] ops_priv		pointer to private data of platform operations
- * @return pointer to RPMI service group instance upon success and NULL upon failure
- */
-struct rpmi_service_group *
-rpmi_service_group_sysreset_create(rpmi_uint32_t sysreset_type_count,
-				   const rpmi_uint32_t *sysreset_types,
-				   const struct rpmi_sysreset_platform_ops *ops,
-				   void *ops_priv);
-
-/**
- * @brief Destroy (of free) a system reset service group instance
- *
- * @param[in] group		pointer to RPMI service group instance
- */
-void rpmi_service_group_sysreset_destroy(struct rpmi_service_group *group);
-
-/** RPMI system suspend type */
-struct rpmi_system_suspend_type {
-	rpmi_uint32_t type;
-	rpmi_uint32_t attr;
-};
-
-/** Platform specific system suspend operations */
-struct rpmi_syssusp_platform_ops {
-	/** Prepare for system suspend */
-	enum rpmi_error (*system_suspend_prepare)(void *priv,
-						  rpmi_uint32_t hart_index,
-			const struct rpmi_system_suspend_type *syssusp_type,
-						  rpmi_uint64_t resume_addr);
-	/** Check if the system is ready to suspend */
-	rpmi_bool_t (*system_suspend_ready)(void *priv,
-					    rpmi_uint32_t hart_index);
-	/** Finalize system suspend */
-	void (*system_suspend_finalize)(void *priv,
-					rpmi_uint32_t hart_index,
-			const struct rpmi_system_suspend_type *syssusp_type,
-					rpmi_uint64_t resume_addr);
-	/** Check if the system is ready to resume */
-	rpmi_bool_t (*system_suspend_can_resume)(void *priv,
-						 rpmi_uint32_t hart_index);
-	/** Resume from system suspend */
-	enum rpmi_error (*system_suspend_resume)(void *priv,
-						 rpmi_uint32_t hart_index,
-			const struct rpmi_system_suspend_type *syssusp_type,
-						 rpmi_uint64_t resume_addr);
-};
-
-/**
- * @brief Create a system suspend service group instance
- *
- * @param[in] hsm			pointer to HSM instance
- * @param[in] syssusp_type_count	number of system suspend types
- * @param[in] syssusp_types		array of system suspend type values
- * @param[in] ops			pointer to platform specific system suspend operations
- * @param[in] ops_priv			pointer to private data of platform operations
- * @return pointer to RPMI service group instance upon success and NULL upon failure
- */
-struct rpmi_service_group *
-rpmi_service_group_syssusp_create(struct rpmi_hsm *hsm,
-				  rpmi_uint32_t syssusp_type_count,
-			const struct rpmi_system_suspend_type *syssusp_types,
-				  const struct rpmi_syssusp_platform_ops *ops,
-				  void *ops_priv);
-
-/**
- * @brief Destroy (of free) a system suspend service group instance
- *
- * @param[in] group		pointer to RPMI service group instance
- */
-void rpmi_service_group_syssusp_destroy(struct rpmi_service_group *group);
-
-/**
- * @brief Create a hart state management (HSM) service group instance
- *
- * @param[in] hsm		pointer to HSM instance
- * @return pointer to RPMI service group instance upon success and NULL upon failure
- */
-struct rpmi_service_group *rpmi_service_group_hsm_create(struct rpmi_hsm *hsm);
-
-/**
- * @brief Destroy (of free) a hart state management (HSM) service group instance
- *
- * @param[in] group		pointer to RPMI service group instance
- */
-void rpmi_service_group_hsm_destroy(struct rpmi_service_group *group);
-
-/** @} */
-
-/******************************************************************************/
-
-/**
- * \defgroup LIBRPMI_CONTEXT_INTERFACE RPMI context library interface
- * @brief Global functions and data structures implemented by the RPMI library
- * for managing RPMI context.
- * @{
- */
-
-/**
- * @brief Opaque RPMI execution context which groups together a RPMI transport
- * instance and a set of RPMI service groups. The RPMI base service group is
- * a built-in service group of the RPMI context and is always available.
- */
-struct rpmi_context;
-
-/**
- * @brief Process requests from application processors for a RPMI context
- *
- * @param[in] cntx		pointer to the RPMI context
- */
-void rpmi_context_process_a2p_request(struct rpmi_context *cntx);
-
-/**
- * @brief Process events of RPMI service group in a RPMI context
- *
- * @param[in] cntx		pointer to the RPMI context
- * @param[in] servicegroup_id	ID of the service group
- */
-void rpmi_context_process_group_events(struct rpmi_context *cntx,
-				       rpmi_uint16_t servicegroup_id);
-
-/**
- * @brief Process events of all RPMI service groups in a RPMI context
- *
- * @param[in] cntx		pointer to the RPMI context
- */
-void rpmi_context_process_all_events(struct rpmi_context *cntx);
-
-/**
- * @brief Find a RPMI service group in a RPMI context
- *
- * @param[in] cntx		pointer to the RPMI context
- * @param[in] servicegroup_id	ID of the service group
- * @return pointer to RPMI service group upon success and NULL upon failure
- */
-struct rpmi_service_group *rpmi_context_find_group(struct rpmi_context *cntx,
-						rpmi_uint16_t servicegroup_id);
-
-/**
- * @brief Add a RPMI service group to a RPMI context
- *
- * @param[in] cntx		pointer to the RPMI context
- * @param[in] group		pointer to the RPMI service group
- * @return enum rpmi_error
- */
-enum rpmi_error rpmi_context_add_group(struct rpmi_context *cntx,
-				       struct rpmi_service_group *group);
-
-/**
- * @brief Remove a RPMI service group from a RPMI context
- *
- * @param[in] cntx		pointer to the RPMI context
- * @param[in] group		pointer to the RPMI service group
- */
-void rpmi_context_remove_group(struct rpmi_context *cntx,
-			       struct rpmi_service_group *group);
-
-/**
- * @brief Create a RPMI context
- *
- * @param[in] name		name of the context instance
- * @param[in] trans		pointer to RPMI transport instance
- * @param[in] max_num_groups	maximum number of service groups
- * @param[in] vendor_id		vendor ID of HW
- * @param[in] vendor_sub_id	vendor SUB-ID of HW
- * @param[in] hw_info_len	length of the HW info string
- * @param[in] hw_info		pointer to the HW info string
- * @return pointer to RPMI context upon success and NULL upon failure
- */
-struct rpmi_context *rpmi_context_create(const char *name,
-					 struct rpmi_transport *trans,
-					 rpmi_uint32_t max_num_groups,
-					 rpmi_uint16_t vendor_id,
-					 rpmi_uint16_t vendor_sub_id,
-					 rpmi_uint32_t hw_info_len,
-					 const rpmi_uint8_t *hw_info);
-
-/**
- * @brief Destroy (of free) a RPMI context
- *
- * @param[in] cntx		pointer to RPMI context instance
- */
-void rpmi_context_destroy(struct rpmi_context *cntx);
 
 /** @} */
 
