@@ -34,21 +34,29 @@
 #define offsetof(TYPE, MEMBER) ((rpmi_size_t) &((TYPE *)0)->MEMBER)
 #endif
 
+#ifndef container_of
 #define container_of(ptr, type, member) ({			\
 	const typeof(((type *)0)->member) * __mptr = (ptr);	\
 	(type *)((char *)__mptr - offsetof(type, member)); })
+#endif
 
+#ifndef array_size
 #define array_size(x) 	(sizeof(x) / sizeof((x)[0]))
+#endif
 
-#define MAX(a, b) ((a) > (b) ? (a) : (b))
-#define MIN(a, b) ((a) < (b) ? (a) : (b))
-#define CLAMP(a, lo, hi) MIN(MAX(a, lo), hi)
+#define RPMI_MAX(a, b) ((a) > (b) ? (a) : (b))
 
-#define STR(x) XSTR(x)
-#define XSTR(x) #x
+#define RPMI_MIN(a, b) ((a) < (b) ? (a) : (b))
 
-#define ROUNDUP(a, b) ((((a)-1) / (b) + 1) * (b))
-#define ROUNDDOWN(a, b) ((a) / (b) * (b))
+#define RPMI_CLAMP(a, lo, hi) RPMI_MIN(RPMI_MAX(a, lo), hi)
+
+#define RPMI_STR(x) RPMI_XSTR(x)
+
+#define RPMI_XSTR(x) #x
+
+#define RPMI_ROUNDUP(a, b) ((((a)-1) / (b) + 1) * (b))
+
+#define RPMI_ROUNDDOWN(a, b) ((a) / (b) * (b))
 
 #endif
 
