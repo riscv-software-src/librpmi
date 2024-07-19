@@ -432,9 +432,9 @@ rpmi_clock_sg_get_attributes(struct rpmi_service_group *group,
 			     rpmi_uint16_t *response_datalen,
 			     rpmi_uint8_t *response_data)
 {
+	rpmi_uint16_t resp_dlen;
 	enum rpmi_error ret;
-	rpmi_uint32_t resp_dlen, flags = 0;
-	char *name = NULL;
+	rpmi_uint32_t flags = 0;
 	struct rpmi_clock_attrs clk_attrs;
 	struct rpmi_clock_group *clkgrp = group->priv;
 	rpmi_uint32_t *resp = (void *)response_data;
@@ -463,8 +463,8 @@ rpmi_clock_sg_get_attributes(struct rpmi_service_group *group,
 	resp[1] = rpmi_to_xe32(trans->is_be, flags);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 
-	if (name)
-		rpmi_env_strncpy((char *)&resp[4], name, RPMI_CLK_NAME_MAX_LEN);
+	if (clk_attrs.name)
+		rpmi_env_strncpy((char *)&resp[4], clk_attrs.name, RPMI_CLK_NAME_MAX_LEN);
 
 	resp_dlen = 8 * sizeof(*resp);
 
@@ -543,8 +543,8 @@ rpmi_clock_sg_get_supp_rates(struct rpmi_service_group *group,
 
 		/* max rates a rpmi message can accomodate */
 		max_rates = 
-		(RPMI_MSG_DATA_SIZE(trans->slot_size) - (4 * sizeof(*resp)) /
-					sizeof(struct rpmi_clock_rate));
+		(RPMI_MSG_DATA_SIZE(trans->slot_size) - (4 * sizeof(*resp))) /
+					sizeof(struct rpmi_clock_rate);
 		remaining = rate_count - clk_rate_idx;
 		if (remaining > max_rates)
 			returned = max_rates;
@@ -635,6 +635,7 @@ rpmi_clock_sg_get_config(struct rpmi_service_group *group,
 			 rpmi_uint16_t *response_datalen,
 			 rpmi_uint8_t *response_data)
 {
+	rpmi_uint16_t resp_dlen;
 	enum rpmi_error status;
 	enum rpmi_clock_state state;
 	struct rpmi_clock_group *clkgrp = group->priv;
@@ -646,20 +647,24 @@ rpmi_clock_sg_get_config(struct rpmi_service_group *group,
 	if (clkid > clkgrp->clock_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_NOTFOUND);
+		resp_dlen = sizeof(*resp);
 		goto done;
 	}
 
 	status = rpmi_clock_get_state(clkgrp, clkid, &state);
 	if (status) {
 		resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)status);
+		resp_dlen = sizeof(*resp);
 		goto done;
 	}
 
 	resp[1] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)state);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 
+	resp_dlen = 2 * sizeof(*resp);
+
 done:
-	*response_datalen = sizeof(*resp);
+	*response_datalen = resp_dlen;
 	return RPMI_SUCCESS;
 }
 
@@ -694,8 +699,11 @@ rpmi_clock_sg_set_rate(struct rpmi_service_group *group,
 
 	/* get rate match mode from flags */
 	rate_match = flags & 0b11;
-	if (rate_match >= RPMI_CLK_RATE_MATCH_MAX_IDX)
-		return RPMI_ERR_INVAL;
+	if (rate_match >= RPMI_CLK_RATE_MATCH_MAX_IDX) {
+		resp[0] = rpmi_to_xe32(trans->is_be,
+				       (rpmi_uint32_t)RPMI_ERR_INVAL);
+		goto done;
+	}
 
 	rate.lo = rpmi_to_xe32(trans->is_be,
 				((const rpmi_uint32_t *)response_data)[2]);
@@ -703,8 +711,11 @@ rpmi_clock_sg_set_rate(struct rpmi_service_group *group,
 				((const rpmi_uint32_t *)response_data)[3]);
 
 	rate_u64 = RATE_U64(rate.lo, rate.hi);
-	if (rate_u64 == RPMI_CLOCK_RATE_INVALID || rate_u64 == 0)
-		return RPMI_ERR_INVAL;
+	if (rate_u64 == RPMI_CLOCK_RATE_INVALID || rate_u64 == 0) {
+	    resp[0] = rpmi_to_xe32(trans->is_be,
+				       (rpmi_uint32_t)RPMI_ERR_INVAL);
+		goto done;
+	}
 
 	status = rpmi_clock_set_rate(clkgrp, clkid, rate_match, rate_u64);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)status);
@@ -723,6 +734,7 @@ rpmi_clock_sg_get_rate(struct rpmi_service_group *group,
 		       rpmi_uint16_t *response_datalen,
 		       rpmi_uint8_t *response_data)
 {
+	rpmi_uint16_t resp_dlen;
 	enum rpmi_error status;
 	rpmi_uint64_t rate_u64;
 	struct rpmi_clock_group *clkgrp = group->priv;
@@ -734,12 +746,14 @@ rpmi_clock_sg_get_rate(struct rpmi_service_group *group,
 	if (clkid > clkgrp->clock_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_NOTFOUND);
+		resp_dlen = sizeof(*resp);
 		goto done;
 	}
 
 	status = rpmi_clock_get_rate(clkgrp, clkid, &rate_u64);
 	if(status) {
 		resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)status);
+		resp_dlen = sizeof(*resp);
 		goto done;
 	}
 
@@ -749,8 +763,10 @@ rpmi_clock_sg_get_rate(struct rpmi_service_group *group,
 				(rpmi_uint32_t)RATE_U64TOLO(rate_u64));
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 
+	resp_dlen = 3 * sizeof(*resp);
+
 done:
-	*response_datalen = sizeof(*resp);
+	*response_datalen = resp_dlen;
 	return RPMI_SUCCESS;
 }
 
