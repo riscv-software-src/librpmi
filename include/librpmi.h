@@ -366,103 +366,6 @@ void rpmi_shmem_destroy(struct rpmi_shmem *shmem);
 /*****************************************************************************/
 
 /**
- * \defgroup LIBRPMI_CONTEXT_INTERFACE RPMI Context Library Interface
- * @brief Global functions and data structures implemented by the RPMI library
- * for managing RPMI context.
- * @{
- */
-
-/**
- * @brief Opaque RPMI execution context which groups together a RPMI transport
- * instance and a set of RPMI service groups. The RPMI base service group is
- * a built-in service group of the RPMI context and is always available.
- */
-struct rpmi_context;
-
-/**
- * @brief Process requests from application processors for a RPMI context
- *
- * @param[in] cntx		pointer to the RPMI context
- */
-void rpmi_context_process_a2p_request(struct rpmi_context *cntx);
-
-/**
- * @brief Process events of RPMI service group in a RPMI context
- *
- * @param[in] cntx		pointer to the RPMI context
- * @param[in] servicegroup_id	ID of the service group
- */
-void rpmi_context_process_group_events(struct rpmi_context *cntx,
-				       rpmi_uint16_t servicegroup_id);
-
-/**
- * @brief Process events of all RPMI service groups in a RPMI context
- *
- * @param[in] cntx		pointer to the RPMI context
- */
-void rpmi_context_process_all_events(struct rpmi_context *cntx);
-
-/**
- * @brief Find a RPMI service group in a RPMI context
- *
- * @param[in] cntx		pointer to the RPMI context
- * @param[in] servicegroup_id	ID of the service group
- * @return pointer to RPMI service group upon success and NULL upon failure
- */
-struct rpmi_service_group *rpmi_context_find_group(struct rpmi_context *cntx,
-						rpmi_uint16_t servicegroup_id);
-
-/**
- * @brief Add a RPMI service group to a RPMI context
- *
- * @param[in] cntx		pointer to the RPMI context
- * @param[in] group		pointer to the RPMI service group
- * @return enum rpmi_error
- */
-enum rpmi_error rpmi_context_add_group(struct rpmi_context *cntx,
-				       struct rpmi_service_group *group);
-
-/**
- * @brief Remove a RPMI service group from a RPMI context
- *
- * @param[in] cntx		pointer to the RPMI context
- * @param[in] group		pointer to the RPMI service group
- */
-void rpmi_context_remove_group(struct rpmi_context *cntx,
-			       struct rpmi_service_group *group);
-
-/**
- * @brief Create a RPMI context
- *
- * @param[in] name		name of the context instance
- * @param[in] trans		pointer to RPMI transport instance
- * @param[in] max_num_groups	maximum number of service groups
- * @param[in] vendor_id		vendor ID of HW
- * @param[in] vendor_sub_id	vendor SUB-ID of HW
- * @param[in] hw_info_len	length of the HW info string
- * @param[in] hw_info		pointer to the HW info string
- * @return pointer to RPMI context upon success and NULL upon failure
- */
-struct rpmi_context *rpmi_context_create(const char *name,
-					 struct rpmi_transport *trans,
-					 rpmi_uint32_t max_num_groups,
-					 rpmi_uint16_t vendor_id,
-					 rpmi_uint16_t vendor_sub_id,
-					 rpmi_uint32_t hw_info_len,
-					 const rpmi_uint8_t *hw_info);
-
-/**
- * @brief Destroy (of free) a RPMI context
- *
- * @param[in] cntx		pointer to RPMI context instance
- */
-void rpmi_context_destroy(struct rpmi_context *cntx);
-
-/** @} */
-
-/*****************************************************************************/
-
-/**
  * \defgroup LIBRPMI_TRANSPORT_INTERFACE RPMI Transport Library Interface
  * @brief Global functions and data structures implemented by the RPMI library
  * for managing RPMI transport.
@@ -588,6 +491,103 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
  * @param[in] trans		pointer to RPMI transport instance
  */
 void rpmi_transport_shmem_destroy(struct rpmi_transport *trans);
+
+/** @} */
+
+/*****************************************************************************/
+
+/**
+ * \defgroup LIBRPMI_CONTEXT_INTERFACE RPMI Context Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for managing RPMI context.
+ * @{
+ */
+
+/**
+ * @brief Opaque RPMI execution context which groups together a RPMI transport
+ * instance and a set of RPMI service groups. The RPMI base service group is
+ * a built-in service group of the RPMI context and is always available.
+ */
+struct rpmi_context;
+
+/**
+ * @brief Process requests from application processors for a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ */
+void rpmi_context_process_a2p_request(struct rpmi_context *cntx);
+
+/**
+ * @brief Process events of RPMI service group in a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ * @param[in] servicegroup_id	ID of the service group
+ */
+void rpmi_context_process_group_events(struct rpmi_context *cntx,
+				       rpmi_uint16_t servicegroup_id);
+
+/**
+ * @brief Process events of all RPMI service groups in a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ */
+void rpmi_context_process_all_events(struct rpmi_context *cntx);
+
+/**
+ * @brief Find a RPMI service group in a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ * @param[in] servicegroup_id	ID of the service group
+ * @return pointer to RPMI service group upon success and NULL upon failure
+ */
+struct rpmi_service_group *rpmi_context_find_group(struct rpmi_context *cntx,
+						rpmi_uint16_t servicegroup_id);
+
+/**
+ * @brief Add a RPMI service group to a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ * @param[in] group		pointer to the RPMI service group
+ * @return enum rpmi_error
+ */
+enum rpmi_error rpmi_context_add_group(struct rpmi_context *cntx,
+				       struct rpmi_service_group *group);
+
+/**
+ * @brief Remove a RPMI service group from a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ * @param[in] group		pointer to the RPMI service group
+ */
+void rpmi_context_remove_group(struct rpmi_context *cntx,
+			       struct rpmi_service_group *group);
+
+/**
+ * @brief Create a RPMI context
+ *
+ * @param[in] name		name of the context instance
+ * @param[in] trans		pointer to RPMI transport instance
+ * @param[in] max_num_groups	maximum number of service groups
+ * @param[in] vendor_id		vendor ID of HW
+ * @param[in] vendor_sub_id	vendor SUB-ID of HW
+ * @param[in] hw_info_len	length of the HW info string
+ * @param[in] hw_info		pointer to the HW info string
+ * @return pointer to RPMI context upon success and NULL upon failure
+ */
+struct rpmi_context *rpmi_context_create(const char *name,
+					 struct rpmi_transport *trans,
+					 rpmi_uint32_t max_num_groups,
+					 rpmi_uint16_t vendor_id,
+					 rpmi_uint16_t vendor_sub_id,
+					 rpmi_uint32_t hw_info_len,
+					 const rpmi_uint8_t *hw_info);
+
+/**
+ * @brief Destroy (of free) a RPMI context
+ *
+ * @param[in] cntx		pointer to RPMI context instance
+ */
+void rpmi_context_destroy(struct rpmi_context *cntx);
 
 /** @} */
 
