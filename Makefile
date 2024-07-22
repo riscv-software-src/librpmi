@@ -49,6 +49,7 @@ endif
 # Setup path of directories
 export include_dir=$(src_dir)/include
 export lib_dir=$(src_dir)/lib
+export test_dir=$(src_dir)/test
 
 ifeq ($(LLVM),1)
 CC		=	clang
@@ -71,15 +72,21 @@ CPP		=	$(CC) -E
 
 # Setup list of objects.mk files
 lib-object-mks=$(shell if [ -d $(lib_dir)/ ]; then find $(lib_dir) -iname "objects.mk" | sort -r; fi)
+test-object-mks=$(shell if [ -d $(test_dir)/ ]; then find $(test_dir) -iname "objects.mk" | sort -r; fi)
 
 # Include all object.mk files
 include $(lib-object-mks)
+include $(test-object-mks)
 
 # Setup list of objects
 lib-objs-path-y=$(foreach obj,$(lib-objs-y),$(build_dir)/lib/$(obj))
+test-elfs-path-y=$(foreach elf,$(test-elfs-y),$(build_dir)/test/$(elf).elf)
+test-objs-path-y=$(foreach elf,$(test-elfs-y),$(build_dir)/test/$(elf).o)
+test-objs-path-y+=$(foreach elf,$(test-elfs-y),$(foreach obj,$($(elf)-objs-y),$(build_dir)/$(obj)))
 
 # Setup list of deps files for objects
 deps-y=$(lib-objs-path-y:.o=.dep)
+deps-y+=$(test-objs-path-y:.o=.dep)
 
 # Setup compilation commands flags
 GENFLAGS	=	-Wall -Werror -g -O2
@@ -91,6 +98,9 @@ CFLAGS		+=	$(EXTRA_CFLAGS)
 CPPFLAGS	+=	$(GENFLAGS)
 
 ARFLAGS		=	rcs
+
+ELFFLAGS	+=	-static
+ELFFLAGS	+=	$(EXTRA_ELFFLAGS)
 
 # Setup functions for compilation
 define dynamic_flags
@@ -128,11 +138,15 @@ compile_cc_dep = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 compile_cc = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 	     echo " CC        $(subst $(build_dir)/,,$(1))"; \
 	     $(CC) $(CFLAGS) $(call dynamic_flags,$(1),$(2)) -c $(2) -o $(1)
+compile_elf = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
+	     echo " ELF       $(subst $(build_dir)/,,$(1))"; \
+	     $(CC) $(CFLAGS) $(ELFFLAGS) $(2) $(3) $(4) -o $(1)
 compile_ar = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 	     echo " AR        $(subst $(build_dir)/,,$(1))"; \
 	     $(AR) $(ARFLAGS) $(1) $(2)
 
 blobs-y = $(build_dir)/librpmi.a
+blobs-y += $(test-elfs-path-y)
 
 # Default rule "make" should always be first rule
 .PHONY: all
@@ -154,6 +168,9 @@ printdetails:
 
 # Preserve all intermediate files
 .SECONDARY:
+
+$(build_dir)/%.elf: $(build_dir)/%.o $(test-objs-path-y) $(build_dir)/librpmi.a
+	$(call compile_elf,$@,$<,$(foreach obj,$($(*F)-objs-y),$(build_dir)/$(obj)),$($(*F)-cflags-y))
 
 $(build_dir)/librpmi.a: $(lib-objs-path-y)
 	$(call compile_ar,$@,$^)
