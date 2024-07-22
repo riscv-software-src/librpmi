@@ -107,7 +107,7 @@ static inline void *rpmi_env_memset(void *dest, int c, rpmi_size_t n)
  * @param[in] count	number of max chars to count
  * @return rpmi_size_t  number of chars in string limited by count
  */
-rpmi_size_t rpmi_env_strnlen(const char *str, rpmi_size_t count)
+static inline rpmi_size_t rpmi_env_strnlen(const char *str, rpmi_size_t count)
 {
 	unsigned long ret = 0;
 
@@ -127,7 +127,7 @@ rpmi_size_t rpmi_env_strnlen(const char *str, rpmi_size_t count)
  * @param[in] count	number of max chars to count
  * @return char *	pointer to string destination buffer
  */
-char *rpmi_env_strncpy(char *dest, const char *src, rpmi_size_t count)
+static inline char *rpmi_env_strncpy(char *dest, const char *src, rpmi_size_t count)
 {
 	char *ret = dest;
 
