@@ -58,7 +58,7 @@ struct rpmi_base_group {
 	rpmi_uint32_t hw_info_len;
 
 	/* HW info string */
-	const rpmi_uint8_t *hw_info;
+	rpmi_uint8_t *hw_info;
 
 	/** P2A MSI details */
 	rpmi_bool_t	msi_enable;
@@ -277,6 +277,7 @@ static struct rpmi_service_group *rpmi_base_group_create(struct rpmi_context *cn
 {
 	struct rpmi_service_group *group;
 	struct rpmi_base_group *base;
+	rpmi_uint32_t i;
 
 	base = rpmi_env_zalloc(sizeof(*base));
 	if (!base)
@@ -284,6 +285,13 @@ static struct rpmi_service_group *rpmi_base_group_create(struct rpmi_context *cn
 	base->cntx = cntx;
 	base->vendor_id = vendor_id;
 	base->vendor_sub_id = vendor_sub_id;
+
+	base->hw_info = rpmi_env_zalloc(hw_info_len);
+	if (!base->hw_info)
+		return NULL;
+
+	for (i = 0; i < hw_info_len; i++)
+		base->hw_info[i] = hw_info[i];
 
 	group = &base->group;
 	group->name = "base";
@@ -298,6 +306,9 @@ static struct rpmi_service_group *rpmi_base_group_create(struct rpmi_context *cn
 
 static void rpmi_base_group_destroy(struct rpmi_service_group *group)
 {
+	struct rpmi_base_group *base = group->priv;
+
+	rpmi_env_free(base->hw_info);
 	rpmi_env_free_lock(group->lock);
 	rpmi_env_free(group->priv);
 }
