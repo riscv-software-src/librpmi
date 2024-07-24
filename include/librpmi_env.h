@@ -60,6 +60,32 @@ typedef long			rpmi_ssize_t;
  */
 
 /**
+ * @brief compare memory from one place to another
+ *
+ * @param[in] s1	pointer to src1
+ * @param[in] s2	pointer to src2
+ * @param[in] n		number of bytes to compare
+ * @return void *	Pointer to destination
+ */
+static inline int rpmi_env_memcmp(void *s1, void *s2, rpmi_size_t n)
+{
+	char *temp1 = s1;
+	char *temp2 = s2;
+
+	while (n > 0) {
+		if (*temp1 < *temp2)
+			return -1;
+		if (*temp1 > *temp2)
+			return 1;
+		temp1++;
+		temp2++;
+		n--;
+	}
+
+	return 0;
+}
+
+/**
  * @brief Copy memory from one place to another
  *
  * @param[in] dest 	pointer to destination
