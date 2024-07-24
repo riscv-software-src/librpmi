@@ -99,7 +99,7 @@ CPPFLAGS	+=	$(GENFLAGS)
 
 ARFLAGS		=	rcs
 
-ELFFLAGS	+=	-static
+ELFFLAGS	+=	-static -L$(build_dir) -lrpmi
 ELFFLAGS	+=	$(EXTRA_ELFFLAGS)
 
 # Setup functions for compilation
@@ -140,7 +140,7 @@ compile_cc = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 	     $(CC) $(CFLAGS) $(call dynamic_flags,$(1),$(2)) -c $(2) -o $(1)
 compile_elf = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 	     echo " ELF       $(subst $(build_dir)/,,$(1))"; \
-	     $(CC) $(CFLAGS) $(ELFFLAGS) $(2) $(3) $(4) -o $(1)
+	     $(CC) $(CFLAGS) $(2) $(3) $(4) $(ELFFLAGS) -o $(1)
 compile_ar = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 	     echo " AR        $(subst $(build_dir)/,,$(1))"; \
 	     $(AR) $(ARFLAGS) $(1) $(2)
