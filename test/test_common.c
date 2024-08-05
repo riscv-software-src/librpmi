@@ -6,11 +6,6 @@
 
 #include "test_common.h"
 
-#define VENDOR_ID 0x1337
-#define VENDOR_SUB_ID 0x7331
-
-#define NUM_SOCKETS     1
-
 /* dump buffer in hexadecimal format */
 void hexdump(char *desc, unsigned int *buf, unsigned int len)
 {
