@@ -33,7 +33,6 @@ struct rpmi_test_scenario;
 
 struct rpmi_test {
 	char name[64];
-	void *rpmi_xport;
 	int arg0;
 	int resp0;
 	struct {
@@ -47,11 +46,14 @@ struct rpmi_test {
 	unsigned char resp_data[RPMI_MSG_MAX_DATA_SIZE];
 
 	/* test specific function handlers*/
-	int (*init)(struct rpmi_test *test);
-	int (*run)(struct rpmi_test *test);
-	int (*wait)(struct rpmi_test *test, struct rpmi_message *msg);
-	int (*verify)(struct rpmi_test *test, struct rpmi_message *msg);
-	int (*cleanup)(struct rpmi_test *test);
+	int (*init)(struct rpmi_test_scenario *scene, struct rpmi_test *test);
+	int (*run)(struct rpmi_test_scenario *scene, struct rpmi_test *test,
+		   struct rpmi_message *msg);
+	int (*wait)(struct rpmi_test_scenario *scene, struct rpmi_test *test,
+		    struct rpmi_message *msg);
+	int (*verify)(struct rpmi_test_scenario *scene, struct rpmi_test *test,
+		      struct rpmi_message *msg);
+	int (*cleanup)(struct rpmi_test_scenario *scene, struct rpmi_test *test);
 };
 
 struct rpmi_test_scenario {

@@ -113,102 +113,95 @@ static void scenario_process(struct rpmi_test_scenario *scene)
 	}
 }
 
-static int test_run(struct rpmi_test *rpmi_test)
+static int test_run(struct rpmi_test_scenario *scene, struct rpmi_test *test,
+		    struct rpmi_message *req_msg)
 {
 	int rc = 0;
-	struct rpmi_message *req_msg = get_rpmi_msg(rpmi_test->rpmi_xport);
 
-	req_msg->header.servicegroup_id = rpmi_test->attrs.svc_grp_id;
-	req_msg->header.service_id = rpmi_test->attrs.svc_id;
-	req_msg->header.datalen = rpmi_test->query_data_len;
-	rpmi_env_memcpy(req_msg->data, rpmi_test->query_data, rpmi_test->query_data_len);
+	req_msg->header.servicegroup_id = test->attrs.svc_grp_id;
+	req_msg->header.service_id = test->attrs.svc_id;
+	req_msg->header.datalen = test->query_data_len;
+	rpmi_env_memcpy(req_msg->data, test->query_data, test->query_data_len);
 
 	do {
-		rc = rpmi_transport_enqueue(rpmi_test->rpmi_xport,
+		rc = rpmi_transport_enqueue(scene->xport,
 					    RPMI_QUEUE_A2P_REQ, req_msg);
 	} while (rc == RPMI_ERR_OUTOFRES);
 
-	if (rc) {
-		printf("%s: failed (error %d)\n",
-		       __func__,  rc);
-	}
+	if (rc)
+		printf("%s: failed (error %d)\n", __func__,  rc);
 
-	free_rpmi_msg(req_msg);
 	return rc;
 }
 
-static void test_wait(struct rpmi_test *rpmi_test, struct rpmi_message *msg)
+static void test_wait(struct rpmi_test_scenario *scene, struct rpmi_test *test,
+		      struct rpmi_message *resp_msg)
 {
 	int result = -1;
 
-	rpmi_env_memset(msg, 0, sizeof(*msg));
+	rpmi_env_memset(resp_msg, 0, sizeof(*resp_msg));
 
 	/* wait for response */
-	if (rpmi_test->attrs.svc_type != RPMI_MSG_POSTED_REQUEST) {
-
+	if (test->attrs.svc_type != RPMI_MSG_POSTED_REQUEST) {
 		while (result != RPMI_SUCCESS)
-			result = rpmi_transport_dequeue(rpmi_test->rpmi_xport,
-						    RPMI_QUEUE_P2A_ACK,
-						    msg);
+			result = rpmi_transport_dequeue(scene->xport,
+							RPMI_QUEUE_P2A_ACK,
+							resp_msg);
 	}
 }
 
-static void test_verify(struct rpmi_test *rpmi_test, struct rpmi_message *msg)
+static void test_verify(struct rpmi_test_scenario *scene, struct rpmi_test *test,
+			struct rpmi_message *msg)
 {
 	int failed = 0;
 
-	if (msg->header.datalen != rpmi_test->resp_data_len) {
+	if (msg->header.datalen != test->resp_data_len) {
 		/* expected data error */
 		printf("%s: datalen mismatch: expected: %d, got: %d\n",
-		       rpmi_test->name,
-		       rpmi_test->resp_data_len, msg->header.datalen);
+		       test->name, test->resp_data_len, msg->header.datalen);
 		failed = 1;
 	} else {
-		if (rpmi_env_memcmp(&rpmi_test->resp_data, &msg->data,
-			   rpmi_test->resp_data_len)) {
+		if (rpmi_env_memcmp(&test->resp_data, &msg->data,
+				    test->resp_data_len)) {
 			printf("%s: datalen: %d, expected data mismatch\n",
-			       rpmi_test->name,
-			       rpmi_test->resp_data_len);
+			       test->name, test->resp_data_len);
 			hexdump("expected",
-				(unsigned int *)&rpmi_test->resp_data,
-				rpmi_test->resp_data_len);
+				(unsigned int *)&test->resp_data,
+				test->resp_data_len);
 			hexdump("received",
-				(unsigned int *)msg->data,
-				rpmi_test->resp_data_len);
+				(unsigned int *)msg->data, test->resp_data_len);
 			failed = 1;
 		}
 	}
-	printf("%-50s \t : %s!\n", rpmi_test->name, failed?"Failed":"Succeeded");
+	printf("%-50s \t : %s!\n", test->name, failed ? "Failed":"Succeeded");
 }
 
 static void execute_scenario(struct rpmi_test_scenario *scene)
 {
-	struct rpmi_transport *rpmi_xport;
-	struct rpmi_test *rpmi_test;
-	struct rpmi_message *msg;
-	int test;
+	struct rpmi_message *req_msg, *resp_msg;
+	struct rpmi_test *test;
+	int i;
 
 	if (!scene)
 		return;
-	rpmi_xport = scene->xport;
-	msg = get_rpmi_msg(rpmi_xport);
+
+	req_msg = get_rpmi_msg(scene->xport);
+	resp_msg = get_rpmi_msg(scene->xport);
 
 	printf("\nExecuting %s test scenario :\n", scene->name);
 	printf("-------------------------------------------------\n");
-	for (test = 0; test < scene->num_tests; test++) {
-
-		rpmi_test = &scene->tests[test];
-		rpmi_test->rpmi_xport = rpmi_xport;
+	for (i = 0; i < scene->num_tests; i++) {
+		test = &scene->tests[i];
 
 		/* initialize test parameters */
-		if (rpmi_test->init)
-			rpmi_test->init(rpmi_test);
+		if (test->init)
+			test->init(scene, test);
 
 		/* run the test */
-		if (rpmi_test->run)
-			rpmi_test->run(rpmi_test);
+		if (test->run)
+			test->run(scene, test, req_msg);
 		else
-			test_run(rpmi_test);
+			test_run(scene, test, req_msg);
 
 		if (scene->process)
 			scene->process(scene);
@@ -216,23 +209,24 @@ static void execute_scenario(struct rpmi_test_scenario *scene)
 			scenario_process(scene);
 
 		/* wait for test to finish */
-		if (rpmi_test->wait)
-			rpmi_test->wait(rpmi_test, msg);
+		if (test->wait)
+			test->wait(scene, test, resp_msg);
 		else
-			test_wait(rpmi_test, msg);
+			test_wait(scene, test, resp_msg);
 
 		/* verify and report */
-		if (rpmi_test->verify)
-			rpmi_test->verify(rpmi_test, msg);
+		if (test->verify)
+			test->verify(scene, test, resp_msg);
 		else
-			test_verify(rpmi_test, msg);
+			test_verify(scene, test, resp_msg);
 
 		/* cleanup if needed */
-		if (rpmi_test->cleanup)
-			rpmi_test->cleanup(rpmi_test);
+		if (test->cleanup)
+			test->cleanup(scene, test);
 	}
 
-	free_rpmi_msg(msg);
+	free_rpmi_msg(req_msg);
+	free_rpmi_msg(resp_msg);
 }
 
 static int init_scenario(struct rpmi_test_scenario *scene)

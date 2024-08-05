@@ -39,7 +39,8 @@ struct group_config {
 	int priv_len;
 } base_conf;
 
-static int init_enable_notification_test(struct rpmi_test *test)
+static int init_enable_notification_test(struct rpmi_test_scenario *scene,
+					 struct rpmi_test *test)
 {
 	rpmi_uint32_t resp_data[1];
 	char name[] = "RPMI_BASE_SRV_ENABLE_NOTIFICATION";
@@ -61,7 +62,7 @@ static int init_enable_notification_test(struct rpmi_test *test)
 	return 0;
 }
 
-static int init_impl_ver_test(struct rpmi_test *test)
+static int init_impl_ver_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
 {
 	rpmi_uint32_t resp_data[2];
 	char name[] = "RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION";
@@ -83,7 +84,7 @@ static int init_impl_ver_test(struct rpmi_test *test)
 	return 0;
 }
 
-static int init_spec_ver_test(struct rpmi_test *test)
+static int init_spec_ver_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
 {
 	rpmi_uint32_t resp_data[2];
 	char name[] = "RPMI_BASE_SRV_GET_SPEC_VERSION";
@@ -106,7 +107,7 @@ static int init_spec_ver_test(struct rpmi_test *test)
 	return 0;
 }
 
-static int init_impl_idn_test(struct rpmi_test *test)
+static int init_impl_idn_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
 {
 	rpmi_uint32_t resp_data[2];
 	char name[] = "RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN";
@@ -127,7 +128,7 @@ static int init_impl_idn_test(struct rpmi_test *test)
 	return 0;
 }
 
-static int init_hw_info_test(struct rpmi_test  *test)
+static int init_hw_info_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
 {
 	struct hw_info {
 		int status;
@@ -154,7 +155,7 @@ static int init_hw_info_test(struct rpmi_test  *test)
 	return 0;
 }
 
-static int init_probe_test(struct rpmi_test  *test)
+static int init_probe_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
 {
 	rpmi_uint32_t resp_data[2];
 	rpmi_uint32_t probe_grp = RPMI_SRVGRP_BASE;
@@ -176,7 +177,7 @@ static int init_probe_test(struct rpmi_test  *test)
 	return 0;
 }
 
-static int init_attribs_test(struct rpmi_test  *test)
+static int init_attribs_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
 {
 	rpmi_uint32_t resp_data[5];
 	char name[] = "RPMI_BASE_SRV_GET_ATTRIBUTES";
@@ -199,7 +200,7 @@ static int init_attribs_test(struct rpmi_test  *test)
 	return 0;
 }
 
-static int init_set_msi_test(struct rpmi_test *test)
+static int init_set_msi_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
 {
 	struct msi_data_s {
 		rpmi_uint32_t addr_l;
