@@ -12,201 +12,121 @@
 
 #define VENDOR_ID 0x1337
 #define VENDOR_SUB_ID 0x7331
-#define NUM_SOCKETS	1
+#define HW_ID0 0xd00dfeed
+#define HW_ID1 0xc001babe
 
-struct hw_info {
-	int status;
-	int vendor_id;
-	int hw_id_len;
-	int hw_id[4];
-} hw_info = {
-	.vendor_id = VENDOR_ID,
-	.hw_id_len = 0,
+static struct hw_info {
+	rpmi_uint32_t status;
+	rpmi_uint32_t vendor_id;
+	rpmi_uint32_t hw_id_len;
+	rpmi_uint32_t hw_id[2];
+} hw_info_val = {
+	.vendor_id = RPMI_BASE_VENDOR_ID(VENDOR_ID, VENDOR_SUB_ID),
+	.hw_id_len = sizeof(rpmi_uint32_t) * 2,
+	.hw_id[0] = HW_ID0,
+	.hw_id[1] = HW_ID1,
 };
 
-static int init_enable_notification_test(struct rpmi_test_scenario *scene,
-					 struct rpmi_test *test)
+static rpmi_uint16_t init_enable_notification_expected_data(
+					    struct rpmi_test_scenario *scene,
+					    struct rpmi_test *test,
+					    void *data, rpmi_uint16_t max_data_len)
 {
-	rpmi_uint32_t resp_data[1];
-	char name[] = "RPMI_BASE_SRV_ENABLE_NOTIFICATION";
-
-	test->attrs.svc_grp_id = RPMI_SRVGRP_BASE;
-	test->attrs.svc_id = RPMI_BASE_SRV_ENABLE_NOTIFICATION;
-	test->attrs.svc_type = RPMI_MSG_NORMAL_REQUEST;
-
-	test->query_data_len = 0;
-
-	test->resp_data_len = sizeof(resp_data);
-	memset(&resp_data, 0,  test->resp_data_len);
-	resp_data[0] = RPMI_ERR_NOTSUPP;
-
-	rpmi_env_memcpy(&test->resp_data, &resp_data, test->resp_data_len);
-
-	rpmi_env_memcpy(&test->name, &name, sizeof(name));
-
-	return 0;
+	((rpmi_uint32_t *)data)[0] = RPMI_ERR_NOTSUPP;
+	return sizeof(rpmi_uint32_t);
 }
 
-static int init_impl_ver_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
+static rpmi_uint16_t init_spec_ver_expected_data(
+					    struct rpmi_test_scenario *scene,
+					    struct rpmi_test *test,
+					    void *data, rpmi_uint16_t max_data_len)
 {
-	rpmi_uint32_t resp_data[2];
-	char name[] = "RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION";
-
-	test->attrs.svc_grp_id = RPMI_SRVGRP_BASE;
-	test->attrs.svc_id = RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION;
-	test->attrs.svc_type = RPMI_MSG_NORMAL_REQUEST;
-
-	test->query_data_len = 0;
-
-	test->resp_data_len = sizeof(resp_data);
-	memset(&resp_data, 0,  test->resp_data_len);
-	resp_data[0] = RPMI_SUCCESS;
-	resp_data[1] = RPMI_BASE_VERSION(LIBRPMI_IMPL_VERSION_MAJOR,
-						  LIBRPMI_IMPL_VERSION_MINOR);
-	rpmi_env_memcpy(&test->resp_data, &resp_data, test->resp_data_len);
-
-	rpmi_env_memcpy(&test->name, &name, sizeof(name));
-	return 0;
+	((rpmi_uint32_t *)data)[0] = RPMI_SUCCESS;
+	((rpmi_uint32_t *)data)[1] = RPMI_BASE_VERSION(RPMI_SPEC_VERSION_MAJOR,
+							RPMI_SPEC_VERSION_MINOR);
+	return sizeof(rpmi_uint32_t) * 2;
 }
 
-static int init_spec_ver_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
+static rpmi_uint16_t init_impl_ver_expected_data(
+					    struct rpmi_test_scenario *scene,
+					    struct rpmi_test *test,
+					    void *data, rpmi_uint16_t max_data_len)
 {
-	rpmi_uint32_t resp_data[2];
-	char name[] = "RPMI_BASE_SRV_GET_SPEC_VERSION";
-
-	test->attrs.svc_grp_id = RPMI_SRVGRP_BASE;
-	test->attrs.svc_id = RPMI_BASE_SRV_GET_SPEC_VERSION;
-	test->attrs.svc_type = RPMI_MSG_NORMAL_REQUEST;
-
-	test->query_data_len = 0;
-
-	test->resp_data_len = sizeof(resp_data);
-	memset(&resp_data, 0,  test->resp_data_len);
-	resp_data[0] = RPMI_SUCCESS;
-	resp_data[1] = RPMI_BASE_VERSION(RPMI_SPEC_VERSION_MAJOR,
-						 RPMI_SPEC_VERSION_MINOR);
-
-	rpmi_env_memcpy(&test->resp_data, &resp_data, test->resp_data_len);
-
-	rpmi_env_memcpy(&test->name, &name, sizeof(name));
-	return 0;
+	((rpmi_uint32_t *)data)[0] = RPMI_SUCCESS;
+	((rpmi_uint32_t *)data)[1] = RPMI_BASE_VERSION(LIBRPMI_IMPL_VERSION_MAJOR,
+							LIBRPMI_IMPL_VERSION_MINOR);
+	return sizeof(rpmi_uint32_t) * 2;
 }
 
-static int init_impl_idn_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
+static rpmi_uint16_t init_impl_idn_expected_data(
+					    struct rpmi_test_scenario *scene,
+					    struct rpmi_test *test,
+					    void *data, rpmi_uint16_t max_data_len)
 {
-	rpmi_uint32_t resp_data[2];
-	char name[] = "RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN";
-
-	test->attrs.svc_grp_id = RPMI_SRVGRP_BASE;
-	test->attrs.svc_id = RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN;
-	test->attrs.svc_type = RPMI_MSG_NORMAL_REQUEST;
-
-	test->query_data_len = 0;
-
-	test->resp_data_len = sizeof(resp_data);
-	memset(&resp_data, 0,  test->resp_data_len);
-	resp_data[0] = RPMI_SUCCESS;
-	resp_data[1] = LIBRPMI_IMPL_ID;
-	rpmi_env_memcpy(&test->resp_data, &resp_data, test->resp_data_len);
-
-	rpmi_env_memcpy(&test->name, &name, sizeof(name));
-	return 0;
+	((rpmi_uint32_t *)data)[0] = RPMI_SUCCESS;
+	((rpmi_uint32_t *)data)[1] = LIBRPMI_IMPL_ID;
+	return sizeof(rpmi_uint32_t) * 2;
 }
 
-static int init_hw_info_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
+static rpmi_uint16_t init_hw_info_expected_data(
+					    struct rpmi_test_scenario *scene,
+					    struct rpmi_test *test,
+					    void *data, rpmi_uint16_t max_data_len)
 {
-	struct hw_info {
-		int status;
-		int vendor_id;
-		int hw_id_len;
-	} resp_data;
-
-	char name[] = "RPMI_BASE_SRV_GET_HW_INFO";
-
-	test->attrs.svc_grp_id = RPMI_SRVGRP_BASE;
-	test->attrs.svc_id = RPMI_BASE_SRV_GET_HW_INFO;
-	test->attrs.svc_type = RPMI_MSG_NORMAL_REQUEST;
-
-	test->query_data_len = 0;
-
-	test->resp_data_len = sizeof(resp_data);
-	memset(&resp_data, 0,  test->resp_data_len);
-	resp_data.status = RPMI_SUCCESS;
-	resp_data.vendor_id  = (VENDOR_SUB_ID << 16 | VENDOR_ID);
-	resp_data.hw_id_len  = 0;
-	rpmi_env_memcpy(&test->resp_data, &resp_data, test->resp_data_len);
-
-	rpmi_env_memcpy(&test->name, &name, sizeof(name));
-	return 0;
+	rpmi_env_memcpy(data, &hw_info_val, sizeof(hw_info_val));
+	return sizeof(hw_info_val);
 }
 
-static int init_probe_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
+static rpmi_uint16_t init_probe_request_data(
+					    struct rpmi_test_scenario *scene,
+					    struct rpmi_test *test,
+					    void *data, rpmi_uint16_t max_data_len)
 {
-	rpmi_uint32_t resp_data[2];
-	rpmi_uint32_t probe_grp = RPMI_SRVGRP_BASE;
-	char name[] = "RPMI_BASE_SRV_PROBE_SERVICE_GROUP";
-
-	test->attrs.svc_grp_id = RPMI_SRVGRP_BASE;
-	test->attrs.svc_id = RPMI_BASE_SRV_PROBE_SERVICE_GROUP;
-	test->attrs.svc_type = RPMI_MSG_NORMAL_REQUEST;
-
-	test->query_data_len = sizeof(probe_grp);
-	rpmi_env_memcpy(test->query_data, &probe_grp, test->query_data_len);
-
-	test->resp_data_len = sizeof(resp_data);
-	resp_data[0] = RPMI_SUCCESS;
-	resp_data[1] = 1;
-	rpmi_env_memcpy(&test->resp_data, &resp_data, test->resp_data_len);
-
-	rpmi_env_memcpy(&test->name, &name, sizeof(name));
-	return 0;
+	((rpmi_uint32_t *)data)[0] = RPMI_SRVGRP_BASE;
+	return sizeof(rpmi_uint32_t);
 }
 
-static int init_attribs_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
+static rpmi_uint16_t init_probe_expected_data(
+					    struct rpmi_test_scenario *scene,
+					    struct rpmi_test *test,
+					    void *data, rpmi_uint16_t max_data_len)
 {
-	rpmi_uint32_t resp_data[5];
-	char name[] = "RPMI_BASE_SRV_GET_ATTRIBUTES";
-
-	test->attrs.svc_grp_id = RPMI_SRVGRP_BASE;
-	test->attrs.svc_id = RPMI_BASE_SRV_GET_ATTRIBUTES;
-	test->attrs.svc_type = RPMI_MSG_NORMAL_REQUEST;
-
-	test->query_data_len = 0;
-
-	test->resp_data_len = sizeof(resp_data);
-	resp_data[0] = RPMI_SUCCESS;
-	resp_data[1] = RPMI_BASE_FLAGS_F0_MSI_EN;
-	resp_data[2] = 0;
-	resp_data[3] = 0;
-	resp_data[4] = 0;
-	rpmi_env_memcpy(&test->resp_data, &resp_data, test->resp_data_len);
-
-	rpmi_env_memcpy(&test->name, &name, sizeof(name));
-	return 0;
+	((rpmi_uint32_t *)data)[0] = RPMI_SUCCESS;
+	((rpmi_uint32_t *)data)[1] = 1;
+	return sizeof(rpmi_uint32_t) * 2;
 }
 
-static int init_set_msi_test(struct rpmi_test_scenario *scene, struct rpmi_test *test)
+static rpmi_uint16_t init_attribs_expected_data(
+					    struct rpmi_test_scenario *scene,
+					    struct rpmi_test *test,
+					    void *data, rpmi_uint16_t max_data_len)
 {
-	struct msi_data_s {
-		rpmi_uint32_t addr_l;
-		rpmi_uint32_t addr_h;
-		rpmi_uint32_t data;
-	} msi_data = {0};
-	rpmi_uint32_t resp_data[1];
-	char name[] = "RPMI_BASE_SRV_SET_MSI";
+	((rpmi_uint32_t *)data)[0] = RPMI_SUCCESS;
+	((rpmi_uint32_t *)data)[1] = RPMI_BASE_FLAGS_F0_MSI_EN;
+	((rpmi_uint32_t *)data)[2] = 0;
+	((rpmi_uint32_t *)data)[3] = 0;
+	((rpmi_uint32_t *)data)[4] = 0;
+	return sizeof(rpmi_uint32_t) * 5;
+}
 
-	test->attrs.svc_grp_id = RPMI_SRVGRP_BASE;
-	test->attrs.svc_id = RPMI_BASE_SRV_SET_MSI;
-	test->attrs.svc_type = RPMI_MSG_NORMAL_REQUEST;
+static rpmi_uint16_t init_set_msi_request_data(
+					    struct rpmi_test_scenario *scene,
+					    struct rpmi_test *test,
+					    void *data, rpmi_uint16_t max_data_len)
+{
+	((rpmi_uint32_t *)data)[0] = 0; /* MSI addr_lo */
+	((rpmi_uint32_t *)data)[1] = 0; /* MSI addr_hi */
+	((rpmi_uint32_t *)data)[2] = 0; /* MSI data */
+	return sizeof(rpmi_uint32_t) * 3;
+}
 
-	test->query_data_len = sizeof(msi_data);
-	rpmi_env_memcpy(test->query_data, &msi_data, test->query_data_len);
-	test->resp_data_len = sizeof(resp_data);
-	resp_data[0] = RPMI_SUCCESS;
-	rpmi_env_memcpy(&test->resp_data, &resp_data, test->resp_data_len);
-
-	rpmi_env_memcpy(&test->name, &name, sizeof(name));
-	return 0;
+static rpmi_uint16_t init_set_msi_expected_data(
+					    struct rpmi_test_scenario *scene,
+					    struct rpmi_test *test,
+					    void *data, rpmi_uint16_t max_data_len)
+{
+	((rpmi_uint32_t *)data)[0] = RPMI_SUCCESS;
+	return sizeof(rpmi_uint32_t);
 }
 
 struct rpmi_test_scenario scenario_base_default = {
@@ -216,8 +136,8 @@ struct rpmi_test_scenario scenario_base_default = {
 	.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT,
 	.base.vendor_id = VENDOR_ID,
 	.base.vendor_sub_id = VENDOR_SUB_ID,
-	.base.hw_info_len = sizeof(hw_info),
-	.base.hw_info = (const rpmi_uint8_t *)&hw_info,
+	.base.hw_info_len = sizeof(hw_info_val.hw_id),
+	.base.hw_info = (const rpmi_uint8_t *)&hw_info_val.hw_id,
 	.priv = NULL,
 
 	.init = test_scenario_default_init,
@@ -226,28 +146,78 @@ struct rpmi_test_scenario scenario_base_default = {
 	.num_tests = 8,
 	.tests = {
 		{
-			.init = init_enable_notification_test,
+			.name = "RPMI_BASE_SRV_ENABLE_NOTIFICATION",
+			.attrs = {
+				.svc_grp_id = RPMI_SRVGRP_BASE,
+				.svc_id = RPMI_BASE_SRV_ENABLE_NOTIFICATION,
+				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.init_expected_data = init_enable_notification_expected_data,
 		},
 		{
-			.init = init_probe_test,
+			.name = "RPMI_BASE_SRV_PROBE_SERVICE_GROUP",
+			.attrs = {
+				.svc_grp_id = RPMI_SRVGRP_BASE,
+				.svc_id = RPMI_BASE_SRV_PROBE_SERVICE_GROUP,
+				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.init_request_data = init_probe_request_data,
+			.init_expected_data = init_probe_expected_data,
 		},
 		{
-			.init = init_impl_ver_test,
+			.name = "RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION",
+			.attrs = {
+				.svc_grp_id = RPMI_SRVGRP_BASE,
+				.svc_id = RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION,
+				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.init_expected_data = init_impl_ver_expected_data,
 		},
 		{
-			.init = init_spec_ver_test,
+			.name = "RPMI_BASE_SRV_GET_SPEC_VERSION",
+			.attrs = {
+				.svc_grp_id = RPMI_SRVGRP_BASE,
+				.svc_id = RPMI_BASE_SRV_GET_SPEC_VERSION,
+				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.init_expected_data = init_spec_ver_expected_data,
 		},
 		{
-			.init = init_impl_idn_test,
+			.name = "RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN",
+			.attrs = {
+				.svc_grp_id = RPMI_SRVGRP_BASE,
+				.svc_id = RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN,
+				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.init_expected_data = init_impl_idn_expected_data,
 		},
 		{
-			.init = init_hw_info_test,
+			.name = "RPMI_BASE_SRV_GET_HW_INFO",
+			.attrs = {
+				.svc_grp_id = RPMI_SRVGRP_BASE,
+				.svc_id = RPMI_BASE_SRV_GET_HW_INFO,
+				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.init_expected_data = init_hw_info_expected_data,
 		},
 		{
-			.init = init_attribs_test,
+			.name = "RPMI_BASE_SRV_GET_ATTRIBUTES",
+			.attrs = {
+				.svc_grp_id = RPMI_SRVGRP_BASE,
+				.svc_id = RPMI_BASE_SRV_GET_ATTRIBUTES,
+				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.init_expected_data = init_attribs_expected_data,
 		},
 		{
-			.init = init_set_msi_test,
+			.name = "RPMI_BASE_SRV_SET_MSI",
+			.attrs = {
+				.svc_grp_id = RPMI_SRVGRP_BASE,
+				.svc_id = RPMI_BASE_SRV_SET_MSI,
+				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.init_request_data = init_set_msi_request_data,
+			.init_expected_data = init_set_msi_expected_data,
 		},
 	},
 };
