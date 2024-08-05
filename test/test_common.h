@@ -26,11 +26,16 @@ struct rpmi_test {
 	/* ==== Public members  ===== */
 
 	char name[64];
-
 	struct {
-		unsigned int svc_grp_id;
-		unsigned int svc_id;
-		unsigned int svc_type;
+		rpmi_uint16_t svc_grp_id;
+		rpmi_uint8_t svc_id;
+		rpmi_uint8_t svc_type;
+
+		const void *request_data;
+		rpmi_uint16_t request_data_len;
+
+		const void *expected_data;
+		rpmi_uint16_t expected_data_len;
 	} attrs;
 	void *priv;
 
@@ -79,6 +84,13 @@ struct rpmi_test_scenario {
 	int num_tests;
 	struct rpmi_test tests[];
 };
+
+rpmi_uint16_t test_init_request_data_from_attrs(struct rpmi_test_scenario *scene,
+						struct rpmi_test *test,
+						void *data, rpmi_uint16_t max_data_len);
+rpmi_uint16_t test_init_expected_data_from_attrs(struct rpmi_test_scenario *scene,
+						 struct rpmi_test *test,
+						 void *data, rpmi_uint16_t max_data_len);
 
 int test_scenario_default_init(struct rpmi_test_scenario *scene);
 int test_scenario_default_cleanup(struct rpmi_test_scenario *scene);
