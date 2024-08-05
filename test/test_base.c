@@ -24,21 +24,6 @@ struct hw_info {
 	.hw_id_len = 0,
 };
 
-/* Base service group config*/
-struct group_config {
-	rpmi_uint32_t max_num_groups;
-
-	struct {
-		rpmi_uint16_t vendor_id;
-		rpmi_uint16_t vendor_sub_id;
-		rpmi_uint32_t hw_info_len;
-		const rpmi_uint8_t *hw_info;
-	} base;
-
-	char *priv;
-	int priv_len;
-} base_conf;
-
 static int init_enable_notification_test(struct rpmi_test_scenario *scene,
 					 struct rpmi_test *test)
 {
@@ -224,50 +209,21 @@ static int init_set_msi_test(struct rpmi_test_scenario *scene, struct rpmi_test 
 	return 0;
 }
 
-int init_base_default(struct rpmi_test_scenario *scene)
-{
-	char name[32];
-
-	scene->conf = &base_conf;
-
-	base_conf.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT;
-	base_conf.base.vendor_id = VENDOR_ID;
-	base_conf.base.vendor_sub_id = VENDOR_SUB_ID;
-	base_conf.base.hw_info_len = sizeof(hw_info);
-	base_conf.base.hw_info = (const rpmi_uint8_t *)&hw_info;
-
-	scene->xport = init_test_rpmi_xport(0);
-	if (scene->xport) {
-		printf("*******************************************\n");
-		sprintf(name, "rpmi_context");
-		scene->rctx = rpmi_context_create(name,
-						  scene->xport,
-						  base_conf.max_num_groups,
-						  base_conf.base.vendor_id,
-						  base_conf.base.vendor_sub_id,
-						  base_conf.base.hw_info_len,
-						  base_conf.base.hw_info);
-		if (!scene->rctx) {
-			printf("%s: rpmi_context_create failed rc: %p\n ",
-			       __func__, scene->rctx);
-			return -1;
-		}
-
-	}
-	return 0;
-}
-
-int cleanup_base_default(struct rpmi_test_scenario *scene)
-{
-	/* nothing to clenaup */
-	return 0;
-}
-
 struct rpmi_test_scenario scenario_base_default = {
-	.name = "RPMI BASE default",
+	.name = "Base Service Group Default",
+	.shm_size = RPMI_SHM_SZ,
+	.slot_size = RPMI_SLOT_SIZE,
+	.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT,
+	.base.vendor_id = VENDOR_ID,
+	.base.vendor_sub_id = VENDOR_SUB_ID,
+	.base.hw_info_len = sizeof(hw_info),
+	.base.hw_info = (const rpmi_uint8_t *)&hw_info,
+	.priv = NULL,
+
+	.init = test_scenario_default_init,
+	.cleanup = test_scenario_default_cleanup,
+
 	.num_tests = 8,
-	.init = init_base_default,
-	.cleanup = cleanup_base_default,
 	.tests = {
 		{
 			.init = init_enable_notification_test,
@@ -301,7 +257,5 @@ int main(int argc, char *argv[])
 	printf("Test Base Service Group\n");
 
 	/* Execute default scenario */
-	execute_test_scenario(&scenario_base_default);
-
-	return 0;
+	return test_scenario_execute(&scenario_base_default);
 }

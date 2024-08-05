@@ -57,12 +57,28 @@ struct rpmi_test {
 };
 
 struct rpmi_test_scenario {
-	char name[64];
-	struct group_config *conf;
-	struct rpmi_context *rctx;
-	struct rpmi_transport *xport;
+	/* ==== Private members  ===== */
 
-	/* group specific function handlers*/
+	void *shm;
+	struct rpmi_shmem *shmem;
+	struct rpmi_transport *xport;
+	struct rpmi_context *cntx;
+
+	/* ==== Public members  ===== */
+
+	char name[64];
+	rpmi_uint32_t shm_size;
+	rpmi_uint32_t slot_size;
+	rpmi_uint32_t max_num_groups;
+	struct {
+		rpmi_uint16_t vendor_id;
+		rpmi_uint16_t vendor_sub_id;
+		rpmi_uint32_t hw_info_len;
+		const rpmi_uint8_t *hw_info;
+	} base;
+	void *priv;
+
+	/* Scenario specific callbacks */
 	int (*init)(struct rpmi_test_scenario *scene);
 	int (*process)(struct rpmi_test_scenario *scene);
 	int (*cleanup)(struct rpmi_test_scenario *scene);
@@ -71,7 +87,9 @@ struct rpmi_test_scenario {
 	struct rpmi_test tests[];
 };
 
-struct rpmi_transport *init_test_rpmi_xport(int do_clear);
-int execute_test_scenario(struct rpmi_test_scenario *scene);
+int test_scenario_default_init(struct rpmi_test_scenario *scene);
+int test_scenario_default_cleanup(struct rpmi_test_scenario *scene);
+
+int test_scenario_execute(struct rpmi_test_scenario *scene);
 
 #endif

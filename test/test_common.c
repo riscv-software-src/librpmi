@@ -11,8 +11,6 @@
 
 #define NUM_SOCKETS     1
 
-char *rpmi_shm = NULL;
-
 /* dump buffer in hexadecimal format */
 void hexdump(char *desc, unsigned int *buf, unsigned int len)
 {
@@ -39,66 +37,15 @@ void rpmi_env_writel(rpmi_uint64_t addr, rpmi_uint32_t val)
 	*((rpmi_uint32_t *) addr) = val;
 }
 
-void *get_shm_addr(unsigned int *shm_sz)
-{
-	if (!rpmi_shm) {
-		rpmi_shm = rpmi_env_zalloc(RPMI_SHM_SZ);
-	}
-
-	if (rpmi_shm)
-	{
-		*shm_sz = RPMI_SHM_SZ;
-	}
-
-	return rpmi_shm;
-}
-
-struct rpmi_transport *init_test_rpmi_xport(int do_clear)
-{
-	char *shm = NULL;
-	unsigned int shm_sz;
-	struct rpmi_shmem *rpmi_shmem = NULL;
-	struct rpmi_transport *rpmi_transport_shmem;
-
-	/* initialize shm for test */
-	shm = get_shm_addr(&shm_sz);
-	if (!shm) {
-		printf("get_shm_addr failed\n");
-		return NULL;
-	}
-
-	if (do_clear)
-		rpmi_env_memset((void *)shm, 0, shm_sz);
-
-	rpmi_shmem = rpmi_shmem_create("rpmi_shmem", (rpmi_uint64_t)shm, shm_sz,
-				       &rpmi_shmem_simple_ops, shm);
-	if (!rpmi_shmem) {
-		printf("%s: rpmi_shmem_tests_create failed\n ", __func__);
-		return NULL;
-	}
-
-	rpmi_transport_shmem = rpmi_transport_shmem_create("rpmi_transport_shmem",
-							   RPMI_SLOT_SIZE,
-							   rpmi_shmem);
-	if (!rpmi_transport_shmem) {
-		printf("%s: transport_shmem_create failed, slot_sz: %d, shm: %p\n",
-		       __func__, RPMI_SLOT_SIZE_MIN, rpmi_shmem);
-		return NULL;
-	}
-
-	return rpmi_transport_shmem;
-}
-
 static void scenario_process(struct rpmi_test_scenario *scene)
 {
-	struct rpmi_context *rpmi_context = scene->rctx;
+	struct rpmi_context *cntx = scene->cntx;
 
-	if (rpmi_context) {
-		rpmi_context_process_a2p_request(rpmi_context);
-		rpmi_context_process_all_events(rpmi_context);
+	if (cntx) {
+		rpmi_context_process_a2p_request(cntx);
+		rpmi_context_process_all_events(cntx);
 	} else {
-		printf("%s: context not initialized!\n",
-		       __func__);
+		printf("%s: context not initialized!\n", __func__);
 	}
 }
 
@@ -171,9 +118,6 @@ static void execute_scenario(struct rpmi_test_scenario *scene)
 	struct rpmi_test *test;
 	int i;
 
-	if (!scene)
-		return;
-
 	req_msg = rpmi_env_zalloc(scene->xport->slot_size);
 	if (!req_msg) {
 		printf("Failed to allocate request message\n");
@@ -226,38 +170,100 @@ static void execute_scenario(struct rpmi_test_scenario *scene)
 	rpmi_env_free(resp_msg);
 }
 
-static int init_scenario(struct rpmi_test_scenario *scene)
+int test_scenario_default_init(struct rpmi_test_scenario *scene)
 {
+	if (!scene || scene->shm || scene->shmem || scene->xport || scene->cntx)
+		return RPMI_ERR_ALREADY;
+
+	scene->shm = rpmi_env_zalloc(scene->shm_size);
+	if (!scene->shm)
+		return RPMI_ERR_FAILED;
+
+	scene->shmem = rpmi_shmem_create("test_shmem",
+					 (unsigned long)scene->shm, scene->shm_size,
+					 &rpmi_shmem_simple_ops, NULL);
+	if (!scene->shmem) {
+		printf("%s: failed to create test rpmi_shmem\n ", __func__);
+		rpmi_env_free(scene->shm);
+		scene->shm = NULL;
+		return RPMI_ERR_FAILED;
+	}
+
+	scene->xport = rpmi_transport_shmem_create("test_transport", scene->slot_size,
+						   scene->shmem);
+	if (!scene->xport) {
+		printf("%s: failed to create test rpmi_transport\n ", __func__);
+		rpmi_shmem_destroy(scene->shmem);
+		scene->shmem = NULL;
+		rpmi_env_free(scene->shm);
+		scene->shm = NULL;
+		return RPMI_ERR_FAILED;
+	}
+
+	scene->cntx = rpmi_context_create("test_context", scene->xport,
+					  scene->max_num_groups,
+					  scene->base.vendor_id, scene->base.vendor_sub_id,
+					  scene->base.hw_info_len, scene->base.hw_info);
+	if (!scene->xport) {
+		printf("%s: failed to create test rpmi_context\n ", __func__);
+		rpmi_transport_shmem_destroy(scene->xport);
+		scene->xport = NULL;
+		rpmi_shmem_destroy(scene->shmem);
+		scene->shmem = NULL;
+		rpmi_env_free(scene->shm);
+		scene->shm = NULL;
+		return RPMI_ERR_FAILED;
+	}
+
 	return 0;
 }
 
-static void cleanup_scenario(struct rpmi_test_scenario *scene)
+int test_scenario_default_cleanup(struct rpmi_test_scenario *scene)
 {
-	rpmi_env_free(scene->xport->priv);
-	rpmi_env_free(scene->rctx);
+	if (!scene) {
+		printf("Invalid test scenario\n");
+		return RPMI_ERR_INVAL;
+	}
 
-	/* cleanup scenario specific stuff */
-	if (scene->cleanup)
-		scene->cleanup(scene);
+	if (scene->xport) {
+		rpmi_transport_shmem_destroy(scene->xport);
+		scene->xport = NULL;
+	}
 
-	rpmi_env_free(rpmi_shm);
+	if (scene->shmem) {
+		rpmi_shmem_destroy(scene->shmem);
+		scene->shmem = NULL;
+	}
+
+	if (scene->shm) {
+		rpmi_env_free(scene->shm);
+		scene->shm = NULL;
+	}
+
+	return 0;
 }
 
-int execute_test_scenario(struct rpmi_test_scenario *scene)
+int test_scenario_execute(struct rpmi_test_scenario *scene)
 {
 	int rc;
 
-	if(scene->init)
-		rc = scene->init(scene);
-	else
-		rc = init_scenario(scene);
+	if (!scene || !scene->init || !scene->cleanup) {
+		printf("Invalid test scenario\n");
+		return RPMI_ERR_INVAL;
+	}
 
-	if (!rc) {
-		execute_scenario(scene);
-		cleanup_scenario(scene);
-	} else {
-		printf("Failed to get rpmi transport\n");
-		return -1;
+	rc = scene->init(scene);
+	if (rc) {
+		printf("Failed to initalize test scenario %s\n", scene->name);
+		return rc;
+	}
+
+	execute_scenario(scene);
+
+	rc = scene->cleanup(scene);
+	if (rc) {
+		printf("Failed to cleanup test scenario %s\n", scene->name);
+		return rc;
 	}
 
 	return 0;
