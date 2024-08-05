@@ -151,7 +151,8 @@ static void execute_scenario(struct rpmi_test_scenario *scene)
 		req_msg->header.servicegroup_id = test->attrs.servicegroup_id;
 		req_msg->header.service_id = test->attrs.service_id;
 		req_msg->header.datalen = 0;
-		req_msg->header.token = 0;
+		req_msg->header.token = scene->token_sequence;
+		scene->token_sequence++;
 
 		/* Initialize request message data */
 		if (test->init_request_data)
@@ -262,6 +263,7 @@ int test_scenario_default_init(struct rpmi_test_scenario *scene)
 		return RPMI_ERR_FAILED;
 	}
 
+	scene->token_sequence = 0;
 	return 0;
 }
 

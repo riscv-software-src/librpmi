@@ -61,6 +61,7 @@ struct rpmi_test_scenario {
 	struct rpmi_shmem *shmem;
 	struct rpmi_transport *xport;
 	struct rpmi_context *cntx;
+	rpmi_uint16_t token_sequence;
 
 	/* ==== Public members  ===== */
 
