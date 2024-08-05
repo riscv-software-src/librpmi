@@ -73,7 +73,7 @@ static rpmi_uint32_t set_msi_expdata_default[] = {
 	RPMI_SUCCESS,
 };
 
-struct rpmi_test_scenario scenario_base_default = {
+static struct rpmi_test_scenario scenario_base_default = {
 	.name = "Base Service Group Default",
 	.shm_size = RPMI_SHM_SZ,
 	.slot_size = RPMI_SLOT_SIZE,
@@ -92,9 +92,9 @@ struct rpmi_test_scenario scenario_base_default = {
 		{
 			.name = "RPMI_BASE_SRV_ENABLE_NOTIFICATION",
 			.attrs = {
-				.svc_grp_id = RPMI_SRVGRP_BASE,
-				.svc_id = RPMI_BASE_SRV_ENABLE_NOTIFICATION,
-				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_ENABLE_NOTIFICATION,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
 				.expected_data = enable_notif_expdata_default,
 				.expected_data_len = sizeof(enable_notif_expdata_default),
 			},
@@ -103,9 +103,9 @@ struct rpmi_test_scenario scenario_base_default = {
 		{
 			.name = "RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION",
 			.attrs = {
-				.svc_grp_id = RPMI_SRVGRP_BASE,
-				.svc_id = RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION,
-				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
 				.expected_data = impl_ver_expdata_default,
 				.expected_data_len = sizeof(impl_ver_expdata_default),
 			},
@@ -114,9 +114,9 @@ struct rpmi_test_scenario scenario_base_default = {
 		{
 			.name = "RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN",
 			.attrs = {
-				.svc_grp_id = RPMI_SRVGRP_BASE,
-				.svc_id = RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN,
-				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
 				.expected_data = impl_idn_expdata_default,
 				.expected_data_len = sizeof(impl_idn_expdata_default),
 			},
@@ -125,9 +125,9 @@ struct rpmi_test_scenario scenario_base_default = {
 		{
 			.name = "RPMI_BASE_SRV_GET_SPEC_VERSION",
 			.attrs = {
-				.svc_grp_id = RPMI_SRVGRP_BASE,
-				.svc_id = RPMI_BASE_SRV_GET_SPEC_VERSION,
-				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_GET_SPEC_VERSION,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
 				.expected_data = spec_ver_expdata_default,
 				.expected_data_len = sizeof(spec_ver_expdata_default),
 			},
@@ -136,9 +136,9 @@ struct rpmi_test_scenario scenario_base_default = {
 		{
 			.name = "RPMI_BASE_SRV_GET_HW_INFO",
 			.attrs = {
-				.svc_grp_id = RPMI_SRVGRP_BASE,
-				.svc_id = RPMI_BASE_SRV_GET_HW_INFO,
-				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_GET_HW_INFO,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
 				.expected_data = &hw_info_val,
 				.expected_data_len = sizeof(hw_info_val),
 			},
@@ -147,9 +147,9 @@ struct rpmi_test_scenario scenario_base_default = {
 		{
 			.name = "RPMI_BASE_SRV_PROBE_SERVICE_GROUP",
 			.attrs = {
-				.svc_grp_id = RPMI_SRVGRP_BASE,
-				.svc_id = RPMI_BASE_SRV_PROBE_SERVICE_GROUP,
-				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_PROBE_SERVICE_GROUP,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
 				.request_data = probe_reqdata_default,
 				.request_data_len = sizeof(probe_reqdata_default),
 				.expected_data = probe_expdata_default,
@@ -161,9 +161,9 @@ struct rpmi_test_scenario scenario_base_default = {
 		{
 			.name = "RPMI_BASE_SRV_GET_ATTRIBUTES",
 			.attrs = {
-				.svc_grp_id = RPMI_SRVGRP_BASE,
-				.svc_id = RPMI_BASE_SRV_GET_ATTRIBUTES,
-				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_GET_ATTRIBUTES,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
 				.expected_data = attribs_expdata_default,
 				.expected_data_len = sizeof(attribs_expdata_default),
 			},
@@ -172,9 +172,9 @@ struct rpmi_test_scenario scenario_base_default = {
 		{
 			.name = "RPMI_BASE_SRV_SET_MSI",
 			.attrs = {
-				.svc_grp_id = RPMI_SRVGRP_BASE,
-				.svc_id = RPMI_BASE_SRV_SET_MSI,
-				.svc_type = RPMI_MSG_NORMAL_REQUEST,
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_SET_MSI,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
 				.request_data = set_msi_reqdata_default,
 				.request_data_len = sizeof(set_msi_reqdata_default),
 				.expected_data = set_msi_expdata_default,
