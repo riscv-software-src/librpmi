@@ -39,17 +39,6 @@ void rpmi_env_writel(rpmi_uint64_t addr, rpmi_uint32_t val)
 	*((rpmi_uint32_t *) addr) = val;
 }
 
-struct rpmi_message *get_rpmi_msg(struct rpmi_transport *rpmi_xport)
-{
-	return rpmi_env_zalloc(rpmi_xport->slot_size);
-}
-
-void free_rpmi_msg(struct rpmi_message *msg)
-{
-	if (msg)
-		rpmi_env_free(msg);
-}
-
 void *get_shm_addr(unsigned int *shm_sz)
 {
 	if (!rpmi_shm) {
@@ -185,8 +174,16 @@ static void execute_scenario(struct rpmi_test_scenario *scene)
 	if (!scene)
 		return;
 
-	req_msg = get_rpmi_msg(scene->xport);
-	resp_msg = get_rpmi_msg(scene->xport);
+	req_msg = rpmi_env_zalloc(scene->xport->slot_size);
+	if (!req_msg) {
+		printf("Failed to allocate request message\n");
+		return;
+	}
+	resp_msg = rpmi_env_zalloc(scene->xport->slot_size);
+	if (!resp_msg) {
+		printf("Failed to allocate response message\n");
+		return;
+	}
 
 	printf("\nExecuting %s test scenario :\n", scene->name);
 	printf("-------------------------------------------------\n");
@@ -225,8 +222,8 @@ static void execute_scenario(struct rpmi_test_scenario *scene)
 			test->cleanup(scene, test);
 	}
 
-	free_rpmi_msg(req_msg);
-	free_rpmi_msg(resp_msg);
+	rpmi_env_free(req_msg);
+	rpmi_env_free(resp_msg);
 }
 
 static int init_scenario(struct rpmi_test_scenario *scene)
