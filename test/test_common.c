@@ -201,6 +201,22 @@ skip:
 	rpmi_env_free(req_msg);
 }
 
+rpmi_uint16_t test_init_request_data_from_attrs(struct rpmi_test_scenario *scene,
+						struct rpmi_test *test,
+						void *data, rpmi_uint16_t max_data_len)
+{
+	rpmi_env_memcpy(data, test->attrs.request_data, test->attrs.request_data_len);
+	return test->attrs.request_data_len;
+}
+
+rpmi_uint16_t test_init_expected_data_from_attrs(struct rpmi_test_scenario *scene,
+						 struct rpmi_test *test,
+						 void *data, rpmi_uint16_t max_data_len)
+{
+	rpmi_env_memcpy(data, test->attrs.expected_data, test->attrs.expected_data_len);
+	return test->attrs.expected_data_len;
+}
+
 int test_scenario_default_init(struct rpmi_test_scenario *scene)
 {
 	if (!scene || scene->shm || scene->shmem || scene->xport || scene->cntx)
