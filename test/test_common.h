@@ -16,18 +16,9 @@
  * its better to decode these data from DTS file, hardcoding for now.
  */
 
-#define RPMI_SHM_SZ (8 * 1024)
+#define RPMI_SHM_SZ		(8 * 1024)
 
-#define RPMI_SLOT_SIZE          64
-#define RPMI_MSG_MAX_DATA_SIZE (RPMI_SLOT_SIZE -  RPMI_MSG_HDR_SIZE)
-
-#define RPMI_MIN_QUEUE_SIZE             (16 * RPMI_SLOT_SIZE)
-#define RPMI_MIN_TOTAL_QUEUES_SIZE      (RPMI_QUEUE_MAX * \
-					 RPMI_MIN_QUEUE_SIZE)
-#define RPMI_MAX_SERVICE_GROUPS 16
-
-#define NUM_XPORTS_PER_SOC	(0)
-#define NUM_XPORTS(num_socks)	(num_socks + NUM_XPORTS_PER_SOC)
+#define RPMI_SLOT_SIZE		64
 
 struct rpmi_test_scenario;
 
