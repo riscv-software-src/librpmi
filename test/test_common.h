@@ -27,9 +27,9 @@ struct rpmi_test {
 
 	char name[64];
 	struct {
-		rpmi_uint16_t svc_grp_id;
-		rpmi_uint8_t svc_id;
-		rpmi_uint8_t svc_type;
+		rpmi_uint16_t servicegroup_id;
+		rpmi_uint8_t service_id;
+		rpmi_uint8_t flags;
 
 		const void *request_data;
 		rpmi_uint16_t request_data_len;

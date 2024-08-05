@@ -68,7 +68,7 @@ static void test_wait(struct rpmi_test_scenario *scene, struct rpmi_test *test,
 	rpmi_env_memset(resp_msg, 0, sizeof(*resp_msg));
 
 	/* wait for response */
-	if (test->attrs.svc_type != RPMI_MSG_POSTED_REQUEST) {
+	if (test->attrs.flags != RPMI_MSG_POSTED_REQUEST) {
 		while (result != RPMI_SUCCESS)
 			result = rpmi_transport_dequeue(scene->xport,
 							RPMI_QUEUE_P2A_ACK,
@@ -148,8 +148,8 @@ static void execute_scenario(struct rpmi_test_scenario *scene)
 		}
 
 		/* Initialize request message header */
-		req_msg->header.servicegroup_id = test->attrs.svc_grp_id;
-		req_msg->header.service_id = test->attrs.svc_id;
+		req_msg->header.servicegroup_id = test->attrs.servicegroup_id;
+		req_msg->header.service_id = test->attrs.service_id;
 		req_msg->header.datalen = 0;
 		req_msg->header.token = 0;
 
