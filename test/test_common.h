@@ -32,28 +32,30 @@
 struct rpmi_test_scenario;
 
 struct rpmi_test {
+	/* ==== Public members  ===== */
+
 	char name[64];
-	int arg0;
-	int resp0;
+
 	struct {
 		unsigned int svc_grp_id;
 		unsigned int svc_id;
 		unsigned int svc_type;
 	} attrs;
-	int query_data_len;
-	unsigned char query_data[RPMI_MSG_MAX_DATA_SIZE];
-	int resp_data_len;
-	unsigned char resp_data[RPMI_MSG_MAX_DATA_SIZE];
+	void *priv;
 
 	/* test specific function handlers*/
 	int (*init)(struct rpmi_test_scenario *scene, struct rpmi_test *test);
+	rpmi_uint16_t (*init_request_data)(struct rpmi_test_scenario *scene,
+					   struct rpmi_test *test,
+					   void *data, rpmi_uint16_t max_data_len);
+	rpmi_uint16_t (*init_expected_data)(struct rpmi_test_scenario *scene,
+					    struct rpmi_test *test,
+					    void *data, rpmi_uint16_t max_data_len);
 	int (*run)(struct rpmi_test_scenario *scene, struct rpmi_test *test,
 		   struct rpmi_message *msg);
-	int (*wait)(struct rpmi_test_scenario *scene, struct rpmi_test *test,
+	void (*wait)(struct rpmi_test_scenario *scene, struct rpmi_test *test,
 		    struct rpmi_message *msg);
-	int (*verify)(struct rpmi_test_scenario *scene, struct rpmi_test *test,
-		      struct rpmi_message *msg);
-	int (*cleanup)(struct rpmi_test_scenario *scene, struct rpmi_test *test);
+	void (*cleanup)(struct rpmi_test_scenario *scene, struct rpmi_test *test);
 };
 
 struct rpmi_test_scenario {
