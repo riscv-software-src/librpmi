@@ -223,11 +223,11 @@ static int init_set_msi_test(struct rpmi_test *test)
 	return 0;
 }
 
-int init_base_group(struct rpmi_test_group *group)
+int init_base_default(struct rpmi_test_scenario *scene)
 {
 	char name[32];
 
-	group->conf = &base_conf;
+	scene->conf = &base_conf;
 
 	base_conf.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT;
 	base_conf.base.vendor_id = VENDOR_ID;
@@ -235,20 +235,20 @@ int init_base_group(struct rpmi_test_group *group)
 	base_conf.base.hw_info_len = sizeof(hw_info);
 	base_conf.base.hw_info = (const rpmi_uint8_t *)&hw_info;
 
-	group->xport = init_test_rpmi_xport(0);
-	if (group->xport) {
+	scene->xport = init_test_rpmi_xport(0);
+	if (scene->xport) {
 		printf("*******************************************\n");
 		sprintf(name, "rpmi_context");
-		group->rctx = rpmi_context_create(name,
-						  group->xport,
+		scene->rctx = rpmi_context_create(name,
+						  scene->xport,
 						  base_conf.max_num_groups,
 						  base_conf.base.vendor_id,
 						  base_conf.base.vendor_sub_id,
 						  base_conf.base.hw_info_len,
 						  base_conf.base.hw_info);
-		if (!group->rctx) {
+		if (!scene->rctx) {
 			printf("%s: rpmi_context_create failed rc: %p\n ",
-			       __func__, group->rctx);
+			       __func__, scene->rctx);
 			return -1;
 		}
 
@@ -256,17 +256,17 @@ int init_base_group(struct rpmi_test_group *group)
 	return 0;
 }
 
-int cleanup_base_group(struct rpmi_test_group *base)
+int cleanup_base_default(struct rpmi_test_scenario *scene)
 {
 	/* nothing to clenaup */
 	return 0;
 }
 
-struct rpmi_test_group rpmi_test_group_base = {
-	.name = "RPMI_BASE",
+struct rpmi_test_scenario scenario_base_default = {
+	.name = "RPMI BASE default",
 	.num_tests = 8,
-	.init = init_base_group,
-	.cleanup = cleanup_base_group,
+	.init = init_base_default,
+	.cleanup = cleanup_base_default,
 	.tests = {
 		{
 			.init = init_enable_notification_test,
@@ -299,8 +299,8 @@ int main(int argc, char *argv[])
 {
 	printf("Test Base Service Group\n");
 
-	/* execute the test config with common info*/
-	execute_test_group(&rpmi_test_group_base);
+	/* Execute default scenario */
+	execute_test_scenario(&scenario_base_default);
 
 	return 0;
 }

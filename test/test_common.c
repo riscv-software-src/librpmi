@@ -100,9 +100,9 @@ struct rpmi_transport *init_test_rpmi_xport(int do_clear)
 	return rpmi_transport_shmem;
 }
 
-void group_process(struct rpmi_test_group *group)
+static void scenario_process(struct rpmi_test_scenario *scene)
 {
-	struct rpmi_context *rpmi_context = group->rctx;
+	struct rpmi_context *rpmi_context = scene->rctx;
 
 	if (rpmi_context) {
 		rpmi_context_process_a2p_request(rpmi_context);
@@ -113,8 +113,7 @@ void group_process(struct rpmi_test_group *group)
 	}
 }
 
-
-int test_run(struct rpmi_test *rpmi_test)
+static int test_run(struct rpmi_test *rpmi_test)
 {
 	int rc = 0;
 	struct rpmi_message *req_msg = get_rpmi_msg(rpmi_test->rpmi_xport);
@@ -138,7 +137,7 @@ int test_run(struct rpmi_test *rpmi_test)
 	return rc;
 }
 
-void test_wait(struct rpmi_test *rpmi_test, struct rpmi_message *msg)
+static void test_wait(struct rpmi_test *rpmi_test, struct rpmi_message *msg)
 {
 	int result = -1;
 
@@ -154,7 +153,7 @@ void test_wait(struct rpmi_test *rpmi_test, struct rpmi_message *msg)
 	}
 }
 
-void test_verify(struct rpmi_test *rpmi_test, struct rpmi_message *msg)
+static void test_verify(struct rpmi_test *rpmi_test, struct rpmi_message *msg)
 {
 	int failed = 0;
 
@@ -182,21 +181,23 @@ void test_verify(struct rpmi_test *rpmi_test, struct rpmi_message *msg)
 	printf("%-50s \t : %s!\n", rpmi_test->name, failed?"Failed":"Succeeded");
 }
 
-void execute_group(struct rpmi_test_group *group)
+static void execute_scenario(struct rpmi_test_scenario *scene)
 {
-	int test;
+	struct rpmi_transport *rpmi_xport;
 	struct rpmi_test *rpmi_test;
-	struct rpmi_transport *rpmi_xport = group->xport;
-	struct rpmi_message *msg = get_rpmi_msg(rpmi_xport);
+	struct rpmi_message *msg;
+	int test;
 
-	if (!group)
+	if (!scene)
 		return;
+	rpmi_xport = scene->xport;
+	msg = get_rpmi_msg(rpmi_xport);
 
-	printf("\nExecuting %s service group tests :\n", group->name);
+	printf("\nExecuting %s test scenario :\n", scene->name);
 	printf("-------------------------------------------------\n");
-	for (test = 0; test < group->num_tests; test++) {
+	for (test = 0; test < scene->num_tests; test++) {
 
-		rpmi_test = &group->tests[test];
+		rpmi_test = &scene->tests[test];
 		rpmi_test->rpmi_xport = rpmi_xport;
 
 		/* initialize test parameters */
@@ -209,10 +210,10 @@ void execute_group(struct rpmi_test_group *group)
 		else
 			test_run(rpmi_test);
 
-		if (group->process)
-			group->process(group);
+		if (scene->process)
+			scene->process(scene);
 		else
-			group_process(group);
+			scenario_process(scene);
 
 		/* wait for test to finish */
 		if (rpmi_test->wait)
@@ -234,35 +235,35 @@ void execute_group(struct rpmi_test_group *group)
 	free_rpmi_msg(msg);
 }
 
-int init_group(struct rpmi_test_group *group)
+static int init_scenario(struct rpmi_test_scenario *scene)
 {
 	return 0;
 }
 
-void cleanup_group(struct rpmi_test_group *group)
+static void cleanup_scenario(struct rpmi_test_scenario *scene)
 {
-	rpmi_env_free(group->xport->priv);
-	rpmi_env_free(group->rctx);
+	rpmi_env_free(scene->xport->priv);
+	rpmi_env_free(scene->rctx);
 
-	/* cleanup group specific stuff */
-	if (group->cleanup)
-		group->cleanup(group);
+	/* cleanup scenario specific stuff */
+	if (scene->cleanup)
+		scene->cleanup(scene);
 
 	rpmi_env_free(rpmi_shm);
 }
 
-int execute_test_group(struct rpmi_test_group *group)
+int execute_test_scenario(struct rpmi_test_scenario *scene)
 {
 	int rc;
 
-	if(group->init)
-		rc = group->init(group);
+	if(scene->init)
+		rc = scene->init(scene);
 	else
-		rc = init_group(group);
+		rc = init_scenario(scene);
 
 	if (!rc) {
-		execute_group(group);
-		cleanup_group(group);
+		execute_scenario(scene);
+		cleanup_scenario(scene);
 	} else {
 		printf("Failed to get rpmi transport\n");
 		return -1;

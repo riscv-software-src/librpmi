@@ -29,6 +29,8 @@
 #define NUM_XPORTS_PER_SOC	(0)
 #define NUM_XPORTS(num_socks)	(num_socks + NUM_XPORTS_PER_SOC)
 
+struct rpmi_test_scenario;
+
 struct rpmi_test {
 	char name[64];
 	void *rpmi_xport;
@@ -52,22 +54,22 @@ struct rpmi_test {
 	int (*cleanup)(struct rpmi_test *test);
 };
 
-struct rpmi_test_group {
+struct rpmi_test_scenario {
 	char name[64];
 	struct group_config *conf;
 	struct rpmi_context *rctx;
 	struct rpmi_transport *xport;
 
 	/* group specific function handlers*/
-	int (*init)(struct rpmi_test_group *group);
-	int (*process)(struct rpmi_test_group *group);
-	int (*cleanup)(struct rpmi_test_group *group);
+	int (*init)(struct rpmi_test_scenario *scene);
+	int (*process)(struct rpmi_test_scenario *scene);
+	int (*cleanup)(struct rpmi_test_scenario *scene);
 
 	int num_tests;
 	struct rpmi_test tests[];
 };
 
-int execute_test_group(struct rpmi_test_group *group);
 struct rpmi_transport *init_test_rpmi_xport(int do_clear);
+int execute_test_scenario(struct rpmi_test_scenario *scene);
 
 #endif
