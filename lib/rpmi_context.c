@@ -286,6 +286,7 @@ static struct rpmi_service_group *rpmi_base_group_create(struct rpmi_context *cn
 	base->vendor_id = vendor_id;
 	base->vendor_sub_id = vendor_sub_id;
 
+	base->hw_info_len = hw_info_len;
 	base->hw_info = rpmi_env_zalloc(hw_info_len);
 	if (!base->hw_info)
 		return NULL;
