@@ -59,6 +59,36 @@ struct rpmi_shmem_platform_ops rpmi_shmem_simple_ops = {
 	.fill = shmem_env_memset_fill,
 };
 
+static enum rpmi_error shmem_env_memcpy_invalidate_read(void *priv, rpmi_uint64_t addr,
+						        void *in, rpmi_uint32_t len)
+{
+	rpmi_env_cache_clean((void *)(unsigned long)addr, len);
+	rpmi_env_memcpy(in, (const void *)(unsigned long)addr, len);
+	return RPMI_SUCCESS;
+}
+
+static enum rpmi_error shmem_env_memcpy_write_clean(void *priv, rpmi_uint64_t addr,
+						    const void *out, rpmi_uint32_t len)
+{
+	rpmi_env_memcpy((void *)(unsigned long)addr, out, len);
+	rpmi_env_cache_clean((void *)(unsigned long)addr, len);
+	return RPMI_SUCCESS;
+}
+
+static enum rpmi_error shmem_env_memset_fill_clean(void *priv, rpmi_uint64_t addr,
+						   char ch, rpmi_uint32_t len)
+{
+	rpmi_env_memset((void *)(unsigned long)addr, ch, len);
+	rpmi_env_cache_clean((void *)(unsigned long)addr, len);
+	return RPMI_SUCCESS;
+}
+
+struct rpmi_shmem_platform_ops rpmi_shmem_simple_noncoherent_ops = {
+	.read = shmem_env_memcpy_invalidate_read,
+	.write = shmem_env_memcpy_write_clean,
+	.fill = shmem_env_memset_fill_clean,
+};
+
 rpmi_uint32_t rpmi_shmem_size(struct rpmi_shmem *shmem)
 {
 	return (shmem) ? shmem->size : 0;

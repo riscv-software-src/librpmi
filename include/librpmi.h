@@ -287,11 +287,18 @@ struct rpmi_shmem_platform_ops {
 };
 
 /**
- * Simple platform specific shared memory operations which use environment functions.
+ * Simple cache-coherent shared memory operations which use environment functions.
  *
  * Note: These operations don't require any platform specific data.
  */
 extern struct rpmi_shmem_platform_ops rpmi_shmem_simple_ops;
+
+/**
+ * Simple cache-non-coherent shared memory operations which use environment functions.
+ *
+ * Note: These operations don't require any platform specific data.
+ */
+extern struct rpmi_shmem_platform_ops rpmi_shmem_simple_noncoherent_ops;
 
 /**
  * @brief Get size of a shared memory
