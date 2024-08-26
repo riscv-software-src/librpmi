@@ -301,6 +301,14 @@ extern struct rpmi_shmem_platform_ops rpmi_shmem_simple_ops;
 extern struct rpmi_shmem_platform_ops rpmi_shmem_simple_noncoherent_ops;
 
 /**
+ * @brief Get base address of a shared memory
+ *
+ * @param[in] shmem		pointer to shared memory instance
+ * @return base address of shared memory
+ */
+rpmi_uint64_t rpmi_shmem_base(struct rpmi_shmem *shmem);
+
+/**
  * @brief Get size of a shared memory
  *
  * @param[in] shmem		pointer to shared memory instance

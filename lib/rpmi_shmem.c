@@ -89,6 +89,11 @@ struct rpmi_shmem_platform_ops rpmi_shmem_simple_noncoherent_ops = {
 	.fill = shmem_env_memset_fill_clean,
 };
 
+rpmi_uint64_t rpmi_shmem_base(struct rpmi_shmem *shmem)
+{
+	return (shmem) ? shmem->base : 0;
+}
+
 rpmi_uint32_t rpmi_shmem_size(struct rpmi_shmem *shmem)
 {
 	return (shmem) ? shmem->size : 0;
