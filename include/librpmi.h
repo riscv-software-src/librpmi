@@ -163,6 +163,7 @@ enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_SYSTEM_RESET = 0x00002,
 	RPMI_SRVGRP_SYSTEM_SUSPEND = 0x00003,
 	RPMI_SRVGRP_HSM = 0x00004,
+	RPMI_SRVGRP_CPPC = 0x00005,
 	RPMI_SRVGRP_CLOCK = 0x00007,
 	RPMI_SRVGRP_ID_MAX_COUNT,
 };
@@ -247,6 +248,17 @@ enum rpmi_clock_service_id {
 	RPMI_CLK_SRV_SET_RATE = 0x07,
 	RPMI_CLK_SRV_GET_RATE = 0x08,
 	RPMI_CLK_SRV_ID_MAX,
+};
+
+enum rpmi_cppc_service_id {
+	RPMI_CPPC_SRV_ENABLE_NOTIFICATION = 0x01,
+	RPMI_CPPC_SRV_PROBE_REG = 0x02,
+	RPMI_CPPC_SRV_READ_REG = 0x03,
+	RPMI_CPPC_SRV_WRITE_REG = 0x04,
+	RPMI_CPPC_SRV_GET_FAST_CHANNEL_REGION = 0x05,
+	RPMI_CPPC_SRV_GET_FAST_CHANNEL_OFFSET = 0x06,
+	RPMI_CPPC_SRV_GET_HART_LIST = 0x07,
+	RPMI_CPPC_SRV_ID_MAX,
 };
 
 /** @} */
@@ -1173,6 +1185,166 @@ rpmi_service_group_clock_create(rpmi_uint32_t clock_count,
  * @param[in] group	pointer to RPMI service group instance
  */
 void rpmi_service_group_clock_destroy(struct rpmi_service_group *group);
+
+/** @} */
+
+/**
+ * \defgroup LIBRPMI_CPPCSRVGRP_INTERFACE RPMI CPPC Service Group Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for RPMI cppc service group.
+ * @{
+ */
+
+/**
+ * ACPI CPPC Register IDs as per
+ * the SBI CPPC extension.
+ */
+enum rpmi_cppc_reg_id {
+	RPMI_CPPC_HIGHEST_PERF			= 0x00000000,
+	RPMI_CPPC_NOMINAL_PERF			= 0x00000001,
+	RPMI_CPPC_LOWEST_NON_LINEAR_PERF	= 0x00000002,
+	RPMI_CPPC_LOWEST_PERF			= 0x00000003,
+	RPMI_CPPC_GUARANTEED_PERF		= 0x00000004,
+	RPMI_CPPC_DESIRED_PERF			= 0x00000005,
+	RPMI_CPPC_MIN_PERF			= 0x00000006,
+	RPMI_CPPC_MAX_PERF			= 0x00000007,
+	RPMI_CPPC_PERF_REDUCTION_TOLERANCE	= 0x00000008,
+	RPMI_CPPC_TIME_WINDOW			= 0x00000009,
+	RPMI_CPPC_COUNTER_WRAPAROUND_TIME	= 0x0000000A,
+	RPMI_CPPC_REFERENCE_PERF_COUNTER	= 0x0000000B,
+	RPMI_CPPC_DELIVERED_PERF_COUNTER	= 0x0000000C,
+	RPMI_CPPC_PERF_LIMITED			= 0x0000000D,
+	RPMI_CPPC_CPPC_ENABLE			= 0x0000000E,
+	RPMI_CPPC_AUTONOMOUS_SELECTION_ENABLE	= 0x0000000F,
+	RPMI_CPPC_AUTONOMOUS_ACTIVITY_WINDOW	= 0x00000010,
+	RPMI_CPPC_ENERGY_PERF_PREFERENCE	= 0x00000011,
+	RPMI_CPPC_REFERENCE_PERF		= 0x00000012,
+	RPMI_CPPC_LOWEST_FREQ			= 0x00000013,
+	RPMI_CPPC_NOMINAL_FREQ			= 0x00000014,
+	RPMI_CPPC_ACPI_REG_MAX_IDX,	/* End of the ACPI CPPC registers */
+	RPMI_CPPC_TRANSITION_LATENCY		= 0x80000000,
+	RPMI_CPPC_NON_ACPI_REG_MAX_IDX,	/* End of the register namespace */
+};
+
+/**
+ * CPPC Mode of Operation.
+ */
+enum rpmi_cppc_mode {
+	/**
+	 * Default CPPC mode in which supervisor software
+	 * uses Desired Performance Register to request
+	 * for performance control.
+	 */
+	RPMI_CPPC_PASSIVE_MODE,
+	
+	/**
+	 * CPPC2 mode also called Autonomous mode, which
+	 * uses Minimum Performance, Maximum Performance
+	 * and Energy Performance Preference Register to
+	 * for performance control
+	 */
+	RPMI_CPPC_AUTO_MODE,
+};
+
+/**
+ * ACPI CPPC Registers
+ */
+struct rpmi_cppc_regs {
+	/* highest performance (r) */
+	rpmi_uint32_t highest_perf;
+	/* nominal performance (r)*/
+	rpmi_uint32_t nominal_perf;
+	/* lowest nonlinear performance (r) */
+	rpmi_uint32_t lowest_nonlinear_perf;
+	/* lowest performance (r) */
+	rpmi_uint32_t lowest_perf;
+	/* guaranteed performance register (r) */
+	rpmi_uint32_t guaranteed_perf;
+	/* desired performance regiser (rw) */
+	rpmi_uint32_t desired_perf;
+	/* minimum performance regiser (rw) */
+	rpmi_uint32_t min_perf;
+	/* maximun performance regiser (rw) */
+	rpmi_uint32_t max_perf;
+	/* performance reduction tolerance register (rw) */
+	rpmi_uint32_t perf_reduction_tolerence;
+	/* time window register (rw) */
+	rpmi_uint32_t time_window;
+	/* counter wrap around time (r) */
+	rpmi_uint64_t counter_wraparound_time;
+	/* reference performance counter (r) */
+	rpmi_uint64_t reference_perf_counter;
+	/* delivered performance counter (r) */
+	rpmi_uint64_t delivered_perf_counter;
+	/* performance limited register (rw) */
+	rpmi_uint32_t perf_limited;
+	/* cppc enable register (rw) */
+	rpmi_uint32_t cppc_enable;
+	/* autonomous selection enable register (rw) */
+	rpmi_uint32_t autonomous_selection_enable;
+	/* autonomous activity window register (rw) */
+	rpmi_uint32_t autonomous_activity_window;
+	/* energy performance preference register (rw) */
+	rpmi_uint32_t energy_perf_preference;
+	/* reference performance (r) */
+	rpmi_uint32_t reference_perf;
+	/* lowest frequency (r) */
+	rpmi_uint32_t lowest_freq;
+	/* nominal frequency (r) */
+	rpmi_uint32_t nominal_freq;
+	/* transition latency */
+	rpmi_uint32_t transition_latency;
+};
+
+struct rpmi_cppc_platform_ops {
+	/**
+	 * cppc get register value for a hart.
+	 */
+	enum rpmi_error (*cppc_get_reg)(void *priv,
+	                                rpmi_uint32_t reg_id,
+	                                rpmi_uint32_t hart_index,
+	                                rpmi_uint64_t *val);
+	
+	/**
+	 * cppc set register value for a hart.
+	 */
+	enum rpmi_error (*cppc_set_reg)(void *priv,
+	                                rpmi_uint32_t reg_id,
+	                                rpmi_uint32_t hart_index,
+	                                rpmi_uint64_t val);
+	/**
+	 * cppc update performance level for a hart
+	 */
+	enum rpmi_error (*cppc_update_perf)(void *priv,
+					    rpmi_uint32_t desired_perf,
+					    rpmi_uint32_t hart_index);
+};
+
+/**
+ * @brief Create a cppc service group instance
+ *
+ * @param[in] hsm		pointer to struct rpmi_hsm instance
+ * @param[in] cppc_regs		pointer to cppc register static data
+ * @param[in] mode		cppc mode (passive or active)
+ * @param[in] shmem_fastchan	pointer to fastchannel shared memory instance
+ * @param[in] ops		pointer to platform specific cppc operations
+ * @param[in] ops_priv		pointer to private data of platform operations
+ * @return rpmi_service_group *	pointer to RPMI service group instance upon
+ * success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
+			       const struct rpmi_cppc_regs *cppc_regs,
+			       enum rpmi_cppc_mode mode,
+			       struct rpmi_shmem *shmem_fastchan,
+			       const struct rpmi_cppc_platform_ops *ops,
+			       void *ops_priv);
+/**
+ * @brief Destroy(free) a cppc service group instance
+ *
+ * @param[in] group	pointer to RPMI service group instance
+ */
+void rpmi_service_group_cppc_destroy(struct rpmi_service_group *group);
 
 /** @} */
 
