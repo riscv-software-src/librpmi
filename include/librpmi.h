@@ -276,9 +276,9 @@ enum rpmi_cppc_service_id {
 #define LIBRPMI_IMPL_VERSION_MAJOR			0
 #define LIBRPMI_IMPL_VERSION_MINOR			1
 
-#define LIBRPMI_TRANSPORT_SHMEM_MIN_SLOTS		16
-#define LIBRPMI_TRANSPORT_SHMEM_MIN_SIZE(__slot_size)	\
-	((__slot_size) * LIBRPMI_TRANSPORT_SHMEM_MIN_SLOTS * RPMI_QUEUE_MAX)
+#define LIBRPMI_TRANSPORT_SHMEM_QUEUE_MIN_SLOTS		4
+#define LIBRPMI_TRANSPORT_SHMEM_QUEUE_MIN_SIZE(__slot_size)	\
+	((__slot_size) * LIBRPMI_TRANSPORT_SHMEM_QUEUE_MIN_SLOTS)
 
 /** RPMI shared memory structure to access a platform shared memory */
 struct rpmi_shmem;
@@ -505,11 +505,15 @@ enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
  *
  * @param[in] name		name of the shared memory transport instance
  * @param[in] slot_size		size of message slot for queues in shared memory
+ * @param[in] a2p_queue_size	size of A2P request and P2A acknowledgement queues
+ * @param[in] p2a_queue_size	size of P2A request and A2P acknowledgement queues
  * @param[in] shmem		pointer to a RPMI shared memory instance
  * @return pointer to RPMI transport upon success and NULL upon failure
  */
 struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 						   rpmi_uint32_t slot_size,
+						   rpmi_uint32_t a2p_queue_size,
+						   rpmi_uint32_t p2a_queue_size,
 						   struct rpmi_shmem *shmem);
 
 /**

@@ -167,6 +167,8 @@ static enum rpmi_error shmem_dequeue(struct rpmi_transport *trans,
 
 struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 						   rpmi_uint32_t slot_size,
+						   rpmi_uint32_t a2p_queue_size,
+						   rpmi_uint32_t p2a_queue_size,
 						   struct rpmi_shmem *shmem)
 {
 	struct rpmi_transport_shmem_queue *shqueue;
@@ -182,17 +184,18 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 	if ((slot_size & (slot_size - 1)) || slot_size < RPMI_SLOT_SIZE_MIN)
 		return NULL;
 
-	/*
-	 * Shared memory size should be aligned to slot size
-	 *
-	 * Note: Actual physical base address of shared memory is
-	 * assumed to be aligned to slot size.
-	 */
-	if (rpmi_shmem_size(shmem) & (slot_size - 1))
+	/* Make sure queue sizes are multiples of slot size */
+	if ((a2p_queue_size & (slot_size - 1)) ||
+	    (p2a_queue_size & (slot_size - 1)))
 		return NULL;
 
-	/* Make sure we can divide shared memory into RPMI_QUEUE_MAX parts */
-	if (rpmi_shmem_size(shmem) < LIBRPMI_TRANSPORT_SHMEM_MIN_SIZE(slot_size))
+	/* Make sure queue sizes are not less than minimum required size */
+	if (a2p_queue_size < LIBRPMI_TRANSPORT_SHMEM_QUEUE_MIN_SIZE(slot_size) ||
+	    p2a_queue_size < LIBRPMI_TRANSPORT_SHMEM_QUEUE_MIN_SIZE(slot_size))
+		return NULL;
+
+	/* Shared memory size MUST be enough to accommodate all queues */
+	if (rpmi_shmem_size(shmem) < (2 * (a2p_queue_size + p2a_queue_size)))
 		return NULL;
 
 	/* Fill the shared memory with zeros */
@@ -208,8 +211,15 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 	for (i = 0; i < RPMI_QUEUE_MAX; i++) {
 		shqueue = &shtrans->queues[i];
 		shqueue->queue_type = i;
-		shqueue->queue_size = rpmi_shmem_size(shmem) / RPMI_QUEUE_MAX;
-		shqueue->queue_base = shqueue->queue_size * i;
+		if (i == RPMI_QUEUE_A2P_REQ || i == RPMI_QUEUE_P2A_ACK)
+			shqueue->queue_size = a2p_queue_size;
+		else
+			shqueue->queue_size = p2a_queue_size;
+		if (i)
+			shqueue->queue_base = shtrans->queues[i - 1].queue_base +
+					      shtrans->queues[i - 1].queue_size;
+		else
+			shqueue->queue_base = 0;
 		shqueue->data_slots = rpmi_env_div32(shqueue->queue_size, slot_size) - 2;
 	}
 

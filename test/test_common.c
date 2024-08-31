@@ -238,6 +238,8 @@ int test_scenario_default_init(struct rpmi_test_scenario *scene)
 	}
 
 	scene->xport = rpmi_transport_shmem_create("test_transport", scene->slot_size,
+						   ((scene->shm_size * 3) / 4) / 2,
+						   ((scene->shm_size * 1) / 4) / 2,
 						   scene->shmem);
 	if (!scene->xport) {
 		printf("%s: failed to create test rpmi_transport\n ", __func__);
