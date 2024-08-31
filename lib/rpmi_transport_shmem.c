@@ -14,10 +14,16 @@
 #define DPRINTF(msg...)
 #endif
 
+struct rpmi_transport_shmem_queue {
+	enum rpmi_queue_type queue_type;
+	rpmi_uint32_t queue_size;
+	rpmi_uint32_t queue_base;
+	rpmi_uint32_t data_slots;
+};
+
 struct rpmi_transport_shmem {
 	struct rpmi_shmem *shmem;
-	rpmi_uint32_t queue_size;
-	rpmi_uint32_t data_slots;
+	struct rpmi_transport_shmem_queue queues[RPMI_QUEUE_MAX];
 	struct rpmi_transport trans;
 };
 
@@ -26,7 +32,7 @@ static rpmi_bool_t shmem_is_empty(struct rpmi_transport *trans,
 {
 	struct rpmi_transport_shmem *shtrans = trans->priv;
 	struct rpmi_shmem *shmem = shtrans->shmem;
-	rpmi_uint32_t queue_base = shtrans->queue_size * qtype;
+	rpmi_uint32_t queue_base = shtrans->queues[qtype].queue_base;
 	rpmi_uint32_t headidx, tailidx;
 	int rc;
 
@@ -54,7 +60,8 @@ static rpmi_bool_t shmem_is_full(struct rpmi_transport *trans,
 				 enum rpmi_queue_type qtype)
 {
 	struct rpmi_transport_shmem *shtrans = trans->priv;
-	rpmi_uint32_t queue_base = shtrans->queue_size * qtype;
+	rpmi_uint32_t queue_base = shtrans->queues[qtype].queue_base;
+	rpmi_uint32_t data_slots = shtrans->queues[qtype].data_slots;
 	struct rpmi_shmem *shmem = shtrans->shmem;
 	rpmi_uint32_t headidx, tailidx;
 	int rc;
@@ -76,8 +83,7 @@ static rpmi_bool_t shmem_is_full(struct rpmi_transport *trans,
 	}
 	tailidx = rpmi_to_le32(tailidx);
 
-	return (rpmi_env_mod32(tailidx + 1, shtrans->data_slots) == headidx) ?
-		true : false;
+	return (rpmi_env_mod32(tailidx + 1, data_slots) == headidx) ? true : false;
 }
 
 static enum rpmi_error shmem_enqueue(struct rpmi_transport *trans,
@@ -85,7 +91,8 @@ static enum rpmi_error shmem_enqueue(struct rpmi_transport *trans,
 				     const struct rpmi_message *msg)
 {
 	struct rpmi_transport_shmem *shtrans = trans->priv;
-	rpmi_uint32_t queue_base = shtrans->queue_size * qtype;
+	rpmi_uint32_t queue_base = shtrans->queues[qtype].queue_base;
+	rpmi_uint32_t data_slots = shtrans->queues[qtype].data_slots;
 	struct rpmi_shmem *shmem = shtrans->shmem;
 	rpmi_uint32_t tailidx;
 	int rc;
@@ -107,7 +114,7 @@ static enum rpmi_error shmem_enqueue(struct rpmi_transport *trans,
 		return RPMI_ERR_FAILED;
 	}
 
-	tailidx = rpmi_to_le32(rpmi_env_mod32(tailidx + 1, shtrans->data_slots));
+	tailidx = rpmi_to_le32(rpmi_env_mod32(tailidx + 1, data_slots));
 	rc = rpmi_shmem_write(shmem, queue_base + trans->slot_size,
 			      &tailidx, sizeof(tailidx));
 	if (rc) {
@@ -124,7 +131,8 @@ static enum rpmi_error shmem_dequeue(struct rpmi_transport *trans,
 				     struct rpmi_message *out_msg)
 {
 	struct rpmi_transport_shmem *shtrans = trans->priv;
-	rpmi_uint32_t queue_base = shtrans->queue_size * qtype;
+	rpmi_uint32_t queue_base = shtrans->queues[qtype].queue_base;
+	rpmi_uint32_t data_slots = shtrans->queues[qtype].data_slots;
 	struct rpmi_shmem *shmem = shtrans->shmem;
 	rpmi_uint32_t headidx;
 	int rc;
@@ -145,7 +153,7 @@ static enum rpmi_error shmem_dequeue(struct rpmi_transport *trans,
 		return RPMI_ERR_FAILED;
 	}
 
-	headidx = rpmi_to_le32(rpmi_env_mod32(headidx + 1, shtrans->data_slots));
+	headidx = rpmi_to_le32(rpmi_env_mod32(headidx + 1, data_slots));
 	rc = rpmi_shmem_write(shmem, queue_base,
 			      &headidx, sizeof(headidx));
 	if (rc) {
@@ -161,8 +169,10 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 						   rpmi_uint32_t slot_size,
 						   struct rpmi_shmem *shmem)
 {
+	struct rpmi_transport_shmem_queue *shqueue;
 	struct rpmi_transport_shmem *shtrans;
 	struct rpmi_transport *trans;
+	int i;
 
 	/* All parameters should be non-zero */
 	if (!name || !slot_size || !shmem)
@@ -204,8 +214,13 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 		return NULL;
 
 	shtrans->shmem = shmem;
-	shtrans->queue_size = rpmi_shmem_size(shmem) / RPMI_QUEUE_MAX;
-	shtrans->data_slots = rpmi_env_div32(shtrans->queue_size, slot_size) - 2;
+	for (i = 0; i < RPMI_QUEUE_MAX; i++) {
+		shqueue = &shtrans->queues[i];
+		shqueue->queue_type = i;
+		shqueue->queue_size = rpmi_shmem_size(shmem) / RPMI_QUEUE_MAX;
+		shqueue->queue_base = shqueue->queue_size * i;
+		shqueue->data_slots = rpmi_env_div32(shqueue->queue_size, slot_size) - 2;
+	}
 
 	trans = &shtrans->trans;
 	trans->name = name;
