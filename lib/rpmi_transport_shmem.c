@@ -183,15 +183,6 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 		return NULL;
 
 	/*
-	 * Shared memory size should be 4KB aligned
-	 *
-	 * Note: Actual physical base address of shared memory is
-	 * assumed to be 4KB aligned.
-	 */
-	if (rpmi_shmem_size(shmem) & 0xfff)
-		return NULL;
-
-	/*
 	 * Shared memory size should be aligned to slot size
 	 *
 	 * Note: Actual physical base address of shared memory is
