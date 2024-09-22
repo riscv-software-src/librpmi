@@ -411,6 +411,12 @@ struct rpmi_transport {
 
 	/** Endianness of the messages transferred through this transport */
 	rpmi_bool_t is_be;
+	
+	/**
+	 * Is P2A channel available (in case of shmem based transport
+	 * is p2a req and a2p ack queues)
+	 */
+	rpmi_bool_t is_p2a_channel;
 
 	/** Slot (or max message) size in transport queues */
 	rpmi_size_t slot_size;

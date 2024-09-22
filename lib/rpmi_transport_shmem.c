@@ -23,7 +23,8 @@ struct rpmi_transport_shmem_queue {
 
 struct rpmi_transport_shmem {
 	struct rpmi_shmem *shmem;
-	struct rpmi_transport_shmem_queue queues[RPMI_QUEUE_MAX];
+	rpmi_uint32_t queue_count;
+	struct rpmi_transport_shmem_queue *queues;
 	struct rpmi_transport trans;
 };
 
@@ -184,19 +185,35 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 	if ((slot_size & (slot_size - 1)) || slot_size < RPMI_SLOT_SIZE_MIN)
 		return NULL;
 
-	/* Make sure queue sizes are multiples of slot size */
-	if ((a2p_req_queue_size & (slot_size - 1)) ||
-	    (p2a_req_queue_size & (slot_size - 1)))
-		return NULL;
+	/* all four queue are present */
+	if (p2a_req_queue_size) {
+		/* Make sure queue sizes are multiples of slot size */
+		if ((a2p_req_queue_size & (slot_size - 1)) ||
+		    (p2a_req_queue_size & (slot_size - 1)))
+			return NULL;
 
-	/* Make sure queue sizes are not less than minimum required size */
-	if (a2p_req_queue_size < LIBRPMI_TRANSPORT_SHMEM_QUEUE_MIN_SIZE(slot_size) ||
-	    p2a_req_queue_size < LIBRPMI_TRANSPORT_SHMEM_QUEUE_MIN_SIZE(slot_size))
-		return NULL;
+		/* Make sure queue sizes are not less than minimum required size */
+		if (a2p_req_queue_size < LIBRPMI_TRANSPORT_SHMEM_QUEUE_MIN_SIZE(slot_size) ||
+		    p2a_req_queue_size < LIBRPMI_TRANSPORT_SHMEM_QUEUE_MIN_SIZE(slot_size))
+			return NULL;
 
-	/* Shared memory size MUST be enough to accommodate all queues */
-	if (rpmi_shmem_size(shmem) < (2 * (a2p_req_queue_size + p2a_req_queue_size)))
-		return NULL;
+		/* Shared memory size MUST be enough to accommodate all queues */
+		if (rpmi_shmem_size(shmem) < (2 * (a2p_req_queue_size + p2a_req_queue_size)))
+			return NULL;
+	}
+	else { /* only a2p req and p2a ack queue */
+		/* Make sure queue sizes are multiples of slot size */
+		if (a2p_req_queue_size & (slot_size - 1))
+			return NULL;
+
+		/* Make sure queue sizes are not less than minimum required size */
+		if (a2p_req_queue_size < LIBRPMI_TRANSPORT_SHMEM_QUEUE_MIN_SIZE(slot_size))
+			return NULL;
+
+		/* Shared memory size MUST be enough to accommodate all queues */
+		if (rpmi_shmem_size(shmem) < (2 * a2p_req_queue_size))
+			return NULL;
+	}
 
 	/* Fill the shared memory with zeros */
 	if (rpmi_shmem_fill(shmem, 0, 0, rpmi_shmem_size(shmem)))
@@ -208,12 +225,18 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 		return NULL;
 
 	shtrans->shmem = shmem;
-	for (i = 0; i < RPMI_QUEUE_MAX; i++) {
+	shtrans->queue_count = p2a_req_queue_size? RPMI_QUEUE_MAX : 2;
+
+	shtrans->queues = rpmi_env_zalloc(sizeof(*shtrans->queues) * shtrans->queue_count);
+	if (!shtrans->queues)
+		return NULL;
+
+	for (i = 0; i < shtrans->queue_count; i++) {
 		shqueue = &shtrans->queues[i];
 		shqueue->queue_type = i;
 		if (i == RPMI_QUEUE_A2P_REQ || i == RPMI_QUEUE_P2A_ACK)
 			shqueue->queue_size = a2p_req_queue_size;
-		else
+		else if (p2a_req_queue_size)
 			shqueue->queue_size = p2a_req_queue_size;
 		if (i)
 			shqueue->queue_base = shtrans->queues[i - 1].queue_base +
@@ -227,6 +250,7 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 	trans->name = name;
 	trans->is_be = false;
 	trans->slot_size = slot_size;
+	trans->is_p2a_channel = p2a_req_queue_size ? true : false;
 	trans->is_empty = shmem_is_empty;
 	trans->is_full = shmem_is_full;
 	trans->enqueue = shmem_enqueue;
@@ -239,9 +263,14 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 
 void rpmi_transport_shmem_destroy(struct rpmi_transport *trans)
 {
+	struct rpmi_transport_shmem *shtrans;
+
 	if (!trans)
 		return;
 
+	shtrans = trans->priv;
+
 	rpmi_env_free_lock(trans->lock);
+	rpmi_env_free(shtrans->queues);
 	rpmi_env_free(trans->priv);
 }
