@@ -505,15 +505,15 @@ enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
  *
  * @param[in] name		name of the shared memory transport instance
  * @param[in] slot_size		size of message slot for queues in shared memory
- * @param[in] a2p_queue_size	size of A2P request and P2A acknowledgement queues
- * @param[in] p2a_queue_size	size of P2A request and A2P acknowledgement queues
+ * @param[in] a2p_req_queue_size	size of A2P request and P2A acknowledgement queues
+ * @param[in] p2a_req_queue_size	size of P2A request and A2P acknowledgement queues
  * @param[in] shmem		pointer to a RPMI shared memory instance
  * @return pointer to RPMI transport upon success and NULL upon failure
  */
 struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 						   rpmi_uint32_t slot_size,
-						   rpmi_uint32_t a2p_queue_size,
-						   rpmi_uint32_t p2a_queue_size,
+						   rpmi_uint32_t a2p_req_queue_size,
+						   rpmi_uint32_t p2a_req_queue_size,
 						   struct rpmi_shmem *shmem);
 
 /**
