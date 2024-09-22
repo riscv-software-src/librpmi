@@ -87,6 +87,12 @@ enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
 		return RPMI_ERR_INVAL;
 	}
 
+	if (!trans->is_p2a_channel && qtype >= RPMI_QUEUE_P2A_REQ) {
+		DPRINTF("%s: %s: p2a channel not available, invalid qtype %d\n",
+			__func__, trans->name, qtype);
+		return RPMI_ERR_INVAL;
+	}
+
 	if (!trans->enqueue) {
 		DPRINTF("%s: %s: enqueue operation not supported for qtype %d\n",
 			__func__, trans->name, qtype);
@@ -131,6 +137,12 @@ enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
 
 	if (qtype >= RPMI_QUEUE_MAX) {
 		DPRINTF("%s: %s: invalid qtype %d\n", __func__, trans->name, qtype);
+		return RPMI_ERR_INVAL;
+	}
+
+	if (!trans->is_p2a_channel && qtype >= RPMI_QUEUE_P2A_REQ) {
+		DPRINTF("%s: %s: p2a channel not available, invalid qtype %d\n",
+			__func__, trans->name, qtype);
 		return RPMI_ERR_INVAL;
 	}
 
