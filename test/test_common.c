@@ -254,7 +254,7 @@ int test_scenario_default_init(struct rpmi_test_scenario *scene)
 					  scene->max_num_groups,
 					  scene->base.vendor_id, scene->base.vendor_sub_id,
 					  scene->base.hw_info_len, scene->base.hw_info);
-	if (!scene->xport) {
+	if (!scene->cntx) {
 		printf("%s: failed to create test rpmi_context\n ", __func__);
 		rpmi_transport_shmem_destroy(scene->xport);
 		scene->xport = NULL;
