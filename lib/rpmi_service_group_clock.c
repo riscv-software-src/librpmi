@@ -442,7 +442,7 @@ rpmi_clock_sg_get_attributes(struct rpmi_service_group *group,
 	rpmi_uint32_t clkid = rpmi_to_xe32(trans->is_be,
 				((const rpmi_uint32_t *)request_data)[0]);
 
-	if (clkid > clkgrp->clock_count) {
+	if (clkid >= clkgrp->clock_count) {
 		resp_dlen = sizeof(*resp);
 		resp[0] = rpmi_to_xe32(trans->is_be,
 					(rpmi_uint32_t)RPMI_ERR_NOTFOUND);
@@ -496,7 +496,7 @@ rpmi_clock_sg_get_supp_rates(struct rpmi_service_group *group,
 	rpmi_uint32_t clkid = rpmi_to_xe32(trans->is_be,
 				((const rpmi_uint32_t *)request_data)[0]);
 
-	if (clkid > clkgrp->clock_count) {
+	if (clkid >= clkgrp->clock_count) {
 		resp_dlen = sizeof(*resp);
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_NOTFOUND);
@@ -598,7 +598,7 @@ rpmi_clock_sg_set_config(struct rpmi_service_group *group,
 	rpmi_uint32_t clkid = rpmi_to_xe32(trans->is_be,
 			       ((const rpmi_uint32_t *)request_data)[0]);
 
-	if (clkid > clkgrp->clock_count) {
+	if (clkid >= clkgrp->clock_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_NOTFOUND);
 		goto done;
@@ -644,7 +644,7 @@ rpmi_clock_sg_get_config(struct rpmi_service_group *group,
 	rpmi_uint32_t clkid = rpmi_to_xe32(trans->is_be,
 				     ((const rpmi_uint32_t *)request_data)[0]);
 
-	if (clkid > clkgrp->clock_count) {
+	if (clkid >= clkgrp->clock_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_NOTFOUND);
 		resp_dlen = sizeof(*resp);
@@ -688,7 +688,7 @@ rpmi_clock_sg_set_rate(struct rpmi_service_group *group,
 	rpmi_uint32_t clkid = rpmi_to_xe32(trans->is_be,
 				     ((const rpmi_uint32_t *)request_data)[0]);
 
-	if (clkid > clkgrp->clock_count) {
+	if (clkid >= clkgrp->clock_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_NOTFOUND);
 		goto done;
@@ -743,7 +743,7 @@ rpmi_clock_sg_get_rate(struct rpmi_service_group *group,
 	rpmi_uint32_t clkid = rpmi_to_xe32(trans->is_be,
 				     ((const rpmi_uint32_t *)request_data)[0]);
 
-	if (clkid > clkgrp->clock_count) {
+	if (clkid >= clkgrp->clock_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_NOTFOUND);
 		resp_dlen = sizeof(*resp);
