@@ -841,7 +841,7 @@ rpmi_service_group_clock_create(rpmi_uint32_t clock_count,
 						 ops,
 						 ops_priv);
 	if (!clkgrp->clock_tree) {
-		DPRINTF("%s: failed to initialize clock tree\n");
+		DPRINTF("%s: failed to initialize clock tree\n", __func__);
 		rpmi_env_free(clkgrp);
 		return NULL;
 	}
