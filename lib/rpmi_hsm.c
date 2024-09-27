@@ -674,7 +674,7 @@ void rpmi_hsm_destroy(struct rpmi_hsm *hsm)
 	if (!hsm->is_non_leaf) {
 		for (i = 0; i < hsm->leaf.hart_count; i++)
 			rpmi_env_free_lock(hsm->leaf.harts[i].lock);
-		rpmi_env_free_lock(hsm->leaf.harts);
+		rpmi_env_free(hsm->leaf.harts);
 	}
 
 	rpmi_env_free(hsm);
