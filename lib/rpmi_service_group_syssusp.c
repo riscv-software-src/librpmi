@@ -174,7 +174,7 @@ static enum rpmi_error rpmi_syssusp_process_events(struct rpmi_service_group *gr
 	case RPMI_SYSSUSP_STATE_SUSPEND_PENDING:
 		if (!sgsusp->ops->system_suspend_ready(sgsusp->ops_priv,
 						       sgsusp->current_hart_index))
-			return RPMI_SUCCESS;
+			return RPMI_ERR_BUSY;
 		sgsusp->ops->system_suspend_finalize(sgsusp->ops_priv,
 						sgsusp->current_hart_index,
 						sgsusp->current_syssusp_type,
@@ -184,7 +184,7 @@ static enum rpmi_error rpmi_syssusp_process_events(struct rpmi_service_group *gr
 	case RPMI_SYSSUSP_STATE_SUSPENDED:
 		if (!sgsusp->ops->system_suspend_can_resume(sgsusp->ops_priv,
 							    sgsusp->current_hart_index))
-			return RPMI_SUCCESS;
+			return RPMI_ERR_BUSY;
 		status = sgsusp->ops->system_suspend_resume(sgsusp->ops_priv,
 							sgsusp->current_hart_index,
 							sgsusp->current_syssusp_type,

@@ -458,7 +458,7 @@ void rpmi_context_process_group_events(struct rpmi_context *cntx,
 	rpmi_env_lock(group->lock);
 	rc = group->process_events(group);
 	rpmi_env_unlock(group->lock);
-	if (rc) {
+	if (rc && rc != RPMI_ERR_BUSY) {
 		DPRINTF("%s: %s: group %s failed with error %d\n",
 			__func__, cntx->name, group->name, rc);
 	}
@@ -487,7 +487,7 @@ void rpmi_context_process_all_events(struct rpmi_context *cntx)
 		rpmi_env_lock(group->lock);
 		rc = group->process_events(group);
 		rpmi_env_unlock(group->lock);
-		if (rc) {
+		if (rc && rc != RPMI_ERR_BUSY) {
 			DPRINTF("%s: %s: group %s failed with error %d\n",
 				__func__, cntx->name, group->name, rc);
 		}
