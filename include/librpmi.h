@@ -283,6 +283,7 @@ enum rpmi_clock_service_id {
 	RPMI_CLK_SRV_ID_MAX,
 };
 
+/** RPMI CPPC (CPPC) ServiceGroup Service IDs */
 enum rpmi_cppc_service_id {
 	RPMI_CPPC_SRV_ENABLE_NOTIFICATION = 0x01,
 	RPMI_CPPC_SRV_PROBE_REG = 0x02,
@@ -1025,7 +1026,10 @@ struct rpmi_syssusp_platform_ops {
 						  rpmi_uint32_t hart_index,
 			const struct rpmi_system_suspend_type *syssusp_type,
 						  rpmi_uint64_t resume_addr);
-	/** Check if the system is ready to suspend */
+	/**
+	 * Check if the system is ready to suspend
+	 * Returns TRUE if system is ready otherwise FALSE
+	 */
 	rpmi_bool_t (*system_suspend_ready)(void *priv,
 					    rpmi_uint32_t hart_index);
 	/** Finalize system suspend */
@@ -1033,7 +1037,10 @@ struct rpmi_syssusp_platform_ops {
 					rpmi_uint32_t hart_index,
 			const struct rpmi_system_suspend_type *syssusp_type,
 					rpmi_uint64_t resume_addr);
-	/** Check if the system is ready to resume */
+	/**
+	 * Check if the system is ready to resume
+	 * Returns TRUE if system can resume otherwise FALSE
+	 */
 	rpmi_bool_t (*system_suspend_can_resume)(void *priv,
 						 rpmi_uint32_t hart_index);
 	/** Resume from system suspend */
@@ -1178,6 +1185,7 @@ struct rpmi_clock_platform_ops {
 	/**
 	 * Check if the requested rate is not in the allowed margin(Hz)
 	 * which require change in clock rate.
+	 * Returns TRUE if rate change required otherwise FALSE
 	 **/
 	rpmi_bool_t (*rate_change_match)(void *priv,
 				  rpmi_uint32_t clock_id,

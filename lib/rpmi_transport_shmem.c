@@ -187,7 +187,8 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 
 	/* all four queue are present */
 	if (p2a_req_queue_size) {
-		/* Make sure queue sizes are multiples of slot size */
+		/* Make sure queue sizes are multiples of slot size
+		 * bitwise-and operation since slot_size is power of 2 */
 		if ((a2p_req_queue_size & (slot_size - 1)) ||
 		    (p2a_req_queue_size & (slot_size - 1)))
 			return NULL;
@@ -202,7 +203,8 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 			return NULL;
 	}
 	else { /* only a2p req and p2a ack queue */
-		/* Make sure queue sizes are multiples of slot size */
+		/* Make sure queue sizes are multiples of slot size
+		 * bitwise-and operation since slot_size is power of 2 */
 		if (a2p_req_queue_size & (slot_size - 1))
 			return NULL;
 
