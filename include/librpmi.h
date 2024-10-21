@@ -222,8 +222,8 @@ enum rpmi_system_suspend_service_id {
 
 #define RPMI_SYSSUSP_TYPE_SUSPEND_TO_RAM		0U
 
-#define RPMI_SYSSUSP_ATTRIBUTES_FLAGS_CUSTOM_RESUME	(1U << 31)
-#define RPMI_SYSSUSP_ATTRIBUTES_FLAGS_SUPPORTED		(1U << 30)
+#define RPMI_SYSSUSP_ATTRIBUTES_FLAGS_CUSTOM_RESUME	(1U << 1)
+#define RPMI_SYSSUSP_ATTRIBUTES_FLAGS_SUPPORTED		1U
 
 /** RPMI Hart State Management (HSM) ServiceGroup Service IDs */
 enum rpmi_hsm_service_id {
