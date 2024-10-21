@@ -210,7 +210,7 @@ enum rpmi_sysreset_service_id {
 #define RPMI_SYSRST_TYPE_COLD_REBOOT		1U
 #define RPMI_SYSRST_TYPE_WARM_REBOOT		2U
 
-#define RPMI_SYSRST_ATTRIBUTES_FLAGS_SUPPORTED	(1U << 31)
+#define RPMI_SYSRST_ATTRIBUTES_FLAGS_SUPPORTED	1U
 
 /** RPMI System Suspend ServiceGroup Service IDs */
 enum rpmi_system_suspend_service_id {
