@@ -103,7 +103,7 @@ static enum rpmi_error rpmi_clock_get_attrs(struct rpmi_clock_group *clkgrp,
 
 /**
  * Take the parent node of a clock subtree and update the
- * rates of all available child clocks based on the 
+ * rates of all available child clocks based on the
  * new parent clock rate.
  */
 static enum rpmi_error
@@ -216,7 +216,7 @@ static enum rpmi_error __rpmi_clock_set_state(struct rpmi_clock_group *clkgrp,
 		/* If the clock has no child or its a parent with single enable
 		 * count then - disable, update cache and return */
 		if (!clk->child_count || clk->enable_count == 1) {
-			ret = clkgrp->ops->set_state(clkgrp->ops_priv, 
+			ret = clkgrp->ops->set_state(clkgrp->ops_priv,
 							clk->id, state);
 			if (ret)
 				return ret;
@@ -328,7 +328,7 @@ static enum rpmi_error rpmi_clock_get_rate(struct rpmi_clock_group *clkgrp,
 }
 
 /**
- * Initialize the clock tree from provided 
+ * Initialize the clock tree from provided
  * static platform clock data.
  *
  * This function initializes the hierarchical structures
@@ -358,10 +358,10 @@ rpmi_clock_tree_init(rpmi_uint32_t clock_count,
 		RPMI_INIT_LIST_HEAD(&clock->node);
 		RPMI_INIT_LIST_HEAD(&clock->child_clock);
 
-		/** 
+		/**
 		 * All clocks state must be deterministic at this stage
 		 * which means this function must not fail with error.
-		 * It should return enabled/disabled state for each 
+		 * It should return enabled/disabled state for each
 		 * clock with success.
 		 */
 		ret = ops->get_state_and_rate(ops_priv, clkid, &state, &rate);
@@ -403,7 +403,7 @@ rpmi_clock_tree_init(rpmi_uint32_t clock_count,
 /*****************************************************************************
  * RPMI Clock Serivce Group Functions
  ****************************************************************************/
-static enum rpmi_error 
+static enum rpmi_error
 rpmi_clock_sg_get_num_clocks(struct rpmi_service_group *group,
 			     struct rpmi_service *service,
 			     struct rpmi_transport *trans,
@@ -457,7 +457,7 @@ rpmi_clock_sg_get_attributes(struct rpmi_service_group *group,
 	}
 
 	/* encode CLOCK_FORMAT */
-	flags = clk_attrs.type << 30;
+	flags = clk_attrs.type;
 	resp[3] = rpmi_to_xe32(trans->is_be, clk_attrs.transition_latency);
 	resp[2] = rpmi_to_xe32(trans->is_be, clk_attrs.rate_count);
 	resp[1] = rpmi_to_xe32(trans->is_be, flags);
@@ -542,7 +542,7 @@ rpmi_clock_sg_get_supp_rates(struct rpmi_service_group *group,
 		}
 
 		/* max rates a rpmi message can accomodate */
-		max_rates = 
+		max_rates =
 		(RPMI_MSG_DATA_SIZE(trans->slot_size) - (4 * sizeof(*resp))) /
 					sizeof(struct rpmi_clock_rate);
 		remaining = rate_count - clk_rate_idx;
@@ -611,7 +611,7 @@ rpmi_clock_sg_set_config(struct rpmi_service_group *group,
 	new_state = (cfg & 0b1) ? RPMI_CLK_STATE_ENABLED : RPMI_CLK_STATE_DISABLED;
 
 	if (new_state == RPMI_CLK_STATE_INVALID || new_state >= RPMI_CLK_STATE_MAX_IDX) {
-		resp[0] = rpmi_to_xe32(trans->is_be, 
+		resp[0] = rpmi_to_xe32(trans->is_be,
 					(rpmi_uint32_t)RPMI_ERR_INVAL);
 		goto done;
 	}
@@ -757,7 +757,7 @@ rpmi_clock_sg_get_rate(struct rpmi_service_group *group,
 		goto done;
 	}
 
-	resp[2] = rpmi_to_xe32(trans->is_be, 
+	resp[2] = rpmi_to_xe32(trans->is_be,
 				(rpmi_uint32_t)RATE_U64TOHI(rate_u64));
 	resp[1] = rpmi_to_xe32(trans->is_be,
 				(rpmi_uint32_t)RATE_U64TOLO(rate_u64));
