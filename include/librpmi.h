@@ -412,7 +412,7 @@ struct rpmi_transport {
 
 	/** Endianness of the messages transferred through this transport */
 	rpmi_bool_t is_be;
-	
+
 	/**
 	 * Is P2A channel available (in case of shmem based transport
 	 * is p2a req and a2p ack queues)
@@ -633,7 +633,7 @@ void rpmi_context_destroy(struct rpmi_context *cntx);
 
 /**
  * \defgroup LIBRPMI_SERVICEGROUP_INTERFACE RPMI Service Group Library Interface
- * @brief Data structures implemented by the RPMI library for managing RPMI 
+ * @brief Data structures implemented by the RPMI library for managing RPMI
  * service groups.
  * @{
  */
@@ -701,7 +701,7 @@ struct rpmi_service_group {
 /**
  * \defgroup LIBRPMI_HSM_INTERFACE RPMI Hart State Management Library Interface
  * @brief Global functions and data structures implemented by the RPMI library
- * for RPMI hart state management. This is shared by multiple RPMI service 
+ * for RPMI hart state management. This is shared by multiple RPMI service
  * groups.
  * @{
  */
@@ -1247,7 +1247,7 @@ enum rpmi_cppc_mode {
 	 * for performance control.
 	 */
 	RPMI_CPPC_PASSIVE_MODE,
-	
+
 	/**
 	 * CPPC2 mode also called Autonomous mode, which
 	 * uses Minimum Performance, Maximum Performance
@@ -1315,7 +1315,7 @@ struct rpmi_cppc_platform_ops {
 	                                rpmi_uint32_t reg_id,
 	                                rpmi_uint32_t hart_index,
 	                                rpmi_uint64_t *val);
-	
+
 	/**
 	 * cppc set register value for a hart.
 	 */
