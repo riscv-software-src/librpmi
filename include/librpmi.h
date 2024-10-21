@@ -738,7 +738,7 @@ struct rpmi_hsm_suspend_type {
 	rpmi_uint32_t type;
 	struct {
 		rpmi_uint32_t flags;
-#define RPMI_HSM_SUSPEND_INFO_FLAGS_TIMER_STOP	(1U << 31)
+#define RPMI_HSM_SUSPEND_INFO_FLAGS_TIMER_STOP		1U
 		rpmi_uint32_t entry_latency_us;
 		rpmi_uint32_t exit_latency_us;
 		rpmi_uint32_t wakeup_latency_us;
