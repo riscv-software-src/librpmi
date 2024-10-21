@@ -194,8 +194,9 @@ enum rpmi_base_service_id {
 #define RPMI_BASE_VENDOR_ID(__id, __subid)	\
 ((((__subid) & 0xffff) << 16) | ((__id) & 0xffff))
 
-#define RPMI_BASE_FLAGS_F0_EV_NOTIFY		(1U << 31)
-#define RPMI_BASE_FLAGS_F0_MSI_EN		(1U << 30)
+#define RPMI_BASE_FLAGS_F0_PRIVILEGE		(1U << 2)
+#define RPMI_BASE_FLAGS_F0_EV_NOTIFY		(1U << 1)
+#define RPMI_BASE_FLAGS_F0_MSI_EN		1U
 
 /** RPMI System Reset ServiceGroup Service IDs */
 enum rpmi_sysreset_service_id {
