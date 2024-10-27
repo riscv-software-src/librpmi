@@ -269,13 +269,13 @@ enum rpmi_error rpmi_hsm_hart_start(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id,
 
 	if (!hsm) {
 		DPRINTF("%s: invalid parameters\n", __func__);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	hart_index = rpmi_hsm_hart_id2index(hsm, hart_id);
 	if (hart_index == LIBRPMI_HSM_INVALID_HART_INDEX) {
 		DPRINTF("%s: invalid hart_id 0x%x\n", __func__, hart_id);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	if (hsm->is_non_leaf) {
@@ -333,13 +333,13 @@ enum rpmi_error rpmi_hsm_hart_stop(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id)
 
 	if (!hsm) {
 		DPRINTF("%s: invalid parameters\n", __func__);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	hart_index = rpmi_hsm_hart_id2index(hsm, hart_id);
 	if (hart_index == LIBRPMI_HSM_INVALID_HART_INDEX) {
 		DPRINTF("%s: invalid hart_id 0x%x\n", __func__, hart_id);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	if (hsm->is_non_leaf) {
@@ -398,13 +398,13 @@ enum rpmi_error rpmi_hsm_hart_suspend(struct rpmi_hsm *hsm, rpmi_uint32_t hart_i
 
 	if (!hsm || !suspend_type) {
 		DPRINTF("%s: invalid parameters\n", __func__);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	hart_index = rpmi_hsm_hart_id2index(hsm, hart_id);
 	if (hart_index == LIBRPMI_HSM_INVALID_HART_INDEX) {
 		DPRINTF("%s: invalid hart_id 0x%x\n", __func__, hart_id);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	if (hsm->is_non_leaf) {
@@ -465,13 +465,13 @@ int rpmi_hsm_get_hart_state(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id)
 
 	if (!hsm) {
 		DPRINTF("%s: invalid parameters\n", __func__);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	hart_index = rpmi_hsm_hart_id2index(hsm, hart_id);
 	if (hart_index == LIBRPMI_HSM_INVALID_HART_INDEX) {
 		DPRINTF("%s: invalid hart_id 0x%x\n", __func__, hart_id);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	if (hsm->is_non_leaf) {

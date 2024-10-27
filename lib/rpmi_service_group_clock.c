@@ -82,14 +82,14 @@ static enum rpmi_error rpmi_clock_get_attrs(struct rpmi_clock_group *clkgrp,
 
 	if (!attrs) {
 		DPRINTF("%s: invalid parameters\n", __func__);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	clk = rpmi_get_clock(clkgrp, clkid);
 	if (!clk) {
 		DPRINTF("%s: clock instance with clkid-%u not found\n",
 			__func__, clkid);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	attrs->name = clk->cdata->name;
@@ -185,7 +185,7 @@ static enum rpmi_error rpmi_clock_set_rate(struct rpmi_clock_group *clkgrp,
 	if (!clk) {
 		DPRINTF("%s: clock instance with clkid-%u not found\n",
 			__func__, clkid);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	rpmi_env_lock(clk->lock);
@@ -289,7 +289,7 @@ static enum rpmi_error rpmi_clock_set_state(struct rpmi_clock_group *clkgrp,
 	enum rpmi_error ret;
 	struct rpmi_clock *clk = rpmi_get_clock(clkgrp, clkid);
 	if (!clk)
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 
 	rpmi_env_lock(clk->lock);
 	ret = __rpmi_clock_set_state(clkgrp, clk, state);
@@ -306,7 +306,7 @@ static enum rpmi_error rpmi_clock_get_state(struct rpmi_clock_group *clkgrp,
 	struct rpmi_clock *clk = rpmi_get_clock(clkgrp, clkid);
 
 	if (!clk || !state)
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 
 	ret = clkgrp->ops->get_state_and_rate(clkgrp->ops_priv, clk->id, state,
 					      NULL);
@@ -320,7 +320,7 @@ static enum rpmi_error rpmi_clock_get_rate(struct rpmi_clock_group *clkgrp,
 	enum rpmi_error ret;
 	struct rpmi_clock *clk = rpmi_get_clock(clkgrp, clkid);
 	if (!clk || !rate)
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 
 	ret = clkgrp->ops->get_state_and_rate(clkgrp->ops_priv, clk->id, NULL,
 					      rate);
@@ -445,7 +445,7 @@ rpmi_clock_sg_get_attributes(struct rpmi_service_group *group,
 	if (clkid >= clkgrp->clock_count) {
 		resp_dlen = sizeof(*resp);
 		resp[0] = rpmi_to_xe32(trans->is_be,
-					(rpmi_uint32_t)RPMI_ERR_NOTFOUND);
+				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		goto done;
 	}
 
@@ -499,7 +499,7 @@ rpmi_clock_sg_get_supp_rates(struct rpmi_service_group *group,
 	if (clkid >= clkgrp->clock_count) {
 		resp_dlen = sizeof(*resp);
 		resp[0] = rpmi_to_xe32(trans->is_be,
-				       (rpmi_uint32_t)RPMI_ERR_NOTFOUND);
+				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		goto done;
 	}
 
@@ -536,7 +536,7 @@ rpmi_clock_sg_get_supp_rates(struct rpmi_service_group *group,
 	else if (clk_attrs.type == RPMI_CLK_TYPE_DISCRETE) {
 		if (clk_rate_idx > rate_count) {
 			resp[0] = rpmi_to_xe32(trans->is_be,
-					(rpmi_uint32_t)RPMI_ERR_OUTOFRANGE);
+					       (rpmi_uint32_t)RPMI_ERR_BAD_RANGE);
 			resp_dlen = sizeof(*resp);
 			goto done;
 		}
@@ -600,7 +600,7 @@ rpmi_clock_sg_set_config(struct rpmi_service_group *group,
 
 	if (clkid >= clkgrp->clock_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
-				       (rpmi_uint32_t)RPMI_ERR_NOTFOUND);
+				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		goto done;
 	}
 
@@ -612,7 +612,7 @@ rpmi_clock_sg_set_config(struct rpmi_service_group *group,
 
 	if (new_state == RPMI_CLK_STATE_INVALID || new_state >= RPMI_CLK_STATE_MAX_IDX) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
-					(rpmi_uint32_t)RPMI_ERR_INVAL);
+					(rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		goto done;
 	}
 
@@ -646,7 +646,7 @@ rpmi_clock_sg_get_config(struct rpmi_service_group *group,
 
 	if (clkid >= clkgrp->clock_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
-				       (rpmi_uint32_t)RPMI_ERR_NOTFOUND);
+				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		resp_dlen = sizeof(*resp);
 		goto done;
 	}
@@ -690,7 +690,7 @@ rpmi_clock_sg_set_rate(struct rpmi_service_group *group,
 
 	if (clkid >= clkgrp->clock_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
-				       (rpmi_uint32_t)RPMI_ERR_NOTFOUND);
+				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		goto done;
 	}
 
@@ -701,7 +701,7 @@ rpmi_clock_sg_set_rate(struct rpmi_service_group *group,
 	rate_match = flags & 0b11;
 	if (rate_match >= RPMI_CLK_RATE_MATCH_MAX_IDX) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
-				       (rpmi_uint32_t)RPMI_ERR_INVAL);
+				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		goto done;
 	}
 
@@ -713,7 +713,7 @@ rpmi_clock_sg_set_rate(struct rpmi_service_group *group,
 	rate_u64 = RATE_U64(rate.lo, rate.hi);
 	if (rate_u64 == RPMI_CLOCK_RATE_INVALID || rate_u64 == 0) {
 	    resp[0] = rpmi_to_xe32(trans->is_be,
-				       (rpmi_uint32_t)RPMI_ERR_INVAL);
+				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		goto done;
 	}
 
@@ -745,7 +745,7 @@ rpmi_clock_sg_get_rate(struct rpmi_service_group *group,
 
 	if (clkid >= clkgrp->clock_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
-				       (rpmi_uint32_t)RPMI_ERR_NOTFOUND);
+				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		resp_dlen = sizeof(*resp);
 		goto done;
 	}

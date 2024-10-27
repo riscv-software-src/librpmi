@@ -79,18 +79,18 @@ enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
 
 	if (!trans || !msg) {
 		DPRINTF("%s: NULL transport or message pointer\n", __func__);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	if (qtype >= RPMI_QUEUE_MAX) {
 		DPRINTF("%s: %s: invalid qtype %d\n", __func__, trans->name, qtype);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	if (!trans->is_p2a_channel && qtype >= RPMI_QUEUE_P2A_REQ) {
 		DPRINTF("%s: %s: p2a channel not available, invalid qtype %d\n",
 			__func__, trans->name, qtype);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	if (!trans->enqueue) {
@@ -110,7 +110,7 @@ enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
 	if (__rpmi_transport_is_full(trans, qtype)) {
 		DPRINTF("%s: %s: qtype %d is full\n", __func__, trans->name, qtype);
 		rpmi_env_unlock(trans->lock);
-		return RPMI_ERR_OUTOFRES;
+		return RPMI_ERR_IO;
 	}
 	rc = trans->enqueue(trans, qtype, msg);
 	rpmi_env_unlock(trans->lock);
@@ -132,18 +132,18 @@ enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
 
 	if (!trans || !out_msg) {
 		DPRINTF("%s: NULL transport or message pointer\n", __func__);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	if (qtype >= RPMI_QUEUE_MAX) {
 		DPRINTF("%s: %s: invalid qtype %d\n", __func__, trans->name, qtype);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	if (!trans->is_p2a_channel && qtype >= RPMI_QUEUE_P2A_REQ) {
 		DPRINTF("%s: %s: p2a channel not available, invalid qtype %d\n",
 			__func__, trans->name, qtype);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	if (!trans->dequeue) {
@@ -158,7 +158,7 @@ enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
 	if (__rpmi_transport_is_empty(trans, qtype)) {
 		DPRINTF("%s: %s: qtype %d is empty\n", __func__, trans->name, qtype);
 		rpmi_env_unlock(trans->lock);
-		return RPMI_ERR_OUTOFRES;
+		return RPMI_ERR_IO;
 	}
 	rc = trans->dequeue(trans, qtype, out_msg);
 	rpmi_env_unlock(trans->lock);
