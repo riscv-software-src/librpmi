@@ -102,7 +102,7 @@ static enum rpmi_error rpmi_syssusp_do_suspend(struct rpmi_service_group *group,
 
 	hart_index = rpmi_hsm_hart_id2index(sgsusp->hsm, hart_id);
 	if (hart_index == LIBRPMI_HSM_INVALID_HART_INDEX) {
-		status = RPMI_ERR_INVAL;
+		status = RPMI_ERR_INVALID_PARAM;
 		goto done;
 	}
 

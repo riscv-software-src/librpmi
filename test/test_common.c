@@ -52,7 +52,7 @@ static int test_run(struct rpmi_test_scenario *scene, struct rpmi_test *test,
 	do {
 		rc = rpmi_transport_enqueue(scene->xport,
 					    RPMI_QUEUE_A2P_REQ, req_msg);
-	} while (rc == RPMI_ERR_OUTOFRES);
+	} while (rc == RPMI_ERR_IO);
 
 	if (rc)
 		printf("%s: failed (error %d)\n", __func__,  rc);
@@ -273,7 +273,7 @@ int test_scenario_default_cleanup(struct rpmi_test_scenario *scene)
 {
 	if (!scene) {
 		printf("Invalid test scenario\n");
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	if (scene->xport) {
@@ -300,7 +300,7 @@ int test_scenario_execute(struct rpmi_test_scenario *scene)
 
 	if (!scene || !scene->init || !scene->cleanup) {
 		printf("Invalid test scenario\n");
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	rc = scene->init(scene);

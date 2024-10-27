@@ -419,9 +419,15 @@ void rpmi_context_process_a2p_request(struct rpmi_context *cntx)
 		if (!do_acknowledge)
 			continue;
 
+		/**
+		 * Try pushing the message in queue until successful
+		 * or any other error apart from input/output error
+		 * in case of queue full.
+		 */
 		do {
 			rc = rpmi_transport_enqueue(trans, RPMI_QUEUE_P2A_ACK, amsg);
-		} while (rc == RPMI_ERR_OUTOFRES);
+		} while (rc == RPMI_ERR_IO);
+
 		if (rc) {
 			DPRINTF("%s: %s: group %s p2a acknowledgment failed (error %d)\n",
 				__func__, cntx->name, group->name, rc);
@@ -531,7 +537,7 @@ enum rpmi_error rpmi_context_add_group(struct rpmi_context *cntx,
 
 	if (!cntx || !group) {
 		DPRINTF("%s: invalid parameters\n", __func__);
-		return RPMI_ERR_INVAL;
+		return RPMI_ERR_INVALID_PARAM;
 	}
 
 	rpmi_env_lock(cntx->groups_lock);
@@ -539,7 +545,7 @@ enum rpmi_error rpmi_context_add_group(struct rpmi_context *cntx,
 	if (cntx->max_num_groups <= cntx->num_groups) {
 		DPRINTF("%s: %s: no space to add group %s\n",
 			__func__, cntx->name, group->name);
-		rc = RPMI_ERR_OUTOFRES;
+		rc = RPMI_ERR_IO;
 		goto fail_unlock;
 	}
 
