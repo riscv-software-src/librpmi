@@ -15,16 +15,16 @@
 #define HW_ID0 0xd00dfeed
 #define HW_ID1 0xc001babe
 
-static struct hw_info {
+static struct plat_info {
 	rpmi_uint32_t status;
 	rpmi_uint32_t vendor_id;
-	rpmi_uint32_t hw_id_len;
-	rpmi_uint32_t hw_id[2];
-} hw_info_val = {
+	rpmi_uint32_t plat_id_len;
+	rpmi_uint32_t plat_id[2];
+} plat_info_val = {
 	.vendor_id = RPMI_BASE_VENDOR_ID(VENDOR_ID, VENDOR_SUB_ID),
-	.hw_id_len = sizeof(rpmi_uint32_t) * 2,
-	.hw_id[0] = HW_ID0,
-	.hw_id[1] = HW_ID1,
+	.plat_id_len = sizeof(rpmi_uint32_t) * 2,
+	.plat_id[0] = HW_ID0,
+	.plat_id[1] = HW_ID1,
 };
 
 static rpmi_uint32_t enable_notif_expdata_default[] = {
@@ -80,8 +80,8 @@ static struct rpmi_test_scenario scenario_base_default = {
 	.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT,
 	.base.vendor_id = VENDOR_ID,
 	.base.vendor_sub_id = VENDOR_SUB_ID,
-	.base.hw_info_len = sizeof(hw_info_val.hw_id),
-	.base.hw_info = (const rpmi_uint8_t *)&hw_info_val.hw_id,
+	.base.plat_info_len = sizeof(plat_info_val.plat_id),
+	.base.plat_info = (const rpmi_uint8_t *)&plat_info_val.plat_id,
 	.priv = NULL,
 
 	.init = test_scenario_default_init,
@@ -134,13 +134,13 @@ static struct rpmi_test_scenario scenario_base_default = {
 			.init_expected_data = test_init_expected_data_from_attrs,
 		},
 		{
-			.name = "RPMI_BASE_SRV_GET_HW_INFO",
+			.name = "RPMI_BASE_SRV_GET_PLATFORM_INFO",
 			.attrs = {
 				.servicegroup_id = RPMI_SRVGRP_BASE,
-				.service_id = RPMI_BASE_SRV_GET_HW_INFO,
+				.service_id = RPMI_BASE_SRV_GET_PLATFORM_INFO,
 				.flags = RPMI_MSG_NORMAL_REQUEST,
-				.expected_data = &hw_info_val,
-				.expected_data_len = sizeof(hw_info_val),
+				.expected_data = &plat_info_val,
+				.expected_data_len = sizeof(plat_info_val),
 			},
 			.init_expected_data = test_init_expected_data_from_attrs,
 		},
