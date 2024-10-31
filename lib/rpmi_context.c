@@ -48,17 +48,11 @@ struct rpmi_context {
 struct rpmi_base_group {
 	struct rpmi_context *cntx;
 
-	/** Vendor ID of HW */
-	rpmi_uint32_t vendor_id;
+	/* Platform info string length */
+	rpmi_uint32_t plat_info_len;
 
-	/** Vendor SUB-ID of HW */
-	rpmi_uint32_t vendor_sub_id;
-
-	/* HW info string length */
-	rpmi_uint32_t hw_info_len;
-
-	/* HW info string */
-	rpmi_uint8_t *hw_info;
+	/* Platform info string */
+	char *plat_info;
 
 	/** P2A MSI details */
 	rpmi_bool_t	msi_enable;
@@ -131,7 +125,7 @@ static enum rpmi_error rpmi_base_get_spec_version(struct rpmi_service_group *gro
 	return RPMI_SUCCESS;
 }
 
-static enum rpmi_error rpmi_base_get_hw_info(struct rpmi_service_group *group,
+static enum rpmi_error rpmi_base_get_plat_info(struct rpmi_service_group *group,
 					     struct rpmi_service *service,
 					     struct rpmi_transport *trans,
 					     rpmi_uint16_t request_datalen,
@@ -141,22 +135,13 @@ static enum rpmi_error rpmi_base_get_hw_info(struct rpmi_service_group *group,
 {
 	rpmi_uint32_t *resp = (void *)response_data;
 	struct rpmi_base_group *base = group->priv;
-	rpmi_uint32_t hw_info_len, i;
-	rpmi_uint8_t *hw_info;
+	rpmi_uint8_t *plat_info;
 
-	hw_info_len = trans->slot_size - (3 * sizeof(*resp));
-	hw_info_len = base->hw_info_len < hw_info_len ?
-			base->hw_info_len : hw_info_len;
-
-	*response_datalen = (3 * sizeof(*resp)) + hw_info_len;
+	*response_datalen = (2 * sizeof(*resp)) + base->plat_info_len;
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
-	resp[1] = rpmi_to_xe32(trans->is_be,
-				RPMI_BASE_VENDOR_ID(base->vendor_id,
-						    base->vendor_sub_id));
-	resp[2] = rpmi_to_xe32(trans->is_be, hw_info_len);
-	hw_info = (rpmi_uint8_t *)&resp[3];
-	for (i = 0; i < hw_info_len; i++)
-		hw_info[i] = base->hw_info[i];
+	resp[1] = rpmi_to_xe32(trans->is_be, base->plat_info_len);
+	plat_info = (rpmi_uint8_t *)&resp[2];
+	rpmi_env_strncpy((char *)plat_info, base->plat_info, base->plat_info_len);
 
 	return RPMI_SUCCESS;
 }
@@ -247,10 +232,10 @@ static struct rpmi_service rpmi_base_services[RPMI_BASE_SRV_MAX] = {
 		.min_a2p_request_datalen = 0,
 		.process_a2p_request = rpmi_base_get_spec_version,
 	},
-	[RPMI_BASE_SRV_GET_HW_INFO] = {
-		.service_id = RPMI_BASE_SRV_GET_HW_INFO,
+	[RPMI_BASE_SRV_GET_PLATFORM_INFO] = {
+		.service_id = RPMI_BASE_SRV_GET_PLATFORM_INFO,
 		.min_a2p_request_datalen = 0,
-		.process_a2p_request = rpmi_base_get_hw_info,
+		.process_a2p_request = rpmi_base_get_plat_info,
 	},
 	[RPMI_BASE_SRV_PROBE_SERVICE_GROUP] = {
 		.service_id = RPMI_BASE_SRV_PROBE_SERVICE_GROUP,
@@ -270,29 +255,39 @@ static struct rpmi_service rpmi_base_services[RPMI_BASE_SRV_MAX] = {
 };
 
 static struct rpmi_service_group *rpmi_base_group_create(struct rpmi_context *cntx,
-							 rpmi_uint16_t vendor_id,
-							 rpmi_uint16_t vendor_sub_id,
-							 rpmi_uint32_t hw_info_len,
-							 const rpmi_uint8_t *hw_info)
+							 rpmi_uint32_t plat_info_len,
+							 const char *plat_info)
 {
 	struct rpmi_service_group *group;
 	struct rpmi_base_group *base;
-	rpmi_uint32_t i;
+	rpmi_uint32_t max_plat_info_len;
 
 	base = rpmi_env_zalloc(sizeof(*base));
 	if (!base)
 		return NULL;
+
 	base->cntx = cntx;
-	base->vendor_id = vendor_id;
-	base->vendor_sub_id = vendor_sub_id;
 
-	base->hw_info_len = hw_info_len;
-	base->hw_info = rpmi_env_zalloc(hw_info_len);
-	if (!base->hw_info)
-		return NULL;
+	/*
+	 * Make sure that platform info length can be
+	 * accomodated in the message data as per the
+	 * format of the base_get_platform_info service
+	 */
+	max_plat_info_len = RPMI_MSG_DATA_SIZE(cntx->trans->slot_size) -
+						(sizeof(rpmi_uint32_t) * 2);
 
-	for (i = 0; i < hw_info_len; i++)
-		base->hw_info[i] = hw_info[i];
+	if (plat_info_len > max_plat_info_len) {
+		goto fail_free_base;
+	}
+
+	if (plat_info) {
+		base->plat_info_len = plat_info_len;
+		base->plat_info = rpmi_env_zalloc(plat_info_len);
+		if (!base->plat_info)
+			goto fail_free_base;
+
+		rpmi_env_strncpy(base->plat_info, plat_info, plat_info_len);
+	}
 
 	group = &base->group;
 	group->name = "base";
@@ -303,13 +298,18 @@ static struct rpmi_service_group *rpmi_base_group_create(struct rpmi_context *cn
 	group->priv = base;
 
 	return group;
+
+fail_free_base:
+	rpmi_env_free(base);
+	return NULL;
 }
 
 static void rpmi_base_group_destroy(struct rpmi_service_group *group)
 {
 	struct rpmi_base_group *base = group->priv;
 
-	rpmi_env_free(base->hw_info);
+	if (base->plat_info)
+		rpmi_env_free(base->plat_info);
 	rpmi_env_free_lock(group->lock);
 	rpmi_env_free(group->priv);
 }
@@ -597,16 +597,19 @@ void rpmi_context_remove_group(struct rpmi_context *cntx,
 struct rpmi_context *rpmi_context_create(const char *name,
 					 struct rpmi_transport *trans,
 					 rpmi_uint32_t max_num_groups,
-					 rpmi_uint16_t vendor_id,
-					 rpmi_uint16_t vendor_sub_id,
-					 rpmi_uint32_t hw_info_len,
-					 const rpmi_uint8_t *hw_info)
+					 rpmi_uint32_t plat_info_len,
+					 const char *plat_info)
 {
 	struct rpmi_context *cntx;
 	enum rpmi_error rc;
 
-	if (!name || !trans || !max_num_groups || !hw_info) {
+	if (!name || !trans || !max_num_groups) {
 		DPRINTF("%s: invalid parameters\n", __func__);
+		return NULL;
+	}
+
+	if (plat_info && !plat_info_len) {
+		DPRINTF("%s: invalid platform info parameters\n", __func__);
 		return NULL;
 	}
 
@@ -620,6 +623,10 @@ struct rpmi_context *rpmi_context_create(const char *name,
 	cntx->trans = trans;
 	cntx->max_num_groups = max_num_groups;
 
+	/**
+	 * Allocate for the array of pointers to the service
+	 * groups instances which are assigned to the context
+	 */
 	cntx->groups = rpmi_env_zalloc(cntx->max_num_groups * sizeof(*cntx->groups));
 	if (!cntx->groups) {
 		DPRINTF("%s: %s: groups array allocation failed\n", __func__, name);
@@ -640,8 +647,7 @@ struct rpmi_context *rpmi_context_create(const char *name,
 		goto fail_free_req_msg;
 	}
 
-	cntx->base_group = rpmi_base_group_create(cntx, vendor_id, vendor_sub_id,
-						  hw_info_len, hw_info);
+	cntx->base_group = rpmi_base_group_create(cntx, plat_info_len, plat_info);
 	if (!cntx->base_group) {
 		DPRINTF("%s: %s: base group creation failed\n", __func__, name);
 		goto fail_free_ack_msg;
