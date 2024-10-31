@@ -10,21 +10,16 @@
 #include "test_common.h"
 #include "test_log.h"
 
-#define VENDOR_ID 0x1337
-#define VENDOR_SUB_ID 0x7331
-#define HW_ID0 0xd00dfeed
-#define HW_ID1 0xc001babe
+#define PLAT_INFO	"ventana veyron-v2 plat 1.0"
+#define PLAT_INFO_LEN	(sizeof(PLAT_INFO))
 
-static struct hw_info {
+static struct plat_info {
 	rpmi_uint32_t status;
-	rpmi_uint32_t vendor_id;
-	rpmi_uint32_t hw_id_len;
-	rpmi_uint32_t hw_id[2];
-} hw_info_val = {
-	.vendor_id = RPMI_BASE_VENDOR_ID(VENDOR_ID, VENDOR_SUB_ID),
-	.hw_id_len = sizeof(rpmi_uint32_t) * 2,
-	.hw_id[0] = HW_ID0,
-	.hw_id[1] = HW_ID1,
+	rpmi_uint32_t plat_id_len;
+	rpmi_uint8_t plat_info[];
+} plat_info_val = {
+	.plat_id_len = PLAT_INFO_LEN,
+	.plat_info = PLAT_INFO,
 };
 
 static rpmi_uint32_t enable_notif_expdata_default[] = {
@@ -78,10 +73,8 @@ static struct rpmi_test_scenario scenario_base_default = {
 	.shm_size = RPMI_SHM_SZ,
 	.slot_size = RPMI_SLOT_SIZE,
 	.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT,
-	.base.vendor_id = VENDOR_ID,
-	.base.vendor_sub_id = VENDOR_SUB_ID,
-	.base.hw_info_len = sizeof(hw_info_val.hw_id),
-	.base.hw_info = (const rpmi_uint8_t *)&hw_info_val.hw_id,
+	.base.plat_info_len = PLAT_INFO_LEN,
+	.base.plat_info = PLAT_INFO,
 	.priv = NULL,
 
 	.init = test_scenario_default_init,
@@ -134,13 +127,13 @@ static struct rpmi_test_scenario scenario_base_default = {
 			.init_expected_data = test_init_expected_data_from_attrs,
 		},
 		{
-			.name = "RPMI_BASE_SRV_GET_HW_INFO",
+			.name = "RPMI_BASE_SRV_GET_PLATFORM_INFO",
 			.attrs = {
 				.servicegroup_id = RPMI_SRVGRP_BASE,
-				.service_id = RPMI_BASE_SRV_GET_HW_INFO,
+				.service_id = RPMI_BASE_SRV_GET_PLATFORM_INFO,
 				.flags = RPMI_MSG_NORMAL_REQUEST,
-				.expected_data = &hw_info_val,
-				.expected_data_len = sizeof(hw_info_val),
+				.expected_data = &plat_info_val,
+				.expected_data_len = PLAT_INFO_LEN + sizeof(rpmi_uint32_t)*2,
 			},
 			.init_expected_data = test_init_expected_data_from_attrs,
 		},
