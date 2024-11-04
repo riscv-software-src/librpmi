@@ -305,7 +305,7 @@ rpmi_cppc_sg_probe_reg(struct rpmi_service_group *group,
 
 	/** valid cppc register */
 	if (!__rpmi_cppc_reg_valid(cppc_reg_id)) {
-		status = RPMI_ERR_INVALID_PARAM;
+		status = RPMI_ERR_INVAL;
 		resp_dlen = sizeof(*resp);
 		goto done;
 	}
@@ -313,7 +313,7 @@ rpmi_cppc_sg_probe_reg(struct rpmi_service_group *group,
 	/** valid hart id */
 	hart_index = rpmi_hsm_hart_id2index(cppcgrp->hsm, hart_id);
 	if (hart_index == LIBRPMI_HSM_INVALID_HART_INDEX) {
-		status = RPMI_ERR_INVALID_PARAM;
+		status = RPMI_ERR_NOTFOUND;
 		resp_dlen = sizeof(*resp);
 		goto done;
 	}
@@ -356,7 +356,7 @@ rpmi_cppc_sg_read_reg(struct rpmi_service_group *group,
 
 	/** valid cppc register */
 	if (!__rpmi_cppc_reg_valid(cppc_reg_id)) {
-		status = RPMI_ERR_INVALID_PARAM;
+		status = RPMI_ERR_INVAL;
 		resp_dlen = sizeof(*resp);
 		goto done;
 	}
@@ -364,7 +364,7 @@ rpmi_cppc_sg_read_reg(struct rpmi_service_group *group,
 	/** valid hart id */
 	hart_index = rpmi_hsm_hart_id2index(cppcgrp->hsm, hart_id);
 	if (hart_index == LIBRPMI_HSM_INVALID_HART_INDEX) {
-		status = RPMI_ERR_INVALID_PARAM;
+		status = RPMI_ERR_NOTFOUND;
 		resp_dlen = sizeof(*resp);
 		goto done;
 	}
@@ -432,14 +432,14 @@ rpmi_cppc_sg_write_reg(struct rpmi_service_group *group,
 
 	/** valid cppc register */
 	if (!__rpmi_cppc_reg_valid(cppc_reg_id)) {
-		status = RPMI_ERR_INVALID_PARAM;
+		status = RPMI_ERR_INVAL;
 		goto done;
 	}
 
 	/** valid hart id */
 	hart_index = rpmi_hsm_hart_id2index(cppcgrp->hsm, hart_id);
 	if (hart_index == LIBRPMI_HSM_INVALID_HART_INDEX) {
-		status = RPMI_ERR_INVALID_PARAM;
+		status = RPMI_ERR_NOTFOUND;
 		goto done;
 	}
 
@@ -535,7 +535,7 @@ rpmi_cppc_sg_get_fast_channel_offset(struct rpmi_service_group *group,
 	/** valid hart id */
 	hart_index = rpmi_hsm_hart_id2index(cppcgrp->hsm, hart_id);
 	if (hart_index == LIBRPMI_HSM_INVALID_HART_INDEX) {
-		status = RPMI_ERR_INVALID_PARAM;
+		status = RPMI_ERR_NOTFOUND;
 		resp_dlen = sizeof(*resp);
 		goto done;
 	}
@@ -587,7 +587,7 @@ rpmi_cppc_sg_get_hart_list(struct rpmi_service_group *group,
 	} else {
 		returned = 0;
 		remaining = hart_count;
-		status = RPMI_ERR_INVALID_PARAM;
+		status = RPMI_ERR_INVAL;
 	}
 
 	*response_datalen = (returned + 3) * sizeof(*resp);

@@ -96,7 +96,7 @@ static enum rpmi_error rpmi_hsm_sg_hart_suspend(struct rpmi_service_group *group
 		status = rpmi_hsm_hart_suspend(sghsm->hsm, hart_id,
 					       suspend_type, resume_addr);
 	else
-		status = RPMI_ERR_INVALID_PARAM;
+		status = RPMI_ERR_INVAL;
 
 	*response_datalen = sizeof(*resp);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)status);
@@ -165,7 +165,7 @@ static enum rpmi_error rpmi_hsm_sg_get_hart_list(struct rpmi_service_group *grou
 	} else {
 		returned = 0;
 		remaining = hart_count;
-		status = RPMI_ERR_INVALID_PARAM;
+		status = RPMI_ERR_INVAL;
 	}
 
 	*response_datalen = (returned + 3) * sizeof(*resp);
@@ -209,7 +209,7 @@ static enum rpmi_error rpmi_hsm_sg_get_suspend_types(struct rpmi_service_group *
 	} else {
 		returned = 0;
 		remaining = type_count;
-		status = RPMI_ERR_INVALID_PARAM;
+		status = RPMI_ERR_INVAL;
 	}
 
 	*response_datalen = (returned + 3) * sizeof(*resp);
@@ -246,7 +246,7 @@ static enum rpmi_error rpmi_hsm_sg_get_suspend_info(struct rpmi_service_group *g
 		resp[4] = rpmi_to_xe32(trans->is_be, suspend_type->info.wakeup_latency_us);
 		resp[5] = rpmi_to_xe32(trans->is_be, suspend_type->info.min_residency_us);
 	} else {
-		resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
+		resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_ERR_INVAL);
 		resp[1] = 0;
 		resp[2] = 0;
 		resp[3] = 0;
