@@ -72,8 +72,8 @@ struct rpmi_test_scenario {
 	struct {
 		rpmi_uint16_t vendor_id;
 		rpmi_uint16_t vendor_sub_id;
-		rpmi_uint32_t plat_info_len;
-		const rpmi_uint8_t *plat_info;
+		rpmi_uint32_t hw_info_len;
+		const rpmi_uint8_t *hw_info;
 	} base;
 	void *priv;
 

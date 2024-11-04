@@ -187,7 +187,7 @@ enum rpmi_base_service_id {
 	RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION = 0x02,
 	RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN = 0x03,
 	RPMI_BASE_SRV_GET_SPEC_VERSION = 0x04,
-	RPMI_BASE_SRV_GET_PLATFORM_INFO = 0x05,
+	RPMI_BASE_SRV_GET_HW_INFO = 0x05,
 	RPMI_BASE_SRV_PROBE_SERVICE_GROUP = 0x06,
 	RPMI_BASE_SRV_GET_ATTRIBUTES = 0x07,
 	RPMI_BASE_SRV_SET_MSI = 0x08,
@@ -621,8 +621,8 @@ void rpmi_context_remove_group(struct rpmi_context *cntx,
  * @param[in] max_num_groups	maximum number of service groups
  * @param[in] vendor_id		vendor ID of HW
  * @param[in] vendor_sub_id	vendor SUB-ID of HW
- * @param[in] plat_info_len	length of the Platform info string
- * @param[in] plat_info		pointer to the Platform info string
+ * @param[in] hw_info_len	length of the HW info string
+ * @param[in] hw_info		pointer to the HW info string
  * @return pointer to RPMI context upon success and NULL upon failure
  */
 struct rpmi_context *rpmi_context_create(const char *name,
@@ -630,8 +630,8 @@ struct rpmi_context *rpmi_context_create(const char *name,
 					 rpmi_uint32_t max_num_groups,
 					 rpmi_uint16_t vendor_id,
 					 rpmi_uint16_t vendor_sub_id,
-					 rpmi_uint32_t plat_info_len,
-					 const rpmi_uint8_t *plat_info);
+					 rpmi_uint32_t hw_info_len,
+					 const rpmi_uint8_t *hw_info);
 
 /**
  * @brief Destroy (of free) a RPMI context

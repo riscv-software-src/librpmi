@@ -253,7 +253,7 @@ int test_scenario_default_init(struct rpmi_test_scenario *scene)
 	scene->cntx = rpmi_context_create("test_context", scene->xport,
 					  scene->max_num_groups,
 					  scene->base.vendor_id, scene->base.vendor_sub_id,
-					  scene->base.plat_info_len, scene->base.plat_info);
+					  scene->base.hw_info_len, scene->base.hw_info);
 	if (!scene->cntx) {
 		printf("%s: failed to create test rpmi_context\n ", __func__);
 		rpmi_transport_shmem_destroy(scene->xport);
