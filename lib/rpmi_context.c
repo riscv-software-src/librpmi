@@ -211,7 +211,7 @@ static enum rpmi_error rpmi_base_set_msi(struct rpmi_service_group *group,
 	return RPMI_SUCCESS;
 }
 
-static struct rpmi_service rpmi_base_services[RPMI_BASE_SRV_MAX] = {
+static struct rpmi_service rpmi_base_services[RPMI_BASE_SRV_ID_MAX] = {
 	[RPMI_BASE_SRV_ENABLE_NOTIFICATION] = {
 		.service_id = RPMI_BASE_SRV_ENABLE_NOTIFICATION,
 		.min_a2p_request_datalen = 4,
@@ -292,7 +292,7 @@ static struct rpmi_service_group *rpmi_base_group_create(struct rpmi_context *cn
 	group = &base->group;
 	group->name = "base";
 	group->servicegroup_id = RPMI_SRVGRP_BASE;
-	group->max_service_id = RPMI_BASE_SRV_MAX;
+	group->max_service_id = RPMI_BASE_SRV_ID_MAX;
 	group->services = rpmi_base_services;
 	group->lock = rpmi_env_alloc_lock();
 	group->priv = base;
