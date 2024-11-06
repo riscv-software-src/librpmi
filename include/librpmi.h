@@ -243,15 +243,19 @@ enum rpmi_sysrst_reset_type {
 /** RPMI System Suspend ServiceGroup Service IDs */
 enum rpmi_system_suspend_service_id {
 	RPMI_SYSSUSP_SRV_ENABLE_NOTIFICATION = 0x01,
-	RPMI_SYSSUSP_SRV_GET_SYSTEM_SUSPEND_ATTRIBUTES = 0x02,
+	RPMI_SYSSUSP_SRV_GET_ATTRIBUTES = 0x02,
 	RPMI_SYSSUSP_SRV_SYSTEM_SUSPEND = 0x03,
 	RPMI_SYSSUSP_SRV_ID_MAX = 0x04,
 };
 
-#define RPMI_SYSSUSP_TYPE_SUSPEND_TO_RAM		0U
+/* RPMI Suspend Types */
+enum rpmi_syssusp_suspend_type {
+	RPMI_SYSSUSP_TYPE_SUSPEND_TO_RAM = 0x0,
+	RPMI_SYSSUSP_TYPE_MAX,
+};
 
-#define RPMI_SYSSUSP_ATTRIBUTES_FLAGS_CUSTOM_RESUME	(1U << 1)
-#define RPMI_SYSSUSP_ATTRIBUTES_FLAGS_SUPPORTED		1U
+#define RPMI_SYSSUSP_ATTRS_FLAGS_RESUMEADDR	(1U << 1)
+#define RPMI_SYSSUSP_ATTRS_FLAGS_SUSPENDTYPE	1U
 
 /** RPMI Hart State Management (HSM) ServiceGroup Service IDs */
 enum rpmi_hsm_service_id {
