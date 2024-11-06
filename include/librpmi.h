@@ -172,13 +172,28 @@ enum rpmi_queue_type {
 /** RPMI ServiceGroups IDs */
 enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_ID_MIN = 0,
-	RPMI_SRVGRP_BASE = 0x00001,
-	RPMI_SRVGRP_SYSTEM_RESET = 0x00002,
-	RPMI_SRVGRP_SYSTEM_SUSPEND = 0x00003,
-	RPMI_SRVGRP_HSM = 0x00004,
-	RPMI_SRVGRP_CPPC = 0x00005,
-	RPMI_SRVGRP_CLOCK = 0x00007,
+	RPMI_SRVGRP_BASE = 0x0001,
+	RPMI_SRVGRP_SYSTEM_RESET = 0x0002,
+	RPMI_SRVGRP_SYSTEM_SUSPEND = 0x0003,
+	RPMI_SRVGRP_HSM = 0x0004,
+	RPMI_SRVGRP_CPPC = 0x0005,
+	RPMI_SRVGRP_VOLTAGE = 0x0006,
+	RPMI_SRVGRP_CLOCK = 0x0007,
+	RPMI_SRVGRP_DEVICE_POWER = 0x0008,
+	RPMI_SRVGRP_PERFORMANCE = 0x0009,
+	RPMI_SRVGRP_MANAGEMENT_MODE = 0x000A,
+	RPMI_SRVGRP_RAS_AGENT = 0x000B,
+	RPMI_SRVGRP_REQUEST_FORWARD = 0x000C,
 	RPMI_SRVGRP_ID_MAX_COUNT,
+	
+	/* Reserved range for service groups */
+	RPMI_SRVGRP_RESERVE_START = RPMI_SRVGRP_ID_MAX_COUNT,
+	RPMI_SRVGRP_RESERVE_END = 0x7FFF,
+	
+	/* Vendor/Implementation-specific service groups range */
+	RPMI_SRVGRP_VENDOR_START = 0x8000,
+	RPMI_SRVGRP_VENDOR_END = 0xFFFF,
+
 };
 
 /** RPMI Base ServiceGroup Service IDs */
@@ -187,11 +202,11 @@ enum rpmi_base_service_id {
 	RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION = 0x02,
 	RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN = 0x03,
 	RPMI_BASE_SRV_GET_SPEC_VERSION = 0x04,
-	RPMI_BASE_SRV_GET_HW_INFO = 0x05,
+	RPMI_BASE_SRV_GET_PLATFORM_INFO = 0x05,
 	RPMI_BASE_SRV_PROBE_SERVICE_GROUP = 0x06,
 	RPMI_BASE_SRV_GET_ATTRIBUTES = 0x07,
 	RPMI_BASE_SRV_SET_MSI = 0x08,
-	RPMI_BASE_SRV_MAX = 0x09,
+	RPMI_BASE_SRV_ID_MAX = 0x09,
 };
 
 #define RPMI_BASE_VERSION_MINOR_POS		0
@@ -204,9 +219,6 @@ enum rpmi_base_service_id {
 ((((__major) & RPMI_BASE_VERSION_MAJOR_MASK) << RPMI_BASE_VERSION_MAJOR_POS) | \
  (((__minor) & RPMI_BASE_VERSION_MINOR_MASK) << RPMI_BASE_VERSION_MINOR_POS))
 
-#define RPMI_BASE_VENDOR_ID(__id, __subid)	\
-((((__subid) & 0xffff) << 16) | ((__id) & 0xffff))
-
 #define RPMI_BASE_FLAGS_F0_PRIVILEGE		(1U << 2)
 #define RPMI_BASE_FLAGS_F0_EV_NOTIFY		(1U << 1)
 #define RPMI_BASE_FLAGS_F0_MSI_EN		1U
@@ -214,29 +226,37 @@ enum rpmi_base_service_id {
 /** RPMI System Reset ServiceGroup Service IDs */
 enum rpmi_sysreset_service_id {
 	RPMI_SYSRST_SRV_ENABLE_NOTIFICATION = 0x01,
-	RPMI_SYSRST_SRV_GET_SYSTEM_RESET_ATTRIBUTES = 0x02,
+	RPMI_SYSRST_SRV_GET_ATTRIBUTES = 0x02,
 	RPMI_SYSRST_SRV_SYSTEM_RESET = 0x03,
-	RPMI_SYSRST_SRV_MAX = 0x04,
+	RPMI_SYSRST_SRV_ID_MAX = 0x04,
 };
 
-#define RPMI_SYSRST_TYPE_SHUTDOWN		0U
-#define RPMI_SYSRST_TYPE_COLD_REBOOT		1U
-#define RPMI_SYSRST_TYPE_WARM_REBOOT		2U
+/** RPMI System Reset types */
+enum rpmi_sysrst_reset_type {
+	RPMI_SYSRST_TYPE_SHUTDOWN = 0x0,
+	RPMI_SYSRST_TYPE_COLD_REBOOT = 0x1,
+	RPMI_SYSRST_TYPE_WARM_REBOOT = 0x2,
+	RPMI_SYSRST_TYPE_MAX,
+};
 
-#define RPMI_SYSRST_ATTRIBUTES_FLAGS_SUPPORTED	1U
+#define RPMI_SYSRST_ATTRS_FLAGS_RESETTYPE	1U
 
 /** RPMI System Suspend ServiceGroup Service IDs */
 enum rpmi_system_suspend_service_id {
 	RPMI_SYSSUSP_SRV_ENABLE_NOTIFICATION = 0x01,
-	RPMI_SYSSUSP_SRV_GET_SYSTEM_SUSPEND_ATTRIBUTES = 0x02,
+	RPMI_SYSSUSP_SRV_GET_ATTRIBUTES = 0x02,
 	RPMI_SYSSUSP_SRV_SYSTEM_SUSPEND = 0x03,
-	RPMI_SYSSUSP_SRV_MAX = 0x04,
+	RPMI_SYSSUSP_SRV_ID_MAX = 0x04,
 };
 
-#define RPMI_SYSSUSP_TYPE_SUSPEND_TO_RAM		0U
+/* RPMI Suspend Types */
+enum rpmi_syssusp_suspend_type {
+	RPMI_SYSSUSP_TYPE_SUSPEND_TO_RAM = 0x0,
+	RPMI_SYSSUSP_TYPE_MAX,
+};
 
-#define RPMI_SYSSUSP_ATTRIBUTES_FLAGS_CUSTOM_RESUME	(1U << 1)
-#define RPMI_SYSSUSP_ATTRIBUTES_FLAGS_SUPPORTED		1U
+#define RPMI_SYSSUSP_ATTRS_FLAGS_RESUMEADDR	(1U << 1)
+#define RPMI_SYSSUSP_ATTRS_FLAGS_SUSPENDTYPE	1U
 
 /** RPMI Hart State Management (HSM) ServiceGroup Service IDs */
 enum rpmi_hsm_service_id {
@@ -619,19 +639,15 @@ void rpmi_context_remove_group(struct rpmi_context *cntx,
  * @param[in] name		name of the context instance
  * @param[in] trans		pointer to RPMI transport instance
  * @param[in] max_num_groups	maximum number of service groups
- * @param[in] vendor_id		vendor ID of HW
- * @param[in] vendor_sub_id	vendor SUB-ID of HW
- * @param[in] hw_info_len	length of the HW info string
- * @param[in] hw_info		pointer to the HW info string
+ * @param[in] plat_info_len	length of the Platform info string
+ * @param[in] plat_info		pointer to the Platform info string
  * @return pointer to RPMI context upon success and NULL upon failure
  */
 struct rpmi_context *rpmi_context_create(const char *name,
 					 struct rpmi_transport *trans,
 					 rpmi_uint32_t max_num_groups,
-					 rpmi_uint16_t vendor_id,
-					 rpmi_uint16_t vendor_sub_id,
-					 rpmi_uint32_t hw_info_len,
-					 const rpmi_uint8_t *hw_info);
+					 rpmi_uint32_t plat_info_len,
+					 const char *plat_info);
 
 /**
  * @brief Destroy (of free) a RPMI context

@@ -70,10 +70,8 @@ struct rpmi_test_scenario {
 	rpmi_uint32_t slot_size;
 	rpmi_uint32_t max_num_groups;
 	struct {
-		rpmi_uint16_t vendor_id;
-		rpmi_uint16_t vendor_sub_id;
-		rpmi_uint32_t hw_info_len;
-		const rpmi_uint8_t *hw_info;
+		rpmi_uint32_t plat_info_len;
+		const char *plat_info;
 	} base;
 	void *priv;
 

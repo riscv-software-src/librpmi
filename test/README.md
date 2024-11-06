@@ -24,7 +24,7 @@ RPMI_BASE_SRV_PROBE_SERVICE_GROUP                        : Succeeded!
 RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION                 : Succeeded!
 RPMI_BASE_SRV_GET_SPEC_VERSION                           : Succeeded!
 RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN                     : Succeeded!
-RPMI_BASE_SRV_GET_HW_INFO                                : Succeeded!
+RPMI_BASE_SRV_GET_PLATFORM_INFO                          : Succeeded!
 RPMI_BASE_SRV_GET_ATTRIBUTES                             : Succeeded!
 RPMI_BASE_SRV_SET_MSI                                    : Succeeded!
 
