@@ -147,7 +147,7 @@ done:
 	return RPMI_SUCCESS;
 }
 
-static struct rpmi_service rpmi_syssusp_services[RPMI_SYSSUSP_SRV_MAX] = {
+static struct rpmi_service rpmi_syssusp_services[RPMI_SYSSUSP_SRV_ID_MAX] = {
 	[RPMI_SYSRST_SRV_ENABLE_NOTIFICATION] = {
 		.service_id = RPMI_SYSRST_SRV_ENABLE_NOTIFICATION,
 		.min_a2p_request_datalen = 4,
@@ -244,7 +244,7 @@ rpmi_service_group_syssusp_create(struct rpmi_hsm *hsm,
 	group = &sgsusp->group;
 	group->name = "syssusp";
 	group->servicegroup_id = RPMI_SRVGRP_SYSTEM_SUSPEND;
-	group->max_service_id = RPMI_SYSSUSP_SRV_MAX;
+	group->max_service_id = RPMI_SYSSUSP_SRV_ID_MAX;
 	group->services = rpmi_syssusp_services;
 	group->process_events = rpmi_syssusp_process_events;
 	group->lock = rpmi_env_alloc_lock();
