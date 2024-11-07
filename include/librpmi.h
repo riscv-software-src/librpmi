@@ -260,13 +260,13 @@ enum rpmi_syssusp_suspend_type {
 /** RPMI Hart State Management (HSM) ServiceGroup Service IDs */
 enum rpmi_hsm_service_id {
 	RPMI_HSM_SRV_ENABLE_NOTIFICATION = 0x01,
-	RPMI_HSM_SRV_HART_START = 0x02,
-	RPMI_HSM_SRV_HART_STOP = 0x03,
-	RPMI_HSM_SRV_HART_SUSPEND = 0x04,
-	RPMI_HSM_SRV_GET_HART_STATUS = 0x05,
-	RPMI_HSM_SRV_GET_HART_LIST = 0x06,
-	RPMI_HSM_SRV_GET_SUSPEND_TYPES = 0x07,
-	RPMI_HSM_SRV_GET_SUSPEND_INFO = 0x08,
+	RPMI_HSM_SRV_GET_HART_STATUS = 0x02,
+	RPMI_HSM_SRV_GET_HART_LIST = 0x03,
+	RPMI_HSM_SRV_GET_SUSPEND_TYPES = 0x04,
+	RPMI_HSM_SRV_GET_SUSPEND_INFO = 0x05,
+	RPMI_HSM_SRV_HART_START = 0x06,
+	RPMI_HSM_SRV_HART_STOP = 0x07,
+	RPMI_HSM_SRV_HART_SUSPEND = 0x08,
 	RPMI_HSM_SRV_ID_MAX = 0x09,
 };
 
@@ -761,12 +761,13 @@ enum rpmi_hart_hw_state {
 	RPMI_HART_HW_STATE_SUSPENDED = 0x2,
 };
 
+#define RPMI_HSM_SUSPEND_INFO_FLAGS_TIMER_STOP		1U
+
 /** RPMI HSM suspend type */
 struct rpmi_hsm_suspend_type {
 	rpmi_uint32_t type;
 	struct {
 		rpmi_uint32_t flags;
-#define RPMI_HSM_SUSPEND_INFO_FLAGS_TIMER_STOP		1U
 		rpmi_uint32_t entry_latency_us;
 		rpmi_uint32_t exit_latency_us;
 		rpmi_uint32_t wakeup_latency_us;
