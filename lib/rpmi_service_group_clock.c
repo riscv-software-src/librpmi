@@ -457,7 +457,9 @@ rpmi_clock_sg_get_attributes(struct rpmi_service_group *group,
 	}
 
 	/* encode CLOCK_FORMAT */
-	flags = clk_attrs.type;
+	if (clk_attrs.type == RPMI_CLK_TYPE_LINEAR)
+		flags |= 1;
+
 	resp[3] = rpmi_to_xe32(trans->is_be, clk_attrs.transition_latency);
 	resp[2] = rpmi_to_xe32(trans->is_be, clk_attrs.rate_count);
 	resp[1] = rpmi_to_xe32(trans->is_be, flags);
@@ -536,12 +538,12 @@ rpmi_clock_sg_get_supp_rates(struct rpmi_service_group *group,
 	else if (clk_attrs.type == RPMI_CLK_TYPE_DISCRETE) {
 		if (clk_rate_idx > rate_count) {
 			resp[0] = rpmi_to_xe32(trans->is_be,
-					       (rpmi_uint32_t)RPMI_ERR_BAD_RANGE);
+					       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 			resp_dlen = sizeof(*resp);
 			goto done;
 		}
 
-		/* max rates a rpmi message can accomodate */
+		/* max rates a rpmi message can accommodate */
 		max_rates =
 		(RPMI_MSG_DATA_SIZE(trans->slot_size) - (4 * sizeof(*resp))) /
 					sizeof(struct rpmi_clock_rate);
@@ -562,7 +564,6 @@ rpmi_clock_sg_get_supp_rates(struct rpmi_service_group *group,
 	}
 	else {
 		DPRINTF("%s: invalid rate format for clk-%u\n", __func__, clkid);
-		/* FIXME: fail completely or return message with fail */
 		return RPMI_ERR_FAILED;
 	}
 
@@ -616,7 +617,7 @@ rpmi_clock_sg_set_config(struct rpmi_service_group *group,
 		goto done;
 	}
 
-	/* change clock config synchronusly */
+	/* change clock config synchronously */
 	status = rpmi_clock_set_state(clkgrp, clkid, new_state);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)status);
 
@@ -658,6 +659,9 @@ rpmi_clock_sg_get_config(struct rpmi_service_group *group,
 		goto done;
 	}
 
+	/** RPMI config field only return enabled or disabled state */
+	state = (state == RPMI_CLK_STATE_ENABLED)? 1 : 0;
+
 	resp[1] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)state);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 
@@ -695,7 +699,7 @@ rpmi_clock_sg_set_rate(struct rpmi_service_group *group,
 	}
 
 	flags = rpmi_to_xe32(trans->is_be,
-			      ((const rpmi_uint32_t *)response_data)[1]);
+			      ((const rpmi_uint32_t *)request_data)[1]);
 
 	/* get rate match mode from flags */
 	rate_match = flags & 0b11;
@@ -706,9 +710,9 @@ rpmi_clock_sg_set_rate(struct rpmi_service_group *group,
 	}
 
 	rate.lo = rpmi_to_xe32(trans->is_be,
-				((const rpmi_uint32_t *)response_data)[2]);
+				((const rpmi_uint32_t *)request_data)[2]);
 	rate.hi = rpmi_to_xe32(trans->is_be,
-				((const rpmi_uint32_t *)response_data)[3]);
+				((const rpmi_uint32_t *)request_data)[3]);
 
 	rate_u64 = RATE_U64(rate.lo, rate.hi);
 	if (rate_u64 == RPMI_CLOCK_RATE_INVALID || rate_u64 == 0) {
