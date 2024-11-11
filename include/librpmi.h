@@ -1364,8 +1364,14 @@ struct rpmi_cppc_platform_ops {
 	 * cppc update performance level for a hart
 	 */
 	enum rpmi_error (*cppc_update_perf)(void *priv,
-					    rpmi_uint32_t desired_perf,
-					    rpmi_uint32_t hart_index);
+					    rpmi_uint32_t hart_index,
+				     	    rpmi_uint32_t desired_perf);
+	/**
+	 * cppc get current frequency in hertz for a hart
+	 */
+	enum rpmi_error (*cppc_get_current_freq)(void *priv,
+						 rpmi_uint32_t hart_index,
+						 rpmi_uint64_t *current_freq_hz);
 };
 
 /**
@@ -1375,6 +1381,8 @@ struct rpmi_cppc_platform_ops {
  * @param[in] cppc_regs		pointer to cppc register static data
  * @param[in] mode		cppc mode (passive or active)
  * @param[in] shmem_fastchan	pointer to fastchannel shared memory instance
+ * @param[in] perf_request_shmem_offset	perf request fastchannel shmem region offset
+ * @param[in] perf_feedback_shmem_offset	perf feedback fastchannel shmem region offset
  * @param[in] ops		pointer to platform specific cppc operations
  * @param[in] ops_priv		pointer to private data of platform operations
  * @return rpmi_service_group *	pointer to RPMI service group instance upon
@@ -1385,6 +1393,8 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 			       const struct rpmi_cppc_regs *cppc_regs,
 			       enum rpmi_cppc_mode mode,
 			       struct rpmi_shmem *shmem_fastchan,
+			       rpmi_uint64_t perf_request_shmem_offset,
+			       rpmi_uint64_t perf_feedback_shmem_offset,
 			       const struct rpmi_cppc_platform_ops *ops,
 			       void *ops_priv);
 /**

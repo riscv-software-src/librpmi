@@ -25,22 +25,62 @@
 /** Get LO_32bit from Val(U64) */
 #define VAL_U64TOLO32(r)		((rpmi_uint32_t)r)
 
+/* CPPC Fastchannel size of both types as per RPMI spec */
+#define RPMI_CPPC_FASTCHAN_SIZE		8
+
 /**
- * RPMI CPPC fast channel per hart
+ * CPPC Performance Request Fastchannel
+ *
+ * Per-hart. The application processor will use this
+ * fast-channel for performance request change either
+ * by writing the desired performance level or the
+ * performance limit change.
  */
-union rpmi_cppc_hart_fastchan {
-	/** CPPC passive(default) mode */
+union rpmi_cppc_perf_request_fastchan {
+	/** CPPC passive(default) mode fastchannel */
 	struct  {
 		rpmi_uint32_t desired_perf;
 		rpmi_uint32_t __reserved;
 	} passive;
 
-	/** CPPC Active(autonomous) mode */
+	/** CPPC Active(autonomous) mode fastchannel */
 	struct {
 		rpmi_uint32_t min_perf;
 		rpmi_uint32_t max_perf;
 	} active;
 };
+
+/**
+ * CPPC Performance Feedback Fast-channel
+ *
+ * Per-hart. The platform microcontroller will write the
+ * latest current frequency after every performance change
+ * in this fast-channel.
+ *
+ * The target frequency applied is not directly deducible
+ * from the performance level since the final target frequency
+ * of the application processor is the result of many
+ * platform heuristics.
+ *
+ * The frequency is in Hertz
+ */
+
+struct rpmi_cppc_perf_feedback_fastchan {
+	rpmi_uint32_t cur_freq_low;
+	rpmi_uint32_t cur_freq_high;
+};
+
+/**
+ * Assert the size of fastchannel types with
+ * defined fastchannel size in RPMI spec.
+ */
+_Static_assert(								\
+(sizeof(union rpmi_cppc_perf_request_fastchan)) == RPMI_CPPC_FASTCHAN_SIZE,	\
+"Perf Request Fastchannel invalid size");
+
+_Static_assert(								\
+(sizeof(struct rpmi_cppc_perf_feedback_fastchan)) == RPMI_CPPC_FASTCHAN_SIZE,\
+"Perf Feedback Fastchannel structure is invalid size, expected ");
 
 /**
  * RPMI CPPC fast channel context
@@ -49,9 +89,13 @@ struct rpmi_cppc_fastchan {
 	/** shared memory backing the fast channels */
 	struct rpmi_shmem *shmem;
 
-	/** array of fastchannel entries for all harts
-	 * managed by cppc service group */
-	union rpmi_cppc_hart_fastchan *hart_fastchan;
+	rpmi_uint64_t perf_request_shmem_offset;
+	rpmi_uint64_t perf_feedback_shmem_offset;
+	/**
+	 * Array to shadow the Performance Request
+	 * fastchannels for all harts.
+	 */
+	union rpmi_cppc_perf_request_fastchan *hart_perf_request;
 };
 
 struct rpmi_cppc_group {
@@ -61,14 +105,17 @@ struct rpmi_cppc_group {
 	/** CPPC mode of operation */
 	enum rpmi_cppc_mode cppc_mode;
 
-	/** hsm context representing all harts managed by CPPC service group */
+	/**
+	 * hsm context representing all harts managed
+	 * by CPPC service group
+	 */
 	struct rpmi_hsm *hsm;
 
 	/** pointer to cppc register platform data */
 	const struct rpmi_cppc_regs *regs;
 
 	/** CPPC fast channel */
-	struct rpmi_cppc_fastchan *fastchan;
+	struct rpmi_cppc_fastchan *fastchan_ctx;
 
 	/** Private data of platform cppc operations */
 	const struct rpmi_cppc_platform_ops *ops;
@@ -83,7 +130,7 @@ struct rpmi_cppc_group {
  * regiser namespace(enum rpmi_cppc_reg_id) is a valid
  * register.
  */
-static inline rpmi_bool_t __rpmi_cppc_reg_valid(rpmi_uint32_t reg_id)
+static inline rpmi_bool_t __cppc_reg_valid(rpmi_uint32_t reg_id)
 {
 	return ((reg_id < RPMI_CPPC_ACPI_REG_MAX_IDX) ||
 	(reg_id >= RPMI_CPPC_TRANSITION_LATENCY &&
@@ -91,31 +138,64 @@ static inline rpmi_bool_t __rpmi_cppc_reg_valid(rpmi_uint32_t reg_id)
 }
 
 /**
- * Get the hart fastchannel offset
+ * Get the hart perf-request fastchannel offset
  */
-static inline rpmi_uint64_t __rpmi_cppc_hart_fc_offset(rpmi_uint32_t hart_index)
+static inline rpmi_uint64_t
+__cppc_hart_fc_perf_request_offset(struct rpmi_cppc_fastchan *fastchan_ctx,
+			      rpmi_uint32_t hart_index)
 {
-	return (hart_index * sizeof(union rpmi_cppc_hart_fastchan));
+	rpmi_uint64_t offset = fastchan_ctx->perf_request_shmem_offset +
+			(hart_index * sizeof(union rpmi_cppc_perf_request_fastchan));
+	return offset;
+}
+
+/**
+ * Get the hart perf-feedback fastchannel offset
+ */
+static inline rpmi_uint64_t
+__cppc_hart_fc_perf_feedback_offset(struct rpmi_cppc_fastchan *fastchan_ctx,
+			       rpmi_uint32_t hart_index)
+{
+	rpmi_uint64_t offset = fastchan_ctx->perf_feedback_shmem_offset +
+			(hart_index * sizeof(struct rpmi_cppc_perf_feedback_fastchan));
+	return offset;
 }
 
 /**
  * Get the desired_perf value from fastchannel of a hart
  */
 static inline rpmi_uint32_t
-__rpmi_cppc_get_fc_desired_perf(struct rpmi_cppc_group *cppcgrp,
-			     rpmi_uint32_t hart_index)
+__cppc_get_fc_desired_perf(struct rpmi_cppc_group *cppcgrp,
+			   rpmi_uint32_t hart_index)
 {
 	int rc;
-	rpmi_uint32_t val, offset;
+	rpmi_uint32_t val;
+	rpmi_uint64_t offset;
 
-	offset = __rpmi_cppc_hart_fc_offset(hart_index);
+	offset = __cppc_hart_fc_perf_request_offset(cppcgrp->fastchan_ctx, hart_index);
 
-	rc = rpmi_shmem_read(cppcgrp->fastchan->shmem, offset, &val,
+	rc = rpmi_shmem_read(cppcgrp->fastchan_ctx->shmem, offset, &val,
 			     sizeof(rpmi_uint32_t));
 	if (rc)
 		return 0;
 
 	return val;
+}
+
+static inline enum rpmi_error
+__cppc_set_fc_current_freq(struct rpmi_cppc_group *cppcgrp,
+			   rpmi_uint32_t hart_index,
+			   rpmi_uint64_t current_freq_hz)
+{
+	int rc;
+	rpmi_uint64_t offset;
+	
+	offset = __cppc_hart_fc_perf_feedback_offset(cppcgrp->fastchan_ctx, hart_index);
+
+	rc = rpmi_shmem_write(cppcgrp->fastchan_ctx->shmem, offset,
+				&current_freq_hz, sizeof(current_freq_hz));
+
+	return rc;
 }
 
 /**
@@ -215,7 +295,7 @@ static enum rpmi_error __rpmi_cppc_read_reg(struct rpmi_cppc_group *cppcgrp,
 		val = cppcgrp->regs->reference_perf;
 		break;
 	case RPMI_CPPC_DESIRED_PERF:
-		val = __rpmi_cppc_get_fc_desired_perf(cppcgrp, hart_index);
+		val = __cppc_get_fc_desired_perf(cppcgrp, hart_index);
 		break;
 	case RPMI_CPPC_PERF_LIMITED:
 		status = cppcgrp->ops->cppc_get_reg(cppcgrp->ops_priv,
@@ -255,7 +335,7 @@ static enum rpmi_error __rpmi_cppc_write_reg(struct rpmi_cppc_group *cppcgrp,
 	/* If fastchannel is supported then platform expect desired
 	 * performance value in fastchannel from supervisor software
 	 * Any write here will not take affect and denied. */
-		if (cppcgrp->fastchan) {
+		if (cppcgrp->fastchan_ctx) {
 			status = RPMI_ERR_DENIED;
 			break;
 		}
@@ -304,7 +384,7 @@ rpmi_cppc_sg_probe_reg(struct rpmi_service_group *group,
 			    ((const rpmi_uint32_t *)request_data)[1]);
 
 	/** valid cppc register */
-	if (!__rpmi_cppc_reg_valid(cppc_reg_id)) {
+	if (!__cppc_reg_valid(cppc_reg_id)) {
 		status = RPMI_ERR_INVALID_PARAM;
 		resp_dlen = sizeof(*resp);
 		goto done;
@@ -355,7 +435,7 @@ rpmi_cppc_sg_read_reg(struct rpmi_service_group *group,
 	data_hi = 0;
 
 	/** valid cppc register */
-	if (!__rpmi_cppc_reg_valid(cppc_reg_id)) {
+	if (!__cppc_reg_valid(cppc_reg_id)) {
 		status = RPMI_ERR_INVALID_PARAM;
 		resp_dlen = sizeof(*resp);
 		goto done;
@@ -431,7 +511,7 @@ rpmi_cppc_sg_write_reg(struct rpmi_service_group *group,
 	reg_val = VAL_U64(data_lo, data_hi);
 
 	/** valid cppc register */
-	if (!__rpmi_cppc_reg_valid(cppc_reg_id)) {
+	if (!__cppc_reg_valid(cppc_reg_id)) {
 		status = RPMI_ERR_INVALID_PARAM;
 		goto done;
 	}
@@ -471,14 +551,14 @@ rpmi_cppc_sg_get_fast_channel_region(struct rpmi_service_group *group,
 	struct rpmi_cppc_group *cppcgrp = group->priv;
 	rpmi_uint32_t *resp = (void *)response_data;
 
-	if (!cppcgrp->fastchan) {
+	if (!cppcgrp->fastchan_ctx) {
 		status = RPMI_ERR_NOTSUPP;
 		resp_dlen = sizeof(*resp);
 		goto done;
 	}
 
-	fastchan_region_base = rpmi_shmem_base(cppcgrp->fastchan->shmem);
-	fastchan_region_size = rpmi_shmem_size(cppcgrp->fastchan->shmem);
+	fastchan_region_base = rpmi_shmem_base(cppcgrp->fastchan_ctx->shmem);
+	fastchan_region_size = rpmi_shmem_size(cppcgrp->fastchan_ctx->shmem);
 
 	/* No doorbell, and mode is passive */
 	flags = 0;
@@ -525,7 +605,7 @@ rpmi_cppc_sg_get_fast_channel_offset(struct rpmi_service_group *group,
 {
 	enum rpmi_error status;
 	rpmi_uint32_t hart_id, hart_index, resp_dlen;
-	rpmi_uint64_t fastchan_hart_offset;
+	rpmi_uint64_t fc_hart_offset;
 	struct rpmi_cppc_group *cppcgrp = group->priv;
 	rpmi_uint32_t *resp = (void *)response_data;
 
@@ -540,13 +620,22 @@ rpmi_cppc_sg_get_fast_channel_offset(struct rpmi_service_group *group,
 		goto done;
 	}
 
-	fastchan_hart_offset = __rpmi_cppc_hart_fc_offset(hart_index);
+	fc_hart_offset = __cppc_hart_fc_perf_request_offset(cppcgrp->fastchan_ctx,
+						       hart_index);
+
+	resp[1] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)fc_hart_offset);
+	resp[2] = rpmi_to_xe32(trans->is_be,
+			(rpmi_uint32_t)(fc_hart_offset >> 32));
+
+	fc_hart_offset = __cppc_hart_fc_perf_feedback_offset(cppcgrp->fastchan_ctx,
+							hart_index);
+
+	resp[3] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)fc_hart_offset);
+	resp[4] = rpmi_to_xe32(trans->is_be,
+			(rpmi_uint32_t)(fc_hart_offset >> 32));
 
 	status = RPMI_SUCCESS;
-	resp[1] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)fastchan_hart_offset);
-	resp[2] = rpmi_to_xe32(trans->is_be,
-			(rpmi_uint32_t)(fastchan_hart_offset >> 32));
-	resp_dlen = 3 * sizeof(*resp);
+	resp_dlen = 5 * sizeof(*resp);
 
 done:
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)status);
@@ -642,18 +731,31 @@ static enum rpmi_error rpmi_cppc_process_events(struct rpmi_service_group *group
 
 	enum rpmi_error status = RPMI_SUCCESS;
 	rpmi_uint32_t hart_idx, desired_perf;
-	union rpmi_cppc_hart_fastchan *fc_hart;
+	rpmi_uint64_t current_freq;
+	union rpmi_cppc_perf_request_fastchan *hart_perf_request;
 	struct rpmi_cppc_group *cppcgrp = group->priv;
 
 	for (hart_idx = 0; hart_idx < cppcgrp->hart_count; hart_idx++) {
-		fc_hart = &cppcgrp->fastchan->hart_fastchan[hart_idx];
-		desired_perf = __rpmi_cppc_get_fc_desired_perf(cppcgrp, hart_idx);
+		hart_perf_request = &cppcgrp->fastchan_ctx->hart_perf_request[hart_idx];
+		desired_perf = __cppc_get_fc_desired_perf(cppcgrp, hart_idx);
 
-		if (fc_hart->passive.desired_perf != desired_perf) {
-			fc_hart->passive.desired_perf = desired_perf;
+		if (hart_perf_request->passive.desired_perf != desired_perf) {
+			hart_perf_request->passive.desired_perf = desired_perf;
 			status = cppcgrp->ops->cppc_update_perf(cppcgrp->ops_priv,
-					   desired_perf,
-					   hart_idx);
+					   hart_idx,
+					   desired_perf);
+			/**
+			 * Dont throw error at this point and
+			 * directly get the current frequency for hart
+			 * for which the cppc_update_perf is called. If
+			 * the performance level update failed, it will
+			 * be reflected into the performance feedback
+			 **/
+			cppcgrp->ops->cppc_get_current_freq(cppcgrp->ops_priv,
+							    hart_idx,
+							    &current_freq);
+			status = __cppc_set_fc_current_freq(cppcgrp, hart_idx,
+							    current_freq);
 		}
 	}
 
@@ -662,53 +764,139 @@ static enum rpmi_error rpmi_cppc_process_events(struct rpmi_service_group *group
 
 static struct rpmi_cppc_fastchan *
 rpmi_cppc_fastchan_create(rpmi_uint32_t hart_count,
-			  struct rpmi_shmem *shmem_fastchan)
+			  struct rpmi_shmem *shmem_fastchan,
+			  rpmi_uint64_t perf_request_shmem_offset,
+			  rpmi_uint64_t perf_feedback_shmem_offset)
 {
-	struct rpmi_cppc_fastchan *cppc_fastchan;
-	union rpmi_cppc_hart_fastchan *hart_fastchan_array;
-	rpmi_uint32_t size = rpmi_shmem_size(shmem_fastchan);
+	struct rpmi_cppc_fastchan *cppc_fastchan_ctx;
+	rpmi_size_t fc_perf_request_region_size, fc_perf_feedback_region_size;
+	union rpmi_cppc_perf_request_fastchan *fc_hart_perf_request_array;
 
-	/** size if not 0 and its not power of 2 */
-	if (!size && (size & (size - 1))) {
+	rpmi_uint32_t shmem_size = rpmi_shmem_size(shmem_fastchan);
+	rpmi_uint64_t shmem_base = rpmi_shmem_base(shmem_fastchan);
+
+	/** check if size is not zero and also its power of 2 */
+	if (!shmem_size || (shmem_size & (shmem_size - 1))) {
 		DPRINTF("%s: CPPC fastchan shmem size not power-of-2\n",
 		__func__);
 		return NULL;
 	}
 
-	/** size must accomodate fast channel entries for all harts */
-	if (size < (hart_count * sizeof(union rpmi_cppc_hart_fastchan))) {
+	/**
+	 * check if perf request and perf feedback region are within the
+	 * shared memory region */
+	if (perf_request_shmem_offset > shmem_size ||
+		perf_feedback_shmem_offset > shmem_size ) {
+		DPRINTF("%s: CPPC fastchan offsets are outside shmem region\n",
+		__func__);
+		return NULL;
+	}
+	
+	/**
+	 * RPMI requires shmem_base to be aligned to fastchannel size. But
+	 * RPMI does not mandate positions of Perf Request fastchannel and
+	 * Perf Feedback fastchannel entries groups in that region and
+	 * implementation can configure that using the respective offsets
+	 * for perf_request and perf_feedback fastchannel in the single shmem
+	 * for all the fastchannels for all harts.
+	 *
+	 * Due to that, check the alignment of perf_request and perf_feedback
+	 * addresses in that shared memory region.
+	 */
+	if ((shmem_base & (RPMI_CPPC_FASTCHAN_SIZE - 1)) ||
+		(perf_request_shmem_offset & (RPMI_CPPC_FASTCHAN_SIZE - 1)) ||
+		(perf_feedback_shmem_offset & (RPMI_CPPC_FASTCHAN_SIZE - 1))) {
+		DPRINTF("%s: CPPC fastchan shmem base not aligned to fastchan size\n",
+		__func__);
+		return NULL;
+	}
+
+
+	fc_perf_request_region_size =
+		hart_count * sizeof(union rpmi_cppc_perf_request_fastchan);
+	fc_perf_feedback_region_size =
+		hart_count * sizeof(struct rpmi_cppc_perf_feedback_fastchan);
+
+	/**
+	 * Check if the perf request and perf feedback regions overlaps
+	 * with each other
+	 */
+
+	if (perf_request_shmem_offset == perf_feedback_shmem_offset) {
+		DPRINTF("%s: Perf request region overlaps with Perf Feedback region\n",
+		__func__);
+		return NULL;
+	}
+
+	if (perf_request_shmem_offset < perf_feedback_shmem_offset &&
+		perf_feedback_shmem_offset < fc_perf_request_region_size) {
+		DPRINTF("%s: Perf request region overlaps with Perf Feedback region\n",
+		__func__);
+		return NULL;
+	}
+
+	if (perf_feedback_shmem_offset < perf_request_shmem_offset &&
+		perf_request_shmem_offset < fc_perf_feedback_region_size) {
+		DPRINTF("%s: Perf request region overlaps with Perf Feedback region\n",
+		__func__);
+		return NULL;
+	}
+
+	/**
+	 * LATER: Currently its assumed that the Perf Request fastchannels subregion
+	 * will be consequtive to Perf Feedback fastchannels subregion. This means
+	 * that the Hart(0) Perf Feedback fastchannel will be right next to the
+	 * Hart(N-1) Perf Request fastchannel, may possibily sharing the same cache
+	 * line and subject to performance penealty due to false sharing.
+	 *
+	 * This can be avoided if a memory gaurd is added inbetween the two
+	 * subregions of atleast 64-bytes.
+	 * This arrangement may incur a performance penalty.
+	 */
+
+	/**
+	 * total shared memory size must accommodate fast channel
+	 * entries for all harts
+	 */
+	if (shmem_size < (fc_perf_request_region_size + fc_perf_feedback_region_size)) {
 		DPRINTF("%s: CPPC fastchan shmem size less than required\n",
 		__func__);
 		return NULL;
 	}
 
-	/** CPPC fast channel shared memory aligned to a hart fast channel entry */
-	if (size & (sizeof(union rpmi_cppc_hart_fastchan) - 1))
+	/**
+	 * check if shared memory base address is aligned to the
+	 * maximum of the fast channel sizes in both types
+	 */
+	if (shmem_base & (RPMI_CPPC_FASTCHAN_SIZE - 1))
 		return NULL;
 
-	if (rpmi_shmem_fill(shmem_fastchan, 0, 0, size))
+	if (rpmi_shmem_fill(shmem_fastchan, 0, 0, shmem_size))
 		return NULL;
 
-	cppc_fastchan = rpmi_env_zalloc(sizeof(*cppc_fastchan));
-	if (!cppc_fastchan) {
+	/** CPPC service group fastchannel context instance allocation */
+	cppc_fastchan_ctx = rpmi_env_zalloc(sizeof(*cppc_fastchan_ctx));
+	if (!cppc_fastchan_ctx) {
 		DPRINTF("%s: failed to allocate cppc fastchannel instance\n",
 		__func__);
 		return NULL;
 	}
 
-	hart_fastchan_array =
-		rpmi_env_zalloc(hart_count * sizeof(*hart_fastchan_array));
-	if (!hart_fastchan_array) {
-		DPRINTF("%s: failed to allocate fastchannel array for harts\n",
+	fc_hart_perf_request_array =
+		rpmi_env_zalloc(fc_perf_request_region_size);
+	if (!fc_hart_perf_request_array) {
+		DPRINTF("%s: failed to allocate perf_request fastchannel array\n",
 		__func__);
-		rpmi_env_free(cppc_fastchan);
+		rpmi_env_free(cppc_fastchan_ctx);
 		return NULL;
 	}
 
-	cppc_fastchan->hart_fastchan = hart_fastchan_array;
-	cppc_fastchan->shmem = shmem_fastchan;
+	cppc_fastchan_ctx->hart_perf_request = fc_hart_perf_request_array;
+	cppc_fastchan_ctx->shmem = shmem_fastchan;
+	cppc_fastchan_ctx->perf_request_shmem_offset = perf_request_shmem_offset;
+	cppc_fastchan_ctx->perf_feedback_shmem_offset = perf_feedback_shmem_offset;
 
-	return cppc_fastchan;
+	return cppc_fastchan_ctx;
 }
 
 struct rpmi_service_group *
@@ -716,12 +904,14 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 			       const struct rpmi_cppc_regs *cppc_regs,
 			       enum rpmi_cppc_mode mode,
 			       struct rpmi_shmem *shmem_fastchan,
+			       rpmi_uint64_t perf_request_shmem_offset,
+			       rpmi_uint64_t perf_feedback_shmem_offset,
 			       const struct rpmi_cppc_platform_ops *ops,
 			       void *ops_priv)
 {
 	struct rpmi_cppc_group *cppcgrp;
 	struct rpmi_service_group *group;
-	struct rpmi_cppc_fastchan *cppc_fastchan;
+	struct rpmi_cppc_fastchan *cppc_fastchan_ctx;
 	rpmi_uint32_t hart_count;
 
 	if (!hsm || !cppc_regs || !shmem_fastchan) {
@@ -750,8 +940,11 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 		return NULL;
 	}
 
-	cppc_fastchan = rpmi_cppc_fastchan_create(hart_count, shmem_fastchan);
-	if (!cppc_fastchan) {
+	cppc_fastchan_ctx = rpmi_cppc_fastchan_create(hart_count,
+						      shmem_fastchan,
+						      perf_request_shmem_offset,
+						      perf_feedback_shmem_offset);
+	if (!cppc_fastchan_ctx) {
 		DPRINTF("%s: failed to create cppc fastchannel\n", __func__);
 		rpmi_env_free(cppcgrp);
 		return NULL;
@@ -773,7 +966,7 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 	 * conversion is done by platform only.
 	 */
 	cppcgrp->regs = cppc_regs;
-	cppcgrp->fastchan = cppc_fastchan;
+	cppcgrp->fastchan_ctx = cppc_fastchan_ctx;
 	cppcgrp->hart_count = hart_count;
 	cppcgrp->hsm = hsm;
 	cppcgrp->ops = ops;
@@ -802,8 +995,8 @@ void rpmi_service_group_cppc_destroy(struct rpmi_service_group *group)
 	}
 
 	cppcgrp = group->priv;
-	rpmi_env_free(cppcgrp->fastchan->hart_fastchan);
-	rpmi_env_free(cppcgrp->fastchan);
+	rpmi_env_free(cppcgrp->fastchan_ctx->hart_perf_request);
+	rpmi_env_free(cppcgrp->fastchan_ctx);
 	rpmi_env_free_lock(group->lock);
 	rpmi_env_free(group->priv);
 }
