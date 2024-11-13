@@ -25,51 +25,6 @@
 /** Get LO_32bit from Val(U64) */
 #define VAL_U64TOLO32(r)		((rpmi_uint32_t)r)
 
-/* CPPC Fastchannel size of both types as per RPMI spec */
-#define RPMI_CPPC_FASTCHAN_SIZE		8
-
-/**
- * CPPC Performance Request Fastchannel
- *
- * Per-hart. The application processor will use this
- * fast-channel for performance request change either
- * by writing the desired performance level or the
- * performance limit change.
- */
-union rpmi_cppc_perf_request_fastchan {
-	/** CPPC passive(default) mode fastchannel */
-	struct  {
-		rpmi_uint32_t desired_perf;
-		rpmi_uint32_t __reserved;
-	} passive;
-
-	/** CPPC Active(autonomous) mode fastchannel */
-	struct {
-		rpmi_uint32_t min_perf;
-		rpmi_uint32_t max_perf;
-	} active;
-};
-
-/**
- * CPPC Performance Feedback Fast-channel
- *
- * Per-hart. The platform microcontroller will write the
- * latest current frequency after every performance change
- * in this fast-channel.
- *
- * The target frequency applied is not directly deducible
- * from the performance level since the final target frequency
- * of the application processor is the result of many
- * platform heuristics.
- *
- * The frequency is in Hertz
- */
-
-struct rpmi_cppc_perf_feedback_fastchan {
-	rpmi_uint32_t cur_freq_low;
-	rpmi_uint32_t cur_freq_high;
-};
-
 /**
  * Assert the size of fastchannel types with
  * defined fastchannel size in RPMI spec.
