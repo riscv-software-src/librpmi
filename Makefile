@@ -221,7 +221,7 @@ endif
 .PHONY: docs
 docs:
 	$(CMD_PREFIX)mkdir -p $(docs_dir)
-	$(CMD_PREFIX)cat docs/Doxyfile | sed -e "s#@@SRC_DIR@@#.#" -e "s#@@BUILD_DIR@@#$(build_dir)#" > $(docs_dir)/Doxyfile
+	$(CMD_PREFIX)cat docs/doxygen/Doxyfile | sed -e "s#@@SRC_DIR@@#.#" -e "s#@@BUILD_DIR@@#$(build_dir)#" > $(docs_dir)/Doxyfile
 	$(CMD_PREFIX)doxygen $(docs_dir)/Doxyfile
 	$(CMD_PREFIX)make -C $(docs_dir)/latex
 
