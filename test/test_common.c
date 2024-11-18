@@ -252,6 +252,7 @@ int test_scenario_default_init(struct rpmi_test_scenario *scene)
 
 	scene->cntx = rpmi_context_create("test_context", scene->xport,
 					  scene->max_num_groups,
+					  RPMI_PRIVILEGE_M_MODE,
 					  scene->base.plat_info_len, scene->base.plat_info);
 	if (!scene->cntx) {
 		printf("%s: failed to create test rpmi_context\n ", __func__);
