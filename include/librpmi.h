@@ -169,6 +169,19 @@ enum rpmi_queue_type {
 	RPMI_QUEUE_MAX,
 };
 
+/**
+ * RISC-V privilege levels associated with
+ * RPMI context and service groups
+ */
+enum rpmi_privilege_level {
+	RPMI_PRIVILEGE_S_MODE = 0,
+	RPMI_PRIVILEGE_M_MODE = 1,
+	RPMI_PRIVILEGE_LEVEL_MAX_IDX,
+};
+
+#define RPMI_PRIVILEGE_S_MODE_MASK	(1U << RPMI_PRIVILEGE_S_MODE)
+#define RPMI_PRIVILEGE_M_MODE_MASK	(1U << RPMI_PRIVILEGE_M_MODE)
+
 /** RPMI ServiceGroups IDs */
 enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_ID_MIN = 0,
@@ -639,6 +652,7 @@ void rpmi_context_remove_group(struct rpmi_context *cntx,
  * @param[in] name		name of the context instance
  * @param[in] trans		pointer to RPMI transport instance
  * @param[in] max_num_groups	maximum number of service groups
+ * @param[in] privilege_level	RISC-V privilege level of the RPMI context
  * @param[in] plat_info_len	length of the Platform info string
  * @param[in] plat_info		pointer to the Platform info string
  * @return pointer to RPMI context upon success and NULL upon failure
@@ -646,6 +660,7 @@ void rpmi_context_remove_group(struct rpmi_context *cntx,
 struct rpmi_context *rpmi_context_create(const char *name,
 					 struct rpmi_transport *trans,
 					 rpmi_uint32_t max_num_groups,
+					 enum rpmi_privilege_level privilege_level,
 					 rpmi_uint32_t plat_info_len,
 					 const char *plat_info);
 
@@ -701,6 +716,14 @@ struct rpmi_service_group {
 
 	/** Maximum service ID of the service group */
 	rpmi_uint8_t max_service_id;
+
+	/**
+	 * RISC-V privilagel level bitmap where this group
+	 * is allowed to be accessible. enum rpmi_privilege_level
+	 * values represents the bit positions which if are
+	 * set, the access to that privilegel level is enabled
+	 */
+	rpmi_uint32_t privilege_level_bitmap;
 
 	/** Array of services indexed by service ID */
 	struct rpmi_service *services;

@@ -29,6 +29,9 @@ struct rpmi_context {
 	/** Current number of service groups in the context */
 	rpmi_uint32_t num_groups;
 
+	/** RISC-V privilege level of RPMI context */
+	enum rpmi_privilege_level privilege_level;
+
 	/** Current set of service groups in the context as an array */
 	struct rpmi_service_group **groups;
 
@@ -177,10 +180,17 @@ static enum rpmi_error rpmi_base_get_attributes(struct rpmi_service_group *group
 						rpmi_uint8_t *response_data)
 {
 	rpmi_uint32_t *resp = (void *)response_data;
+	struct rpmi_context *cntx = ((struct rpmi_base_group *)group->priv)->cntx;
+	rpmi_uint32_t flags = 0;
 
+	flags |= RPMI_BASE_FLAGS_F0_MSI_EN;
+	/* Set the context privilege level bit if context priv mode is M-mode */
+	flags |= (cntx->privilege_level == RPMI_PRIVILEGE_M_MODE_MASK) ?
+					RPMI_BASE_FLAGS_F0_PRIVILEGE : 0;
+	
 	*response_datalen = 5 * sizeof(*resp);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
-	resp[1] = rpmi_to_xe32(trans->is_be, RPMI_BASE_FLAGS_F0_MSI_EN);
+	resp[1] = rpmi_to_xe32(trans->is_be, flags);
 	resp[2] = 0;
 	resp[3] = 0;
 	resp[4] = 0;
@@ -292,6 +302,8 @@ static struct rpmi_service_group *rpmi_base_group_create(struct rpmi_context *cn
 	group = &base->group;
 	group->name = "base";
 	group->servicegroup_id = RPMI_SRVGRP_BASE;
+	/* Allowed for both M-mode and S-mode RPMI context */
+	group->privilege_level_bitmap = RPMI_PRIVILEGE_M_MODE_MASK | RPMI_PRIVILEGE_S_MODE_MASK;
 	group->max_service_id = RPMI_BASE_SRV_ID_MAX;
 	group->services = rpmi_base_services;
 	group->lock = rpmi_env_alloc_lock();
@@ -529,6 +541,18 @@ struct rpmi_service_group *rpmi_context_find_group(struct rpmi_context *cntx,
 	return ret;
 }
 
+static enum rpmi_error rpmi_context_verify_privilege_level(struct rpmi_context *cntx,
+						      struct rpmi_service_group *group)
+{
+	if (!group->privilege_level_bitmap)
+		return RPMI_ERR_INVALID_PARAM;
+
+	if (group->privilege_level_bitmap & (1U << cntx->privilege_level))
+		return RPMI_SUCCESS;
+
+	return RPMI_ERR_DENIED;
+}
+
 enum rpmi_error rpmi_context_add_group(struct rpmi_context *cntx,
 				       struct rpmi_service_group *group)
 {
@@ -557,6 +581,10 @@ enum rpmi_error rpmi_context_add_group(struct rpmi_context *cntx,
 			goto fail_unlock;
 		}
 	}
+
+	rc = rpmi_context_verify_privilege_level(cntx, group);
+	if (rc)
+		goto fail_unlock;
 
 	cntx->groups[cntx->num_groups] = group;
 	cntx->num_groups++;
@@ -597,13 +625,15 @@ void rpmi_context_remove_group(struct rpmi_context *cntx,
 struct rpmi_context *rpmi_context_create(const char *name,
 					 struct rpmi_transport *trans,
 					 rpmi_uint32_t max_num_groups,
+					 enum rpmi_privilege_level privilege_level,
 					 rpmi_uint32_t plat_info_len,
 					 const char *plat_info)
 {
 	struct rpmi_context *cntx;
 	enum rpmi_error rc;
 
-	if (!name || !trans || !max_num_groups) {
+	if (!name || !trans || !max_num_groups ||
+			privilege_level >= RPMI_PRIVILEGE_LEVEL_MAX_IDX) {
 		DPRINTF("%s: invalid parameters\n", __func__);
 		return NULL;
 	}
@@ -622,6 +652,7 @@ struct rpmi_context *rpmi_context_create(const char *name,
 	cntx->name = name;
 	cntx->trans = trans;
 	cntx->max_num_groups = max_num_groups;
+	cntx->privilege_level = privilege_level;
 
 	/**
 	 * Allocate for the array of pointers to the service
