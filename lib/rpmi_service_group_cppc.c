@@ -931,6 +931,8 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 	group = &cppcgrp->group;
 	group->name = "cppc";
 	group->servicegroup_id = RPMI_SRVGRP_CPPC;
+	group->servicegroup_version =
+		RPMI_BASE_VERSION(RPMI_SPEC_VERSION_MAJOR, RPMI_SPEC_VERSION_MINOR);
 	/* Allowed for both M-mode and S-mode RPMI context */
 	group->privilege_level_bitmap = RPMI_PRIVILEGE_M_MODE_MASK | RPMI_PRIVILEGE_S_MODE_MASK;
 	group->max_service_id = RPMI_CPPC_SRV_ID_MAX;

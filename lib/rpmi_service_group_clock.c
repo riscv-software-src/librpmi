@@ -857,6 +857,8 @@ rpmi_service_group_clock_create(rpmi_uint32_t clock_count,
 	group = &clkgrp->group;
 	group->name = "clk";
 	group->servicegroup_id = RPMI_SRVGRP_CLOCK;
+	group->servicegroup_version =
+		RPMI_BASE_VERSION(RPMI_SPEC_VERSION_MAJOR, RPMI_SPEC_VERSION_MINOR);
 	/* Allowed for both M-mode and S-mode RPMI context */
 	group->privilege_level_bitmap = RPMI_PRIVILEGE_M_MODE_MASK | RPMI_PRIVILEGE_S_MODE_MASK;
 	group->max_service_id = RPMI_CLK_SRV_ID_MAX;

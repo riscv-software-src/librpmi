@@ -140,6 +140,8 @@ rpmi_service_group_sysreset_create(rpmi_uint32_t sysreset_type_count,
 	group = &sgrst->group;
 	group->name = "sysreset";
 	group->servicegroup_id = RPMI_SRVGRP_SYSTEM_RESET;
+	group->servicegroup_version =
+		RPMI_BASE_VERSION(RPMI_SPEC_VERSION_MAJOR, RPMI_SPEC_VERSION_MINOR);
 	/* Allowed only for M-mode RPMI context */
 	group->privilege_level_bitmap = RPMI_PRIVILEGE_M_MODE_MASK;
 	group->max_service_id = RPMI_SYSRST_SRV_ID_MAX;
