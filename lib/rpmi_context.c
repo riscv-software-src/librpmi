@@ -185,9 +185,9 @@ static enum rpmi_error rpmi_base_get_attributes(struct rpmi_service_group *group
 
 	flags |= RPMI_BASE_FLAGS_F0_MSI_EN;
 	/* Set the context privilege level bit if context priv mode is M-mode */
-	flags |= (cntx->privilege_level == RPMI_PRIVILEGE_M_MODE_MASK) ?
+	flags |= (cntx->privilege_level == RPMI_PRIVILEGE_M_MODE) ?
 					RPMI_BASE_FLAGS_F0_PRIVILEGE : 0;
-	
+
 	*response_datalen = 5 * sizeof(*resp);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 	resp[1] = rpmi_to_xe32(trans->is_be, flags);
