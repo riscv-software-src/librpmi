@@ -159,14 +159,18 @@ static enum rpmi_error rpmi_base_probe_group(struct rpmi_service_group *group,
 {
 	rpmi_uint32_t *resp = (void *)response_data;
 	struct rpmi_base_group *base = group->priv;
-	rpmi_uint32_t probe_id;
+	struct rpmi_service_group *srvgrp;
+	rpmi_uint32_t probe_id, ver;
 
 	probe_id = rpmi_to_xe32(trans->is_be, ((const rpmi_uint32_t *)request_data)[0]);
 
 	*response_datalen = 2 * sizeof(*resp);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
-	resp[1] = rpmi_context_find_group(base->cntx, probe_id) ?
-			rpmi_to_xe32(trans->is_be, 1) : 0;
+	
+	srvgrp = rpmi_context_find_group(base->cntx, probe_id);
+	ver = srvgrp ? srvgrp->servicegroup_version : 0;
+
+	resp[1] = rpmi_to_xe32(trans->is_be, ver);
 
 	return RPMI_SUCCESS;
 }
@@ -302,8 +306,11 @@ static struct rpmi_service_group *rpmi_base_group_create(struct rpmi_context *cn
 	group = &base->group;
 	group->name = "base";
 	group->servicegroup_id = RPMI_SRVGRP_BASE;
+	group->servicegroup_version =
+		RPMI_BASE_VERSION(RPMI_SPEC_VERSION_MAJOR, RPMI_SPEC_VERSION_MINOR);
 	/* Allowed for both M-mode and S-mode RPMI context */
-	group->privilege_level_bitmap = RPMI_PRIVILEGE_M_MODE_MASK | RPMI_PRIVILEGE_S_MODE_MASK;
+	group->privilege_level_bitmap =
+		RPMI_PRIVILEGE_M_MODE_MASK | RPMI_PRIVILEGE_S_MODE_MASK;
 	group->max_service_id = RPMI_BASE_SRV_ID_MAX;
 	group->services = rpmi_base_services;
 	group->lock = rpmi_env_alloc_lock();

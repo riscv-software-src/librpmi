@@ -717,6 +717,9 @@ struct rpmi_service_group {
 	/** Maximum service ID of the service group */
 	rpmi_uint8_t max_service_id;
 
+	/** Service group version */
+	rpmi_uint32_t servicegroup_version;
+
 	/**
 	 * RISC-V privilagel level bitmap where this group
 	 * is allowed to be accessible. enum rpmi_privilege_level

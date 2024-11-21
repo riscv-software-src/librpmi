@@ -244,6 +244,8 @@ rpmi_service_group_syssusp_create(struct rpmi_hsm *hsm,
 	group = &sgsusp->group;
 	group->name = "syssusp";
 	group->servicegroup_id = RPMI_SRVGRP_SYSTEM_SUSPEND;
+	group->servicegroup_version =
+		RPMI_BASE_VERSION(RPMI_SPEC_VERSION_MAJOR, RPMI_SPEC_VERSION_MINOR);
 	/* Allowed only for M-mode RPMI context */
 	group->privilege_level_bitmap = RPMI_PRIVILEGE_M_MODE_MASK;
 	group->max_service_id = RPMI_SYSSUSP_SRV_ID_MAX;
