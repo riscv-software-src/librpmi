@@ -238,6 +238,18 @@ enum rpmi_base_service_id {
 #define RPMI_BASE_FLAGS_F0_PRIVILEGE		(1U << 1)
 #define RPMI_BASE_FLAGS_F0_EV_NOTIFY		(1U << 0)
 
+/** RPMI System MSI (SYSMSI) ServiceGroup Service IDs */
+enum rpmi_sysmsi_service_id {
+	RPMI_SYSMSI_SRV_ENABLE_NOTIFICATION = 0x01,
+	RPMI_SYSMSI_SRV_GET_ATTRIBUTES = 0x2,
+	RPMI_SYSMSI_SRV_GET_MSI_ATTRIBUTES = 0x3,
+	RPMI_SYSMSI_SRV_SET_MSI_STATE = 0x4,
+	RPMI_SYSMSI_SRV_GET_MSI_STATE = 0x5,
+	RPMI_SYSMSI_SRV_SET_MSI_TARGET = 0x6,
+	RPMI_SYSMSI_SRV_GET_MSI_TARGET = 0x7,
+	RPMI_SYSMSI_SRV_ID_MAX,
+};
+
 /** RPMI System Reset ServiceGroup Service IDs */
 enum rpmi_sysreset_service_id {
 	RPMI_SYSRST_SRV_ENABLE_NOTIFICATION = 0x01,
@@ -1471,12 +1483,84 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 			       rpmi_uint64_t perf_feedback_shmem_offset,
 			       const struct rpmi_cppc_platform_ops *ops,
 			       void *ops_priv);
+
 /**
  * @brief Destroy(free) a cppc service group instance
  *
  * @param[in] group	pointer to RPMI service group instance
  */
 void rpmi_service_group_cppc_destroy(struct rpmi_service_group *group);
+
+/** @} */
+
+/**
+ * \defgroup LIBRPMI_SYSMSISRVGRP_INTERFACE RPMI System MSI Service Group Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for RPMI system MSI service group.
+ * @{
+ */
+
+/** Preferred privilege level bit of the MSI attributes */
+#define RPMI_SYSMSI_MSI_ATTRIBUTES_FLAG0_PREF_PRIV	(1U << 0)
+
+/** System MSI state enable bit */
+#define RPMI_SYSMSI_MSI_STATE_ENABLE			(1U << 0)
+
+/** System MSI state pending bit */
+#define RPMI_SYSMSI_MSI_STATE_PENDING			(1U << 1)
+
+struct rpmi_sysmsi_platform_ops {
+	/** Check whether given MSI target address is valid or not (Mandatory) */
+	rpmi_bool_t (*validate_msi_addr)(void *priv, rpmi_uint64_t msi_addr);
+
+	/** Check whether M-mode is the preferred for handling given system MSI (Optional) */
+	rpmi_bool_t (*mmode_preferred)(void *priv, rpmi_uint32_t msi_index);
+
+	/** Get the name of given system MSI (Optional) */
+	void (*get_name)(void *priv, rpmi_uint32_t msi_index,
+			 char *out_name, rpmi_uint32_t out_name_sz);
+};
+
+/**
+ * @brief Inject a MSI to the system MSI service group instance
+ *
+ * @param[in] group	pointer to RPMI service group instance
+ * @param[in] msi_index	system MSI index
+ * @return enum rpmi_error
+ */
+enum rpmi_error rpmi_service_group_sysmsi_inject(struct rpmi_service_group *group,
+						 rpmi_uint32_t msi_index);
+
+/**
+ * @brief Inject P2A doorbell system MSI to the system MSI service group instance
+ *
+ * @param[in] group	pointer to RPMI service group instance
+ * @return enum rpmi_error
+ */
+enum rpmi_error rpmi_service_group_sysmsi_inject_p2a(struct rpmi_service_group *group);
+
+/**
+ * @brief Destroy(free) a system MSI service group instance
+ *
+ * @param[in] group	pointer to RPMI service group instance
+ */
+void rpmi_service_group_sysmsi_destroy(struct rpmi_service_group *group);
+
+/**
+ * @brief Create a system MSI service group instance
+ *
+ * @param[in] num_msi		number of system MSIs
+ * @param[in] p2a_msi_index	system MSI index of P2A doorbell
+ *				(Note: A value greater than num_msi means not supported)
+ * @param[in] ops		pointer to platform specific system MSI operations
+ * @param[in] ops_priv		pointer to private data of platform operations
+ * success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_sysmsi_create(rpmi_uint32_t num_msi,
+				 rpmi_uint32_t p2a_msi_index,
+				 const struct rpmi_sysmsi_platform_ops *ops,
+				 void *ops_priv);
 
 /** @} */
 
