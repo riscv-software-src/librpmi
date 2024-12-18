@@ -201,7 +201,12 @@ enum rpmi_servicegroup_id {
 	
 	/* Reserved range for service groups */
 	RPMI_SRVGRP_RESERVE_START = RPMI_SRVGRP_ID_MAX_COUNT,
-	RPMI_SRVGRP_RESERVE_END = 0x7FFF,
+	RPMI_SRVGRP_RESERVE_END = 0x7BFF,
+
+	/* Experimental service groups range */
+	RPMI_SRVGRP_EXPERIMENTAL_START = 0x7C00,
+	RPMI_SRVGRP_SYSTEM_MSI = 0x7C00,
+	RPMI_SRVGRP_EXPERIMENTAL_END = 0x7FFF,
 	
 	/* Vendor/Implementation-specific service groups range */
 	RPMI_SRVGRP_VENDOR_START = 0x8000,
@@ -306,6 +311,17 @@ enum rpmi_cppc_service_id {
 	RPMI_CPPC_SRV_GET_FAST_CHANNEL_OFFSET = 0x06,
 	RPMI_CPPC_SRV_GET_HART_LIST = 0x07,
 	RPMI_CPPC_SRV_ID_MAX,
+};
+
+/** RPMI System MSI (SYSMSI) ServiceGroup Service IDs */
+enum rpmi_sysmsi_service_id {
+	RPMI_SYSMSI_SRV_ENABLE_NOTIFICATION = 0x01,
+	RPMI_SYSMSI_SRV_NUM_MSIS = 0x2,
+	RPMI_SYSMSI_SRV_SET_CONFIG = 0x3,
+	RPMI_SYSMSI_SRV_GET_CONFIG = 0x4,
+	RPMI_SYSMSI_SRV_SET_TARGET = 0x5,
+	RPMI_SYSMSI_SRV_GET_TARGET = 0x6,
+	RPMI_SYSMSI_SRV_ID_MAX,
 };
 
 /** @} */
@@ -1468,12 +1484,39 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 			       rpmi_uint64_t perf_feedback_shmem_offset,
 			       const struct rpmi_cppc_platform_ops *ops,
 			       void *ops_priv);
+
 /**
  * @brief Destroy(free) a cppc service group instance
  *
  * @param[in] group	pointer to RPMI service group instance
  */
 void rpmi_service_group_cppc_destroy(struct rpmi_service_group *group);
+
+/**
+ * @brief Inject a MSI to the system MSI service group instance
+ *
+ * @param[in] group	pointer to RPMI service group instance
+ * @param[in] msi_index	index of the MSI
+ */
+enum rpmi_error rpmi_service_group_sysmsi_inject(struct rpmi_service_group *group,
+						 rpmi_uint32_t msi_index);
+
+/**
+ * @brief Destroy(free) a system MSI service group instance
+ *
+ * @param[in] group	pointer to RPMI service group instance
+ */
+void rpmi_service_group_sysmsi_destroy(struct rpmi_service_group *group);
+
+/**
+ * @brief Create a system MSI service group instance
+ *
+ * @param[in] num_msis		number of system MSIs
+ * @param[in] ops		pointer to platform specific system MSI operations
+ * success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_sysmsi_create(rpmi_uint32_t num_msis);
 
 /** @} */
 
