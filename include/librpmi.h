@@ -201,7 +201,11 @@ enum rpmi_servicegroup_id {
 	
 	/* Reserved range for service groups */
 	RPMI_SRVGRP_RESERVE_START = RPMI_SRVGRP_ID_MAX_COUNT,
-	RPMI_SRVGRP_RESERVE_END = 0x7FFF,
+	RPMI_SRVGRP_RESERVE_END = 0x7BFF,
+
+	/* Experimental service groups range */
+	RPMI_SRVGRP_EXPERIMENTAL_START = 0x7C00,
+	RPMI_SRVGRP_EXPERIMENTAL_END = 0x7FFF,
 	
 	/* Vendor/Implementation-specific service groups range */
 	RPMI_SRVGRP_VENDOR_START = 0x8000,
