@@ -47,25 +47,15 @@ static rpmi_uint32_t probe_reqdata_default[] = {
 
 static rpmi_uint32_t probe_expdata_default[] = {
 	RPMI_SUCCESS,
-	1,
+	RPMI_BASE_VERSION(1, 0),
 };
 
 static rpmi_uint32_t attribs_expdata_default[] = {
 	RPMI_SUCCESS,
-	RPMI_BASE_FLAGS_F0_MSI_EN,
+	RPMI_BASE_FLAGS_F0_PRIVILEGE,
 	0,
 	0,
 	0,
-};
-
-static rpmi_uint32_t set_msi_reqdata_default[] = {
-	0, /* MSI addr_lo */
-	0, /* MSI addr_hi */
-	0, /* MSI data */
-};
-
-static rpmi_uint32_t set_msi_expdata_default[] = {
-	RPMI_SUCCESS,
 };
 
 static struct rpmi_test_scenario scenario_base_default = {
@@ -80,7 +70,7 @@ static struct rpmi_test_scenario scenario_base_default = {
 	.init = test_scenario_default_init,
 	.cleanup = test_scenario_default_cleanup,
 
-	.num_tests = 8,
+	.num_tests = 7,
 	.tests = {
 		{
 			.name = "RPMI_BASE_SRV_ENABLE_NOTIFICATION",
@@ -160,20 +150,6 @@ static struct rpmi_test_scenario scenario_base_default = {
 				.expected_data = attribs_expdata_default,
 				.expected_data_len = sizeof(attribs_expdata_default),
 			},
-			.init_expected_data = test_init_expected_data_from_attrs,
-		},
-		{
-			.name = "RPMI_BASE_SRV_SET_MSI",
-			.attrs = {
-				.servicegroup_id = RPMI_SRVGRP_BASE,
-				.service_id = RPMI_BASE_SRV_SET_MSI,
-				.flags = RPMI_MSG_NORMAL_REQUEST,
-				.request_data = set_msi_reqdata_default,
-				.request_data_len = sizeof(set_msi_reqdata_default),
-				.expected_data = set_msi_expdata_default,
-				.expected_data_len = sizeof(set_msi_expdata_default),
-			},
-			.init_request_data = test_init_request_data_from_attrs,
 			.init_expected_data = test_init_expected_data_from_attrs,
 		},
 	},
