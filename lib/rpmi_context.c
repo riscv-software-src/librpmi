@@ -46,6 +46,9 @@ struct rpmi_context {
 
 	/** Base serivce group */
 	struct rpmi_service_group *base_group;
+
+	/** System MSI serivce group */
+	struct rpmi_service_group *sysmsi_group;
 };
 
 struct rpmi_base_group {
@@ -59,11 +62,6 @@ struct rpmi_base_group {
 
 	struct rpmi_service_group group;
 };
-
-static void rpmi_base_write_p2a_ack_doorbell(struct rpmi_base_group *base)
-{
-	/* TODO: Inject P2A doorbell via SYSTEM_MSI service group */
-}
 
 static enum rpmi_error rpmi_base_get_impl_version(struct rpmi_service_group *group,
 						  struct rpmi_service *service,
@@ -317,7 +315,6 @@ void rpmi_context_process_a2p_request(struct rpmi_context *cntx)
 	struct rpmi_message *rmsg, *amsg;
 	struct rpmi_service_group *group;
 	struct rpmi_service *service;
-	struct rpmi_base_group *base;
 	struct rpmi_transport *trans;
 	enum rpmi_error rc;
 
@@ -326,7 +323,6 @@ void rpmi_context_process_a2p_request(struct rpmi_context *cntx)
 		return;
 	}
 
-	base = cntx->base_group->priv;
 	trans = cntx->trans;
 	rmsg = cntx->req_msg;
 	amsg = cntx->ack_msg;
@@ -415,8 +411,9 @@ void rpmi_context_process_a2p_request(struct rpmi_context *cntx)
 				__func__, cntx->name, group->name, rc);
 		}
 
-		if (rmsg->header.flags & RPMI_MSG_FLAGS_DOORBELL)
-			rpmi_base_write_p2a_ack_doorbell(base);
+		if ((rmsg->header.flags & RPMI_MSG_FLAGS_DOORBELL) &&
+		    cntx->sysmsi_group)
+			rpmi_service_group_sysmsi_inject_p2a(cntx->sysmsi_group);
 	}
 }
 
@@ -559,6 +556,9 @@ enum rpmi_error rpmi_context_add_group(struct rpmi_context *cntx,
 	cntx->groups[cntx->num_groups] = group;
 	cntx->num_groups++;
 
+	if (group->servicegroup_id == RPMI_SRVGRP_SYSTEM_MSI)
+		cntx->sysmsi_group = group;
+
 fail_unlock:
 	rpmi_env_unlock(cntx->groups_lock);
 
@@ -586,6 +586,9 @@ void rpmi_context_remove_group(struct rpmi_context *cntx,
 
 		cntx->num_groups--;
 		cntx->groups[cntx->num_groups] = NULL;
+		if (group->servicegroup_id == RPMI_SRVGRP_SYSTEM_MSI)
+			cntx->sysmsi_group = NULL;
+
 		break;
 	}
 
