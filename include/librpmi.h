@@ -222,8 +222,7 @@ enum rpmi_base_service_id {
 	RPMI_BASE_SRV_GET_PLATFORM_INFO = 0x05,
 	RPMI_BASE_SRV_PROBE_SERVICE_GROUP = 0x06,
 	RPMI_BASE_SRV_GET_ATTRIBUTES = 0x07,
-	RPMI_BASE_SRV_SET_MSI = 0x08,
-	RPMI_BASE_SRV_ID_MAX = 0x09,
+	RPMI_BASE_SRV_ID_MAX = 0x08,
 };
 
 #define RPMI_BASE_VERSION_MINOR_POS		0
@@ -236,9 +235,8 @@ enum rpmi_base_service_id {
 ((((__major) & RPMI_BASE_VERSION_MAJOR_MASK) << RPMI_BASE_VERSION_MAJOR_POS) | \
  (((__minor) & RPMI_BASE_VERSION_MINOR_MASK) << RPMI_BASE_VERSION_MINOR_POS))
 
-#define RPMI_BASE_FLAGS_F0_PRIVILEGE		(1U << 2)
-#define RPMI_BASE_FLAGS_F0_EV_NOTIFY		(1U << 1)
-#define RPMI_BASE_FLAGS_F0_MSI_EN		1U
+#define RPMI_BASE_FLAGS_F0_PRIVILEGE		(1U << 1)
+#define RPMI_BASE_FLAGS_F0_EV_NOTIFY		(1U << 0)
 
 /** RPMI System Reset ServiceGroup Service IDs */
 enum rpmi_sysreset_service_id {

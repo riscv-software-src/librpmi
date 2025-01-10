@@ -57,20 +57,12 @@ struct rpmi_base_group {
 	/* Platform info string */
 	char *plat_info;
 
-	/** P2A MSI details */
-	rpmi_bool_t	msi_enable;
-	rpmi_uint64_t	msi_addr;
-	rpmi_uint32_t	msi_data;
-
 	struct rpmi_service_group group;
 };
 
 static void rpmi_base_write_p2a_ack_doorbell(struct rpmi_base_group *base)
 {
-	if (!base->msi_enable)
-		return;
-
-	rpmi_env_writel(base->msi_addr, base->msi_data);
+	/* TODO: Inject P2A doorbell via SYSTEM_MSI service group */
 }
 
 static enum rpmi_error rpmi_base_get_impl_version(struct rpmi_service_group *group,
@@ -187,7 +179,6 @@ static enum rpmi_error rpmi_base_get_attributes(struct rpmi_service_group *group
 	struct rpmi_context *cntx = ((struct rpmi_base_group *)group->priv)->cntx;
 	rpmi_uint32_t flags = 0;
 
-	flags |= RPMI_BASE_FLAGS_F0_MSI_EN;
 	/* Set the context privilege level bit if context priv mode is M-mode */
 	flags |= (cntx->privilege_level == RPMI_PRIVILEGE_M_MODE) ?
 					RPMI_BASE_FLAGS_F0_PRIVILEGE : 0;
@@ -198,29 +189,6 @@ static enum rpmi_error rpmi_base_get_attributes(struct rpmi_service_group *group
 	resp[2] = 0;
 	resp[3] = 0;
 	resp[4] = 0;
-
-	return RPMI_SUCCESS;
-}
-
-static enum rpmi_error rpmi_base_set_msi(struct rpmi_service_group *group,
-					 struct rpmi_service *service,
-					 struct rpmi_transport *trans,
-					 rpmi_uint16_t request_datalen,
-					 const rpmi_uint8_t *request_data,
-					 rpmi_uint16_t *response_datalen,
-					 rpmi_uint8_t *response_data)
-{
-	rpmi_uint32_t *resp = (void *)response_data;
-	struct rpmi_base_group *base = group->priv;
-
-	base->msi_enable = true;
-	base->msi_addr = rpmi_to_xe32(trans->is_be, ((const rpmi_uint32_t *)request_data)[1]);
-	base->msi_addr = (base->msi_addr << 32) |
-			 rpmi_to_xe32(trans->is_be, ((const rpmi_uint32_t *)request_data)[0]);
-	base->msi_data = rpmi_to_xe32(trans->is_be, ((const rpmi_uint32_t *)request_data)[2]);
-
-	*response_datalen = 4;
-	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 
 	return RPMI_SUCCESS;
 }
@@ -260,11 +228,6 @@ static struct rpmi_service rpmi_base_services[RPMI_BASE_SRV_ID_MAX] = {
 		.service_id = RPMI_BASE_SRV_GET_ATTRIBUTES,
 		.min_a2p_request_datalen = 0,
 		.process_a2p_request = rpmi_base_get_attributes,
-	},
-	[RPMI_BASE_SRV_SET_MSI] = {
-		.service_id = RPMI_BASE_SRV_SET_MSI,
-		.min_a2p_request_datalen = 12,
-		.process_a2p_request = rpmi_base_set_msi,
 	},
 };
 
