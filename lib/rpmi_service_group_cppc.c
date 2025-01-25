@@ -82,8 +82,7 @@ struct rpmi_cppc_group {
 /**
  * Check if a register is valid.
  * A register even if unimplemented but defined in the
- * regiser namespace(enum rpmi_cppc_reg_id) is a valid
- * register.
+ * register namespace is a valid register.
  */
 static inline rpmi_bool_t __cppc_reg_valid(rpmi_uint32_t reg_id)
 {
