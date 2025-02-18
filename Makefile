@@ -54,6 +54,7 @@ export test_dir=$(src_dir)/test
 ifeq ($(LLVM),1)
 CC		=	clang
 AR		=	llvm-ar
+AS		=	llvm-as
 LD		=	ld.lld
 OBJCOPY		=	llvm-objcopy
 else
@@ -61,10 +62,12 @@ else
 ifdef CROSS_COMPILE
 CC		=	$(CROSS_COMPILE)gcc
 AR		=	$(CROSS_COMPILE)ar
+AS		=	$(CROSS_COMPILE)as
 LD		=	$(CROSS_COMPILE)ld
 else
 CC		?=	gcc
 AR		?=	ar
+AS		?=	as
 LD		?=	ld
 endif
 endif
