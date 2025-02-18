@@ -175,7 +175,7 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 	struct rpmi_transport_shmem_queue *shqueue;
 	struct rpmi_transport_shmem *shtrans;
 	struct rpmi_transport *trans;
-	int i;
+	unsigned int i;
 
 	/* All parameters should be non-zero */
 	if (!name || !slot_size || !shmem)

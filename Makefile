@@ -98,6 +98,8 @@ endif
 GENFLAGS	=	-Wall -Werror -g -O2
 GENFLAGS	+=	-I$(include_dir) -I$(lib_dir)
 
+EXTRA_CFLAGS	+= 	-Wsign-compare
+
 CFLAGS		=	$(GENFLAGS)
 CFLAGS		+=	$(EXTRA_CFLAGS)
 

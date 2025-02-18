@@ -1143,7 +1143,6 @@ void rpmi_service_group_hsm_destroy(struct rpmi_service_group *group);
 
 /** Clock rate match mode */
 enum rpmi_clock_rate_match {
-	RPMI_CLK_RATE_MATCH_INVALID = -1,
 	RPMI_CLK_RATE_MATCH_PLATFORM = 0,
 	RPMI_CLK_RATE_MATCH_ROUND_DOWN = 1,
 	RPMI_CLK_RATE_MATCH_ROUND_UP = 2,
@@ -1152,7 +1151,6 @@ enum rpmi_clock_rate_match {
 
 /** Supported clock states */
 enum rpmi_clock_state {
-	RPMI_CLK_STATE_INVALID = -1,
 	RPMI_CLK_STATE_DISABLED = 0,
 	RPMI_CLK_STATE_ENABLED = 1,
 	RPMI_CLK_STATE_MAX_IDX,
@@ -1160,7 +1158,6 @@ enum rpmi_clock_state {
 
 /** Clock type based on rate format */
 enum rpmi_clock_type {
-	RPMI_CLK_TYPE_INVALID = -1,
 	RPMI_CLK_TYPE_DISCRETE = 0,
 	RPMI_CLK_TYPE_LINEAR = 1,
 	RPMI_CLK_TYPE_MAX_IDX,
