@@ -89,7 +89,10 @@ test-objs-path-y+=$(foreach elf,$(test-elfs-y),$(foreach obj,$($(elf)-objs-y),$(
 
 # Setup list of deps files for objects
 deps-y=$(lib-objs-path-y:.o=.dep)
+
+ifeq ($(LIBRPMI_TEST),y)
 deps-y+=$(test-objs-path-y:.o=.dep)
+endif
 
 # Setup compilation commands flags
 GENFLAGS	=	-Wall -Werror -g -O2
@@ -149,7 +152,7 @@ compile_ar = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 	     $(AR) $(ARFLAGS) $(1) $(2)
 
 blobs-y = $(build_dir)/librpmi.a
-blobs-y += $(test-elfs-path-y)
+blobs-$(LIBRPMI_TEST) += $(test-elfs-path-y)
 
 # Default rule "make" should always be first rule
 .PHONY: all
