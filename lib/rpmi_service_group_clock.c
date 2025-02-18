@@ -386,7 +386,7 @@ rpmi_clock_tree_init(rpmi_uint32_t clock_count,
 	 * data */
 	for (clkid = 0; clkid < clock_count; clkid++) {
 		clock = &clock_tree[clkid];
-		if (clock->cdata->parent_id != -1) {
+		if (clock->cdata->parent_id != -1U) {
 			clock->parent = &clock_tree[clock->cdata->parent_id];
 			rpmi_list_add_tail(&clock->node,
 					   &clock->parent->child_clock);
@@ -486,7 +486,7 @@ rpmi_clock_sg_get_supp_rates(struct rpmi_service_group *group,
 			     rpmi_uint8_t *response_data)
 {
 	enum rpmi_error ret;
-	rpmi_int32_t i = 0, j = 0;
+	rpmi_uint32_t i = 0, j = 0;
 	rpmi_uint32_t rate_count;
 	rpmi_uint32_t resp_dlen = 0, clk_rate_idx = 0;
 	rpmi_uint32_t max_rates, remaining = 0, returned = 0;
@@ -610,12 +610,6 @@ rpmi_clock_sg_set_config(struct rpmi_service_group *group,
 
 	/* get command from 0th index bit in config field */
 	new_state = (cfg & 0b1) ? RPMI_CLK_STATE_ENABLED : RPMI_CLK_STATE_DISABLED;
-
-	if (new_state == RPMI_CLK_STATE_INVALID || new_state >= RPMI_CLK_STATE_MAX_IDX) {
-		resp[0] = rpmi_to_xe32(trans->is_be,
-					(rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
-		goto done;
-	}
 
 	/* change clock config synchronously */
 	status = rpmi_clock_set_state(clkgrp, clkid, new_state);
