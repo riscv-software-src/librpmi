@@ -61,6 +61,10 @@ This generates pdf file `build/docs/latex/refman.pdf` and html documentation
 at `build/docs/html`.
 
 ## Test
+Build test binaries -
+```
+make LIBRPMI_TEST=y
+```
 Refer: [README in test folder](test/README.md)
 
 
