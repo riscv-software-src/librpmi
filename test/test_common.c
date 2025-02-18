@@ -29,7 +29,8 @@ void rpmi_env_free(void *ptr)
 
 void rpmi_env_writel(rpmi_uint64_t addr, rpmi_uint32_t val)
 {
-	*((rpmi_uint32_t *) addr) = val;
+	rpmi_uint32_t *addr_u32 = (void *)(rpmi_uintptr_t)addr;
+	*addr_u32 = val;
 }
 
 static void scenario_process(struct rpmi_test_scenario *scene)
