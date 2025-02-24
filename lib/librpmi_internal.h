@@ -44,9 +44,19 @@
 #define array_size(x) 	(sizeof(x) / sizeof((x)[0]))
 #endif
 
-#define RPMI_MAX(a, b) ((a) > (b) ? (a) : (b))
+#define RPMI_MAX(a, b)			\
+({					\
+        __typeof__(a) _a = (a);		\
+        __typeof__(b) _b = (b);		\
+        (_a > _b) ? _a : _b;		\
+})
 
-#define RPMI_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define RPMI_MIN(a, b)			\
+({					\
+        __typeof__(a) _a = (a);		\
+        __typeof__(b) _b = (b);		\
+        (_a < _b) ? _a : _b;		\
+})
 
 #define RPMI_CLAMP(a, lo, hi) RPMI_MIN(RPMI_MAX(a, lo), hi)
 
@@ -54,9 +64,23 @@
 
 #define RPMI_XSTR(x) #x
 
-#define RPMI_ROUNDUP(a, b) ((((a)-1) / (b) + 1) * (b))
+/**
+ * Roundup the x to the next multiple of m
+ */
+#define RPMI_ROUNDUP(x, m)		\
+({					\
+	__typeof__(m) _m = m;		\
+	((((x - 1) / _m) + 1) * _m)	\
+})
 
-#define RPMI_ROUNDDOWN(a, b) ((a) / (b) * (b))
+/**
+ * Rounddown the x to the previous multiple of m
+ */
+#define RPMI_ROUNDDOWN(x, m)		\
+({					\
+	__typeof__(m) _m = m;		\
+	((x / _m) * _m);		\
+})
 
 #endif
 
