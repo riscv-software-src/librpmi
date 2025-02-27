@@ -95,8 +95,14 @@ deps-y+=$(test-objs-path-y:.o=.dep)
 endif
 
 # Setup compilation commands flags
-GENFLAGS	=	-Wall -Werror -g -O2
+GENFLAGS	=	-Wall -Werror -g
 GENFLAGS	+=	-I$(include_dir) -I$(lib_dir)
+
+ifeq ($(LIBRPMI_DEBUG),y)
+GENFLAGS 	+=	 -O0 -DDEBUG
+else
+GENFLAGS 	+=	 -O2
+endif
 
 EXTRA_CFLAGS	+= 	-Wsign-compare
 

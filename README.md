@@ -44,7 +44,14 @@ directory.
 
 ### librpmi.a
 ```
+// defaut without debug logs and tests, compiler optimizations are on
 make
+
+// Enable debug logs and build tests, compiler optimizations are off
+make LIBRPMI_TEST=y LIBRPMI_DEBUG=y
+
+// Cross compilation
+make CROSS_COMPILE=<compiler prefix>
 ```
 The platform vendors may also integrate librpmi sources directly into the
 platform microcontroller firmware and extend firmware build system to
