@@ -6,8 +6,6 @@
 
 #include <librpmi.h>
 
-#undef DEBUG
-
 #ifdef DEBUG
 #define DPRINTF(msg...)		rpmi_env_printf(msg)
 #else
