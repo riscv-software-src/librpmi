@@ -171,37 +171,6 @@ static inline char *rpmi_env_strncpy(char *dest, const char *src, rpmi_size_t co
 /******************************************************************************/
 
 /**
- * \defgroup CACHE_ENV Cache Maintenance Functions
- * @brief Cache maintenance functions used by library which must be provided by the
- * platform firmware.
- * @{
- */
-
-/**
- * @brief Invalidate cache lines based on virtual address range
- *
- * @param[in] base	pointer to base virtual address
- * @param[in] len	number of bytes to invalidate
- */
-static inline void rpmi_env_cache_invalidate(void *base, rpmi_size_t len)
-{
-}
-
-/**
- * @brief Clean cache lines based on virtual address range
- *
- * @param[in] base	pointer to base virtual address
- * @param[in] len	number of bytes to clean
- */
-static inline void rpmi_env_cache_clean(void *base, rpmi_size_t len)
-{
-}
-
-/** @} */
-
-/******************************************************************************/
-
-/**
  * \defgroup HEAP_ENV Heap Environment Functions
  * @brief Memory allocation functions used by library which must be provided by the
  * platform firmware.
