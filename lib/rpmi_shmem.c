@@ -30,33 +30,6 @@ struct rpmi_shmem {
 	void *ops_priv;
 };
 
-static enum rpmi_error shmem_env_memcpy_read(void *priv, rpmi_uint64_t addr,
-					     void *in, rpmi_uint32_t len)
-{
-	rpmi_env_memcpy(in, (const void *)(unsigned long)addr, len);
-	return RPMI_SUCCESS;
-}
-
-static enum rpmi_error shmem_env_memcpy_write(void *priv, rpmi_uint64_t addr,
-					      const void *out, rpmi_uint32_t len)
-{
-	rpmi_env_memcpy((void *)(unsigned long)addr, out, len);
-	return RPMI_SUCCESS;
-}
-
-static enum rpmi_error shmem_env_memset_fill(void *priv, rpmi_uint64_t addr,
-					     char ch, rpmi_uint32_t len)
-{
-	rpmi_env_memset((void *)(unsigned long)addr, ch, len);
-	return RPMI_SUCCESS;
-}
-
-struct rpmi_shmem_platform_ops rpmi_shmem_simple_ops = {
-	.read = shmem_env_memcpy_read,
-	.write = shmem_env_memcpy_write,
-	.fill = shmem_env_memset_fill,
-};
-
 rpmi_uint64_t rpmi_shmem_base(struct rpmi_shmem *shmem)
 {
 	return (shmem) ? shmem->base : 0;

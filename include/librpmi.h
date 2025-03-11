@@ -361,13 +361,6 @@ struct rpmi_shmem_platform_ops {
 };
 
 /**
- * Simple cache-coherent shared memory operations which use environment functions.
- *
- * Note: These operations don't require any platform specific data.
- */
-extern struct rpmi_shmem_platform_ops rpmi_shmem_simple_ops;
-
-/**
  * @brief Get base address of a shared memory
  *
  * @param[in] shmem		pointer to shared memory instance
