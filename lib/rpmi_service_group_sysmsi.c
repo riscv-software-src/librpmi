@@ -50,10 +50,9 @@ static enum rpmi_error rpmi_sysmsi_get_attrs(struct rpmi_service_group *group,
 
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 	resp[1] = rpmi_to_xe32(trans->is_be, sgmsi->num_msi);
-	resp[2] = rpmi_to_xe32(trans->is_be, sgmsi->p2a_msi_index);
+	resp[2] = 0;
 	resp[3] = 0;
-	resp[4] = 0;
-	*response_datalen = 5 * sizeof(*resp);
+	*response_datalen = 4 * sizeof(*resp);
 
 	return RPMI_SUCCESS;
 }
