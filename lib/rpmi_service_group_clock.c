@@ -5,7 +5,8 @@
  */
 
 #include <librpmi.h>
-#include "librpmi_internal.h"
+#include <librpmi_internal.h>
+
 #include "librpmi_internal_list.h"
 
 #ifdef LIBRPMI_DEBUG

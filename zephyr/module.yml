@@ -1,0 +1,15 @@
+# Copyright (c) 2024 Tenstorrent AI ULC
+# SPDX-License-Identifier: Apache-2.0
+
+# See https://docs.zephyrproject.org/latest/develop/modules.html
+
+name: librpmi
+build:
+  cmake: zephyr
+  kconfig: zephyr/Kconfig
+
+# twister settings
+samples:
+  - zephyr/samples
+tests:
+  - zephyr/tests

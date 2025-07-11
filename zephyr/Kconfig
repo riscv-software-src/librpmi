@@ -1,0 +1,5 @@
+config RISCV_RPMI
+	bool "Support for RISC-V Platform Management Interface (RPMI)"
+	depends on RISCV
+	help
+	  Enable support for RISC-V Platform Management Interface (RPMI).

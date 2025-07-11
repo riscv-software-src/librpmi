@@ -1,0 +1,6 @@
+tests:
+  drivers.firmware.rpmi:
+    tags:
+      - drivers
+      - rpmi
+
