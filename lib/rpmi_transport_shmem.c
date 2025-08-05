@@ -228,8 +228,10 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 	shtrans->queue_count = p2a_req_queue_size? RPMI_QUEUE_MAX : 2;
 
 	shtrans->queues = rpmi_env_zalloc(sizeof(*shtrans->queues) * shtrans->queue_count);
-	if (!shtrans->queues)
+	if (!shtrans->queues) {
+		rpmi_env_free(shtrans);
 		return NULL;
+	}
 
 	for (i = 0; i < shtrans->queue_count; i++) {
 		shqueue = &shtrans->queues[i];
