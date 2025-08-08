@@ -8,11 +8,12 @@ zephyr_library_sources(
   ${ZEPHYR_LIBRPMI_MODULE_DIR}/lib/rpmi_service_group_clock.c
   ${ZEPHYR_LIBRPMI_MODULE_DIR}/lib/rpmi_service_group_cppc.c
   ${ZEPHYR_LIBRPMI_MODULE_DIR}/lib/rpmi_service_group_hsm.c
+  ${ZEPHYR_LIBRPMI_MODULE_DIR}/lib/rpmi_service_group_sysmsi.c
   ${ZEPHYR_LIBRPMI_MODULE_DIR}/lib/rpmi_service_group_sysreset.c
   ${ZEPHYR_LIBRPMI_MODULE_DIR}/lib/rpmi_service_group_syssusp.c
   ${ZEPHYR_LIBRPMI_MODULE_DIR}/lib/rpmi_shmem.c
-  ${ZEPHYR_LIBRPMI_MODULE_DIR}/lib/rpmi_transport_shmem.c
   ${ZEPHYR_LIBRPMI_MODULE_DIR}/lib/rpmi_transport.c
+  ${ZEPHYR_LIBRPMI_MODULE_DIR}/lib/rpmi_transport_shmem.c
 )
 
   zephyr_include_directories(
