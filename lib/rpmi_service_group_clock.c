@@ -346,6 +346,8 @@ rpmi_clock_tree_init(rpmi_uint32_t clock_count,
 
 	struct rpmi_clock *clock_tree =
 		rpmi_env_zalloc(sizeof(struct rpmi_clock) * clock_count);
+	if (!clock_tree)
+		return NULL;
 
 	/* initialize all clocks instances */
 	for (clkid = 0; clkid < clock_count; clkid++) {
