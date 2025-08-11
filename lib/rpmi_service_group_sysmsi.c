@@ -364,7 +364,7 @@ rpmi_service_group_sysmsi_create(rpmi_uint32_t num_msi,
 	sgmsi->num_msi = num_msi;
 	sgmsi->p2a_msi_index = p2a_msi_index < num_msi ? p2a_msi_index : -1U;
 	sgmsi->msis = rpmi_env_zalloc(sizeof(*sgmsi->msis) * sgmsi->num_msi);
-	if (!sgmsi) {
+	if (!sgmsi->msis) {
 		DPRINTF("%s: failed to allocate system MSI array\n",
 			__func__);
 		rpmi_env_free(sgmsi);
