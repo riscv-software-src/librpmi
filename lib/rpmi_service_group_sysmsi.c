@@ -249,7 +249,7 @@ done:
 static struct rpmi_service rpmi_sysmsi_services[RPMI_SYSMSI_SRV_ID_MAX] = {
 	[RPMI_SYSMSI_SRV_ENABLE_NOTIFICATION] = {
 		.service_id = RPMI_SYSMSI_SRV_ENABLE_NOTIFICATION,
-		.min_a2p_request_datalen = 4,
+		.min_a2p_request_datalen = 8,
 		.process_a2p_request = NULL,
 	},
 	[RPMI_SYSMSI_SRV_GET_ATTRIBUTES] = {
