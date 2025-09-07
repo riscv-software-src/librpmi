@@ -4,12 +4,12 @@
 # Copyright (c) 2024 Ventana Micro Systems Inc.
 #
 
-test-elfs-y += test_base
+test-elfs-y += test_srvgrp_base
 
-test_base-objs-y += test/test_log.o
-test_base-objs-y += test/test_common.o
+test_srvgrp_base-objs-y += test/test_log.o
+test_srvgrp_base-objs-y += test/test_common.o
 
-test-elfs-y += test_sysreset
+test-elfs-y += test_srvgrp_sysreset
 
-test_sysreset-objs-y += test/test_log.o
-test_sysreset-objs-y += test/test_common.o
+test_srvgrp_sysreset-objs-y += test/test_log.o
+test_srvgrp_sysreset-objs-y += test/test_common.o

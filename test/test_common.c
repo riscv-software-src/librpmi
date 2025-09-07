@@ -11,9 +11,9 @@ void hexdump(char *desc, unsigned int *buf, unsigned int len)
 {
 	unsigned int i;
 
-	printf("Dumping %s at %p\n", desc, buf);
+	printf("%s \n", desc);
 	for (i = 0; i < len/4; i++)
-		printf("%d: 0x%08x\n", i, *(buf+i));
+		printf("word:%d: 0x%08x\n", i, *(buf+i));
 
 }
 
@@ -84,26 +84,28 @@ static void test_verify(struct rpmi_test *test, struct rpmi_message *msg,
 
 	if (msg->header.datalen != exp_data_len) {
 		/* expected data error */
-		printf("%s: datalen mismatch: expected: %d, got: %d\n",
+		printf("%s: response datalen mismatch: expected: %d, got: %d\n",
 		       test->name, exp_data_len, msg->header.datalen);
-		hexdump("expected",
+		hexdump("EXPECTED DATALEN: ",
 			(unsigned int *)exp_data, exp_data_len);
-		hexdump("received",
+		printf("\n");
+		hexdump("RECEIVED DATALEN: ",
 			(unsigned int *)msg->data, msg->header.datalen);
 		failed = 1;
 	} else if (exp_data_len) {
 		if (rpmi_env_memcmp(exp_data, &msg->data, exp_data_len)) {
-			printf("%s: datalen: %d, expected data mismatch\n",
+			printf("%s: expected response data mismatch, datalen: %d\n",
 			       test->name, exp_data_len);
-			hexdump("expected",
+			hexdump("EXPECTED DATA: ",
 				(unsigned int *)exp_data, exp_data_len);
-			hexdump("received",
+			printf("\n");
+			hexdump("RECEIVED DATA: ",
 				(unsigned int *)msg->data, exp_data_len);
 			failed = 1;
 		}
 	}
 
-	printf("%-50s \t : %s!\n", test->name, failed ? "Failed" : "Succeeded");
+	printf("TEST: %-50s \t : %s!\n\n", test->name, failed ? "Failed" : "Succeeded");
 }
 
 static void execute_scenario(struct rpmi_test_scenario *scene)
