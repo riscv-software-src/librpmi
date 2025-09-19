@@ -736,10 +736,10 @@ struct rpmi_service_group {
 	rpmi_uint32_t servicegroup_version;
 
 	/**
-	 * RISC-V privilagel level bitmap where this group
+	 * RISC-V privilege level bitmap where this group
 	 * is allowed to be accessible. enum rpmi_privilege_level
 	 * values represents the bit positions which if are
-	 * set, the access to that privilegel level is enabled
+	 * set, the access to that privilege level is enabled
 	 */
 	rpmi_uint32_t privilege_level_bitmap;
 
@@ -1343,11 +1343,11 @@ struct rpmi_cppc_regs {
 	rpmi_uint32_t lowest_perf;
 	/* guaranteed performance register (r) */
 	rpmi_uint32_t guaranteed_perf;
-	/* desired performance regiser (rw) */
+	/* desired performance register (rw) */
 	rpmi_uint32_t desired_perf;
-	/* minimum performance regiser (rw) */
+	/* minimum performance register (rw) */
 	rpmi_uint32_t min_perf;
-	/* maximun performance regiser (rw) */
+	/* maximum performance register (rw) */
 	rpmi_uint32_t max_perf;
 	/* performance reduction tolerance register (rw) */
 	rpmi_uint32_t perf_reduction_tolerence;

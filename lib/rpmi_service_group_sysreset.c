@@ -69,7 +69,6 @@ static enum rpmi_error rpmi_sysreset_do_reset(struct rpmi_service_group *group,
 					      rpmi_uint8_t *response_data)
 {
 	struct rpmi_sysreset_group *sgrst = group->priv;
-	rpmi_uint32_t *resp = (void *)response_data;
 	const rpmi_uint32_t *sysreset_type;
 	rpmi_uint32_t reset_type;
 
@@ -81,10 +80,6 @@ static enum rpmi_error rpmi_sysreset_do_reset(struct rpmi_service_group *group,
 		/* No returning back after this function */
 		sgrst->ops->do_system_reset(sgrst->ops_priv, reset_type);
 	}
-
-	/* reset_type is invalid at this point */
-	*response_datalen = sizeof(*resp);
-	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 
 	return RPMI_SUCCESS;
 }
