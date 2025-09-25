@@ -831,7 +831,7 @@ struct rpmi_hsm_platform_ops {
 					      rpmi_uint32_t hart_index,
 					      rpmi_uint64_t start_addr);
 
-	/** Finalize hart stop (optional) */
+	/** Finalize hart start (optional) */
 	void (*hart_start_finalize)(void *priv,
 				    rpmi_uint32_t hart_index,
 				    rpmi_uint64_t start_addr);
