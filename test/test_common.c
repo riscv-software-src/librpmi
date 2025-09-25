@@ -13,7 +13,8 @@ void hexdump(char *desc, unsigned int *buf, unsigned int len)
 
 	printf("%s \n", desc);
 	for (i = 0; i < len/4; i++)
-		printf("word:%d: 0x%08x\n", i, *(buf+i));
+		printf("word:%d: 0x%08x ", i, *(buf+i));
+	printf("(%d)\n", *buf);
 
 }
 
