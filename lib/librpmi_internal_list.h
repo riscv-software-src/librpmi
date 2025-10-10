@@ -31,8 +31,8 @@ do { \
 } while (0)
 
 static inline void __rpmi_list_add(struct rpmi_dlist *new,
-				  struct rpmi_dlist *prev,
-				  struct rpmi_dlist *next)
+				   struct rpmi_dlist *prev,
+				   struct rpmi_dlist *next)
 {
 	new->prev = prev;
 	new->next = next;
@@ -57,7 +57,8 @@ static inline rpmi_bool_t rpmi_list_empty(struct rpmi_dlist *head)
  * @param head List head after which the "new" node should be added.
  * Note: the new node is added after the head.
  */
-static inline void rpmi_list_add(struct rpmi_dlist *new, struct rpmi_dlist *head)
+static inline void rpmi_list_add(struct rpmi_dlist *new,
+				 struct rpmi_dlist *head)
 {
 	__rpmi_list_add(new, head, head->next);
 }
@@ -69,13 +70,13 @@ static inline void rpmi_list_add(struct rpmi_dlist *new, struct rpmi_dlist *head
  * Note: the new node is added before tail node.
  */
 static inline void rpmi_list_add_tail(struct rpmi_dlist *new,
-				     struct rpmi_dlist *tnode)
+				      struct rpmi_dlist *tnode)
 {
 	__rpmi_list_add(new, tnode->prev, tnode);
 }
 
 static inline void __rpmi_list_del(struct rpmi_dlist *prev,
-				  struct rpmi_dlist *next)
+				   struct rpmi_dlist *next)
 {
 	prev->next = next;
 	next->prev = prev;
@@ -157,4 +158,4 @@ static inline void rpmi_list_del_init(struct rpmi_dlist *entry)
 	     &pos->member != (head); 	\
 	     pos = rpmi_list_entry(pos->member.next, typeof(*pos), member))
 
-#endif
+#endif /* __LIBRPMI_LIST_H__ */

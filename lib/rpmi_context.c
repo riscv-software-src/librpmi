@@ -39,13 +39,13 @@ struct rpmi_context {
 	/** Temporary request message */
 	struct rpmi_message *req_msg;
 
-	/** Temporary acknowledgment message */
+	/** Temporary acknowledgement message */
 	struct rpmi_message *ack_msg;
 
-	/** Base serivce group */
+	/** Base service group */
 	struct rpmi_service_group *base_group;
 
-	/** System MSI serivce group */
+	/** System MSI service group */
 	struct rpmi_service_group *sysmsi_group;
 };
 
@@ -336,7 +336,7 @@ void rpmi_context_process_a2p_request(struct rpmi_context *cntx)
 		if (rmsg->header.service_id < group->max_service_id)
 			service = &group->services[rmsg->header.service_id];
 
-		amsg->header.flags = RPMI_MSG_ACKNOWLDGEMENT;
+		amsg->header.flags = RPMI_MSG_ACKNOWLEDGEMENT;
 		amsg->header.service_id = rmsg->header.service_id;
 		amsg->header.servicegroup_id = rmsg->header.servicegroup_id;
 		amsg->header.datalen = 0;
@@ -352,8 +352,8 @@ void rpmi_context_process_a2p_request(struct rpmi_context *cntx)
 		case RPMI_MSG_POSTED_REQUEST:
 			do_process = true;
 			break;
-		case RPMI_MSG_ACKNOWLDGEMENT:
-			DPRINTF("%s: %s: group %s ignoring acknowledgment from a2p queue\n",
+		case RPMI_MSG_ACKNOWLEDGEMENT:
+			DPRINTF("%s: %s: group %s ignoring acknowledgement from a2p queue\n",
 				__func__, cntx->name, group->name);
 			break;
 		case RPMI_MSG_NOTIFICATION:
@@ -405,7 +405,7 @@ void rpmi_context_process_a2p_request(struct rpmi_context *cntx)
 		} while (rc == RPMI_ERR_IO);
 
 		if (rc) {
-			DPRINTF("%s: %s: group %s p2a acknowledgment failed (error %d)\n",
+			DPRINTF("%s: %s: group %s p2a acknowledgement failed (error %d)\n",
 				__func__, cntx->name, group->name, rc);
 		}
 
@@ -645,7 +645,7 @@ struct rpmi_context *rpmi_context_create(const char *name,
 
 	cntx->ack_msg = rpmi_env_zalloc(trans->slot_size);
 	if (!cntx->ack_msg) {
-		DPRINTF("%s: %s: acknowledgment message allocation failed\n", __func__, name);
+		DPRINTF("%s: %s: acknowledgement message allocation failed\n", __func__, name);
 		goto fail_free_req_msg;
 	}
 

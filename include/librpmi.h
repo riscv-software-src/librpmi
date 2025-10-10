@@ -88,8 +88,8 @@ enum rpmi_message_type {
 	RPMI_MSG_NORMAL_REQUEST = 0x0,
 	/* Request without any ack */
 	RPMI_MSG_POSTED_REQUEST = 0x1,
-	/* Acknowledgment for normal request message */
-	RPMI_MSG_ACKNOWLDGEMENT = 0x2,
+	/* Acknowledgement for normal request message */
+	RPMI_MSG_ACKNOWLEDGEMENT = 0x2,
 	/* Notification message */
 	RPMI_MSG_NOTIFICATION = 0x3,
 };
@@ -199,7 +199,7 @@ enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_RAS_AGENT = 0x000C,
 	RPMI_SRVGRP_REQUEST_FORWARD = 0x000D,
 	RPMI_SRVGRP_ID_MAX_COUNT,
-	
+
 	/* Reserved range for service groups */
 	RPMI_SRVGRP_RESERVE_START = RPMI_SRVGRP_ID_MAX_COUNT,
 	RPMI_SRVGRP_RESERVE_END = 0x7BFF,
@@ -207,7 +207,7 @@ enum rpmi_servicegroup_id {
 	/* Experimental service groups range */
 	RPMI_SRVGRP_EXPERIMENTAL_START = 0x7C00,
 	RPMI_SRVGRP_EXPERIMENTAL_END = 0x7FFF,
-	
+
 	/* Vendor/Implementation-specific service groups range */
 	RPMI_SRVGRP_VENDOR_START = 0x8000,
 	RPMI_SRVGRP_VENDOR_END = 0xFFFF,
@@ -444,7 +444,7 @@ struct rpmi_shmem *rpmi_shmem_create(const char *name,
 				     void *ops_priv);
 
 /**
- * @brief Destroy (of free) a shared memory instance
+ * @brief Destroy (or free) a shared memory instance
  *
  * @param[in] shmem		pointer to shared memory instance
  */
@@ -542,7 +542,7 @@ rpmi_bool_t rpmi_transport_is_empty(struct rpmi_transport *trans,
  * @return true if full and false if not full
  */
 rpmi_bool_t rpmi_transport_is_full(struct rpmi_transport *trans,
-				  enum rpmi_queue_type qtype);
+				   enum rpmi_queue_type qtype);
 
 /**
  * @brief Enqueue a RPMI message to a specified RPMI queue type of a RPMI transport
@@ -553,8 +553,8 @@ rpmi_bool_t rpmi_transport_is_full(struct rpmi_transport *trans,
  * @return enum rpmi_error
  */
 enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
-				      enum rpmi_queue_type qtype,
-				      struct rpmi_message *msg);
+				       enum rpmi_queue_type qtype,
+				       struct rpmi_message *msg);
 
 /**
  * @brief Dequeue a RPMI message from a specified RPMI queue type of a RPMI transport
@@ -585,7 +585,7 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
 						   struct rpmi_shmem *shmem);
 
 /**
- * @brief Destroy (of free) a shared memory transport instance
+ * @brief Destroy (or free) a shared memory transport instance
  *
  * @param[in] trans		pointer to RPMI transport instance
  */
@@ -680,7 +680,7 @@ struct rpmi_context *rpmi_context_create(const char *name,
 					 const char *plat_info);
 
 /**
- * @brief Destroy (of free) a RPMI context
+ * @brief Destroy (or free) a RPMI context
  *
  * @param[in] cntx		pointer to RPMI context instance
  */
@@ -747,7 +747,7 @@ struct rpmi_service_group {
 	struct rpmi_service *services;
 
 	/**
-	 * Callback to process events for a service group. This events can be:
+	 * Callback to process events for a service group. These events can be:
 	 *
 	 * 1) Fast-channel requests from application processors
 	 * 2) Pending HW interrupts relevant to a service group
@@ -997,7 +997,7 @@ struct rpmi_hsm *rpmi_hsm_nonleaf_create(rpmi_uint32_t child_count,
 					 struct rpmi_hsm **child_array);
 
 /**
- * @brief Destroy (of free) a HSM instance
+ * @brief Destroy (or free) a HSM instance
  *
  * @param[in] hsm		pointer to HSM instance
  */
@@ -1037,7 +1037,7 @@ rpmi_service_group_sysreset_create(rpmi_uint32_t sysreset_type_count,
 				   void *ops_priv);
 
 /**
- * @brief Destroy (of free) a system reset service group instance
+ * @brief Destroy (or free) a system reset service group instance
  *
  * @param[in] group		pointer to RPMI service group instance
  */
@@ -1109,7 +1109,7 @@ rpmi_service_group_syssusp_create(struct rpmi_hsm *hsm,
 				  void *ops_priv);
 
 /**
- * @brief Destroy (of free) a system suspend service group instance
+ * @brief Destroy (or free) a system suspend service group instance
  *
  * @param[in] group		pointer to RPMI service group instance
  */
@@ -1124,7 +1124,7 @@ void rpmi_service_group_syssusp_destroy(struct rpmi_service_group *group);
 struct rpmi_service_group *rpmi_service_group_hsm_create(struct rpmi_hsm *hsm);
 
 /**
- * @brief Destroy (of free) a hart state management (HSM) service group instance
+ * @brief Destroy (or free) a hart state management (HSM) service group instance
  *
  * @param[in] group		pointer to RPMI service group instance
  */
@@ -1209,32 +1209,32 @@ struct rpmi_clock_attrs {
 struct rpmi_clock_platform_ops {
 	/** Set the clock state enable/disable/others */
 	enum rpmi_error (*set_state)(void *priv,
-				      rpmi_uint32_t clock_id,
-				      enum rpmi_clock_state state);
+				     rpmi_uint32_t clock_id,
+				     enum rpmi_clock_state state);
 
 	/**
 	 * Get state and rate together
-	 **/
+	 */
 	enum rpmi_error (*get_state_and_rate)(void *priv,
-				       rpmi_uint32_t clock_id,
-				       enum rpmi_clock_state *state,
-				       rpmi_uint64_t *rate);
+					      rpmi_uint32_t clock_id,
+					      enum rpmi_clock_state *state,
+					      rpmi_uint64_t *rate);
 
 	/**
 	 * Check if the requested rate is not in the allowed margin(Hz)
 	 * which require change in clock rate.
 	 * Returns TRUE if rate change required otherwise FALSE
-	 **/
+	 */
 	rpmi_bool_t (*rate_change_match)(void *priv,
-				  rpmi_uint32_t clock_id,
-				  rpmi_uint64_t rate);
+					 rpmi_uint32_t clock_id,
+					 rpmi_uint64_t rate);
 
 	/**
 	 * Set clock rate.
 	 * Also based on the rate match mode and PLL lock frequency
 	 * the actual frequency set may have +-margin with requested rate.
 	 * Return the set rate in new_rate buffer
-	 * */
+	 */
 	enum rpmi_error (*set_rate)(void *priv,
 				    rpmi_uint32_t clock_id,
 				    enum rpmi_clock_rate_match match,
@@ -1247,9 +1247,9 @@ struct rpmi_clock_platform_ops {
 	 * clock and return the new rate in buffer.
 	 */
 	enum rpmi_error (*set_rate_recalc)(void *priv,
-					rpmi_uint32_t clock_id,
-					rpmi_uint64_t parent_rate,
-					rpmi_uint64_t *new_rate);
+					   rpmi_uint32_t clock_id,
+					   rpmi_uint64_t parent_rate,
+					   rpmi_uint64_t *new_rate);
 };
 
 /**
@@ -1266,7 +1266,7 @@ rpmi_service_group_clock_create(rpmi_uint32_t clock_count,
 				void *ops_priv);
 
 /**
- * @brief Destroy(free) a clock service group instance
+ * @brief Destroy (or free) a clock service group instance
  *
  * @param[in] group	pointer to RPMI service group instance
  */
@@ -1335,7 +1335,7 @@ enum rpmi_cppc_mode {
 struct rpmi_cppc_regs {
 	/* highest performance (r) */
 	rpmi_uint32_t highest_perf;
-	/* nominal performance (r)*/
+	/* nominal performance (r) */
 	rpmi_uint32_t nominal_perf;
 	/* lowest nonlinear performance (r) */
 	rpmi_uint32_t lowest_nonlinear_perf;
@@ -1392,7 +1392,7 @@ struct rpmi_cppc_regs {
  */
 union rpmi_cppc_perf_request_fastchan {
 	/** CPPC passive(default) mode fastchannel */
-	struct  {
+	struct {
 		rpmi_uint32_t desired_perf;
 		rpmi_uint32_t __reserved;
 	} passive;
@@ -1429,23 +1429,23 @@ struct rpmi_cppc_platform_ops {
 	 * cppc get register value for a hart.
 	 */
 	enum rpmi_error (*cppc_get_reg)(void *priv,
-	                                rpmi_uint32_t reg_id,
-	                                rpmi_uint32_t hart_index,
-	                                rpmi_uint64_t *val);
+					rpmi_uint32_t reg_id,
+					rpmi_uint32_t hart_index,
+					rpmi_uint64_t *val);
 
 	/**
 	 * cppc set register value for a hart.
 	 */
 	enum rpmi_error (*cppc_set_reg)(void *priv,
-	                                rpmi_uint32_t reg_id,
-	                                rpmi_uint32_t hart_index,
-	                                rpmi_uint64_t val);
+					rpmi_uint32_t reg_id,
+					rpmi_uint32_t hart_index,
+					rpmi_uint64_t val);
 	/**
 	 * cppc update performance level for a hart
 	 */
 	enum rpmi_error (*cppc_update_perf)(void *priv,
 					    rpmi_uint32_t hart_index,
-				     	    rpmi_uint32_t desired_perf);
+					    rpmi_uint32_t desired_perf);
 	/**
 	 * cppc get current frequency in hertz for a hart
 	 */
@@ -1479,7 +1479,7 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 			       void *ops_priv);
 
 /**
- * @brief Destroy(free) a cppc service group instance
+ * @brief Destroy (or free) a cppc service group instance
  *
  * @param[in] group	pointer to RPMI service group instance
  */
@@ -1534,7 +1534,7 @@ enum rpmi_error rpmi_service_group_sysmsi_inject(struct rpmi_service_group *grou
 enum rpmi_error rpmi_service_group_sysmsi_inject_p2a(struct rpmi_service_group *group);
 
 /**
- * @brief Destroy(free) a system MSI service group instance
+ * @brief Destroy (or free) a system MSI service group instance
  *
  * @param[in] group	pointer to RPMI service group instance
  */
@@ -1558,4 +1558,4 @@ rpmi_service_group_sysmsi_create(rpmi_uint32_t num_msi,
 
 /** @} */
 
-#endif  /* __LIBRPMI_H__ */
+#endif /* __LIBRPMI_H__ */

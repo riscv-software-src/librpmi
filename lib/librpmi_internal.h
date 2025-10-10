@@ -1,4 +1,4 @@
- /*
+/*
  * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (c) 2024 Ventana Micro Systems
@@ -41,21 +41,21 @@
 #endif
 
 #ifndef array_size
-#define array_size(x) 	(sizeof(x) / sizeof((x)[0]))
+#define array_size(x)	(sizeof(x) / sizeof((x)[0]))
 #endif
 
 #define RPMI_MAX(a, b)			\
 ({					\
-        __typeof__(a) _a = (a);		\
-        __typeof__(b) _b = (b);		\
-        (_a > _b) ? _a : _b;		\
+	__typeof__(a) _a = (a);		\
+	__typeof__(b) _b = (b);		\
+	(_a > _b) ? _a : _b;		\
 })
 
 #define RPMI_MIN(a, b)			\
 ({					\
-        __typeof__(a) _a = (a);		\
-        __typeof__(b) _b = (b);		\
-        (_a < _b) ? _a : _b;		\
+	__typeof__(a) _a = (a);		\
+	__typeof__(b) _b = (b);		\
+	(_a < _b) ? _a : _b;		\
 })
 
 #define RPMI_CLAMP(a, lo, hi) RPMI_MIN(RPMI_MAX(a, lo), hi)
@@ -82,6 +82,4 @@
 	((x / _m) * _m);		\
 })
 
-#endif
-
-
+#endif /* __LIBRPMI_INTERNAL_H__ */
