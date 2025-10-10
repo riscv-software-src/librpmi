@@ -153,7 +153,8 @@ static inline rpmi_size_t rpmi_env_strnlen(const char *str, rpmi_size_t count)
  * @param[in] count	number of max chars to count
  * @return char *	pointer to string destination buffer
  */
-static inline char *rpmi_env_strncpy(char *dest, const char *src, rpmi_size_t count)
+static inline char *rpmi_env_strncpy(char *dest, const char *src,
+				     rpmi_size_t count)
 {
 	char *ret = dest;
 
@@ -449,4 +450,4 @@ int __printf(1, 2) rpmi_env_printf(const char *format, ...);
 
 /** @} */
 
-#endif  /* __LIBRPMI_ENV_H__ */
+#endif /* __LIBRPMI_ENV_H__ */
