@@ -12,65 +12,6 @@
 #define DPRINTF(msg...)
 #endif
 
-struct rpmi_hsm_hart {
-	/** Lock to protect this structure and perform platform operations */
-	void *lock;
-
-	/** Current HSM hart state */
-	enum rpmi_hsm_hart_state state;
-
-	/** Current hart start parameter */
-	rpmi_uint64_t start_addr;
-
-	/** Current hart suspend parameter */
-	const struct rpmi_hsm_suspend_type *suspend_type;
-	rpmi_uint64_t resume_addr;
-};
-
-struct rpmi_hsm {
-	/** Whether HSM instance is non-leaf (or hierarchical) instance */
-	rpmi_bool_t is_non_leaf;
-
-	union {
-		/** Details required by leaf instance */
-		struct {
-			/** Number of harts */
-			rpmi_uint32_t hart_count;
-
-			/** Array of hart IDs */
-			const rpmi_uint32_t *hart_ids;
-
-			/** Array of harts */
-			struct rpmi_hsm_hart *harts;
-
-			/** Number of suspend types */
-			rpmi_uint32_t suspend_type_count;
-
-			/** Array of suspend types */
-			const struct rpmi_hsm_suspend_type *suspend_types;
-
-			/**
-			 * Platform HSM operations
-			 *
-			 * Note: These operations are called with harts[i]->lock held
-			 */
-			const struct rpmi_hsm_platform_ops *ops;
-
-			/** Private data of platform HSM operations */
-			void *ops_priv;
-		} leaf;
-
-		/** Details required by non-leaf instance */
-		struct {
-			/** Number of child instances */
-			rpmi_uint32_t child_count;
-
-			/** Array of child instance pointers */
-			struct rpmi_hsm **child_array;
-		} nonleaf;
-	};
-};
-
 rpmi_uint32_t rpmi_hsm_hart_count(struct rpmi_hsm *hsm)
 {
 	struct rpmi_hsm *child_hsm;
