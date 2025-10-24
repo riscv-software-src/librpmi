@@ -199,7 +199,7 @@ enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_RAS_AGENT = 0x000C,
 	RPMI_SRVGRP_REQUEST_FORWARD = 0x000D,
 	RPMI_SRVGRP_ID_MAX_COUNT,
-	
+
 	/* Reserved range for service groups */
 	RPMI_SRVGRP_RESERVE_START = RPMI_SRVGRP_ID_MAX_COUNT,
 	RPMI_SRVGRP_RESERVE_END = 0x7BFF,
@@ -207,7 +207,7 @@ enum rpmi_servicegroup_id {
 	/* Experimental service groups range */
 	RPMI_SRVGRP_EXPERIMENTAL_START = 0x7C00,
 	RPMI_SRVGRP_EXPERIMENTAL_END = 0x7FFF,
-	
+
 	/* Vendor/Implementation-specific service groups range */
 	RPMI_SRVGRP_VENDOR_START = 0x8000,
 	RPMI_SRVGRP_VENDOR_END = 0xFFFF,
@@ -321,6 +321,16 @@ enum rpmi_cppc_service_id {
 	RPMI_CPPC_SRV_GET_FAST_CHANNEL_OFFSET = 0x06,
 	RPMI_CPPC_SRV_GET_HART_LIST = 0x07,
 	RPMI_CPPC_SRV_ID_MAX,
+};
+
+/** RPMI Device_Power (DPWR) ServiceGroup Service IDs */
+enum rpmi_dpwr_service_id {
+	RPMI_DPWR_SRV_ENABLE_NOTIFICATION = 0x01,
+	RPMI_DPWR_SRV_GET_NUM_DOMAINS = 0x02,
+	RPMI_DPWR_SRV_GET_ATTRIBUTES = 0x03,
+	RPMI_DPWR_SRV_SET_DPWR_STATE = 0x04,
+	RPMI_DPWR_SRV_GET_DPWR_STATE = 0x05,
+	RPMI_DPWR_SRV_ID_MAX,
 };
 
 /** @} */
@@ -1555,6 +1565,95 @@ rpmi_service_group_sysmsi_create(rpmi_uint32_t num_msi,
 				 rpmi_uint32_t p2a_msi_index,
 				 const struct rpmi_sysmsi_platform_ops *ops,
 				 void *ops_priv);
+
+/** @} */
+
+/******************************************************************************/
+
+/**
+ * \defgroup LIBRPMI_DPWRSRVGRP_INTERFACE RPMI Device Power Service Group Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for RPMI device power service group.
+ * @{
+ */
+
+/** Supported dpwr states */
+enum rpmi_dpwr_state {
+	RPMI_DPWR_STATE_INVALID = -1,
+	RPMI_DPWR_STATE_ON = 0,
+	RPMI_DPWR_STATE_OFF = 3,
+	RPMI_DPWR_STATE_MAX_IDX,
+};
+
+/**
+ * DPWR Data and Tree details
+ *
+ * This structure represents the static
+ * dpwr data which platform has to maintain
+ * and pass to create the dpwr service group.
+ */
+struct rpmi_dpwr_data {
+	/** worst case transition latency from one power state to another */
+	rpmi_uint32_t trans_latency;
+	/* dpwr name */
+	const char name[16];
+};
+
+/** Device Power Domain Attributes */
+struct rpmi_dpwr_attrs {
+	/** dpwr service return status */
+	rpmi_uint32_t status;
+	/** worst case transition latency from one power state to another */
+	rpmi_uint32_t trans_latency;
+	/** dpwr domain name */
+	const char *name;
+};
+
+/** Platform specific dpwr operations(synchronous) */
+struct rpmi_dpwr_platform_ops {
+	/**
+	 * Get device power state
+	 **/
+	enum rpmi_error (*get_state)(void *priv,
+				     rpmi_uint32_t dpwr_id,
+				     rpmi_uint32_t *state);
+	/**
+	 * Set device power state
+	 **/
+	enum rpmi_error (*set_state)(void *priv,
+				     rpmi_uint32_t dpwr_id,
+				     rpmi_uint32_t state);
+
+	/**
+	 * Get device power domain attributes
+	 **/
+	enum rpmi_error (*get_attrs)(void *priv,
+				     rpmi_uint32_t dpwr_id,
+				     struct rpmi_dpwr_attrs *dpwr_attrs);
+};
+
+/**
+ * @brief Create a device power service group instance
+ *
+ * @param[in] dpwr_count        number of device power domains
+ * @param[in] dpwr_tree_data    pointer to device power domain data
+ * @param[in] ops               pointer to platform specific device power operations
+ * @param[in] ops_priv          pointer to private data of platform operations
+ * @return rpmi_service_group * pointer to RPMI service group instance upon
+ * success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_dpwr_create(rpmi_uint32_t dpwr_count,
+                               const struct rpmi_dpwr_data *dpwr_tree_data,
+                               const struct rpmi_dpwr_platform_ops *ops,
+                               void *ops_priv);
+
+/**
+ * @brief Destroy(free) a device power service group instance
+ *
+ * @param[in] group     pointer to RPMI service group instance
+ */
+void rpmi_service_group_dpwr_destroy(struct rpmi_service_group *group);
 
 /** @} */
 
