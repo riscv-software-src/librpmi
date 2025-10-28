@@ -85,79 +85,79 @@
 /** RPMI Messages Types */
 enum rpmi_message_type {
 	/* Normal request backed with ack */
-	RPMI_MSG_NORMAL_REQUEST = 0x0,
+	RPMI_MSG_NORMAL_REQUEST		= 0x0,
 	/* Request without any ack */
-	RPMI_MSG_POSTED_REQUEST = 0x1,
+	RPMI_MSG_POSTED_REQUEST		= 0x1,
 	/* Acknowledgement for normal request message */
-	RPMI_MSG_ACKNOWLEDGEMENT = 0x2,
+	RPMI_MSG_ACKNOWLEDGEMENT	= 0x2,
 	/* Notification message */
-	RPMI_MSG_NOTIFICATION = 0x3,
+	RPMI_MSG_NOTIFICATION		= 0x3,
 };
 
 /** RPMI Message Header */
 struct rpmi_message_header {
-	rpmi_uint16_t servicegroup_id;
-	rpmi_uint8_t service_id;
-	rpmi_uint8_t flags;
-	rpmi_uint16_t datalen;
-	rpmi_uint16_t token;
+	rpmi_uint16_t	servicegroup_id;
+	rpmi_uint8_t	service_id;
+	rpmi_uint8_t	flags;
+	rpmi_uint16_t	datalen;
+	rpmi_uint16_t	token;
 };
 
 /** RPMI Message */
 struct rpmi_message {
-	struct rpmi_message_header header;
-	rpmi_uint8_t data[0];
+	struct rpmi_message_header	header;
+	rpmi_uint8_t			data[0];
 };
 
 /** RPMI Error Types */
 enum rpmi_error {
 	/* Success */
-	RPMI_SUCCESS		= 0,
+	RPMI_SUCCESS			= 0,
 	/* General failure  */
-	RPMI_ERR_FAILED		= -1,
+	RPMI_ERR_FAILED			= -1,
 	/* Service or feature not supported */
-	RPMI_ERR_NOTSUPP	= -2,
+	RPMI_ERR_NOTSUPP		= -2,
 	/* Invalid Parameter  */
-	RPMI_ERR_INVALID_PARAM    = -3,
+	RPMI_ERR_INVALID_PARAM		= -3,
 	/*
 	 * Denied to insufficient permissions
 	 * or due to unmet prerequisite
 	 */
-	RPMI_ERR_DENIED		= -4,
+	RPMI_ERR_DENIED			= -4,
 	/* Invalid address or offset */
-	RPMI_ERR_INVALID_ADDR	= -5,
+	RPMI_ERR_INVALID_ADDR		= -5,
 	/*
 	 * Operation failed as it was already in
 	 * progress or the state has changed already
 	 * for which the operation was carried out.
 	 */
-	RPMI_ERR_ALREADY	= -6,
+	RPMI_ERR_ALREADY		= -6,
 	/*
 	 * Error in implementation which violates
 	 * the specification version
 	 */
-	RPMI_ERR_EXTENSION	= -7,
+	RPMI_ERR_EXTENSION		= -7,
 	/* Operation failed due to hardware issues */
-	RPMI_ERR_HW_FAULT	= -8,
+	RPMI_ERR_HW_FAULT		= -8,
 	/* System, device or resource is busy */
-	RPMI_ERR_BUSY		= -9,
+	RPMI_ERR_BUSY			= -9,
 	/* System or device or resource in invalid state */
-	RPMI_ERR_INVALID_STATE	= -10,
+	RPMI_ERR_INVALID_STATE		= -10,
 	/* Index, offset or address is out of range */
-	RPMI_ERR_BAD_RANGE	= -11,
+	RPMI_ERR_BAD_RANGE		= -11,
 	/* Operation timed out */
-	RPMI_ERR_TIMEOUT	= -12,
+	RPMI_ERR_TIMEOUT		= -12,
 	/*
 	 * Error in input or output or
 	 * error in sending or receiving data
 	 * through communication medium
 	 */
-	RPMI_ERR_IO		= -13,
+	RPMI_ERR_IO			= -13,
 	/* No data available */
-	RPMI_ERR_NO_DATA	= -14,
-	RPMI_ERR_RESERVED_START	= -15,
-	RPMI_ERR_RESERVED_END	= -127,
-	RPMI_ERR_VENDOR_START	= -128,
+	RPMI_ERR_NO_DATA		= -14,
+	RPMI_ERR_RESERVED_START		= -15,
+	RPMI_ERR_RESERVED_END		= -127,
+	RPMI_ERR_VENDOR_START		= -128
 };
 
 /** RPMI Queue Types */
@@ -166,7 +166,7 @@ enum rpmi_queue_type {
 	RPMI_QUEUE_P2A_ACK,
 	RPMI_QUEUE_P2A_REQ,
 	RPMI_QUEUE_A2P_ACK,
-	RPMI_QUEUE_MAX,
+	RPMI_QUEUE_MAX
 };
 
 /**
@@ -176,7 +176,7 @@ enum rpmi_queue_type {
 enum rpmi_privilege_level {
 	RPMI_PRIVILEGE_S_MODE = 0,
 	RPMI_PRIVILEGE_M_MODE = 1,
-	RPMI_PRIVILEGE_LEVEL_MAX_IDX,
+	RPMI_PRIVILEGE_LEVEL_MAX
 };
 
 #define RPMI_PRIVILEGE_S_MODE_MASK	(1U << RPMI_PRIVILEGE_S_MODE)
@@ -184,45 +184,45 @@ enum rpmi_privilege_level {
 
 /** RPMI ServiceGroups IDs */
 enum rpmi_servicegroup_id {
-	RPMI_SRVGRP_ID_MIN = 0,
-	RPMI_SRVGRP_BASE = 0x0001,
-	RPMI_SRVGRP_SYSTEM_MSI = 0x0002,
-	RPMI_SRVGRP_SYSTEM_RESET = 0x0003,
-	RPMI_SRVGRP_SYSTEM_SUSPEND = 0x0004,
-	RPMI_SRVGRP_HSM = 0x0005,
-	RPMI_SRVGRP_CPPC = 0x0006,
-	RPMI_SRVGRP_VOLTAGE = 0x0007,
-	RPMI_SRVGRP_CLOCK = 0x0008,
-	RPMI_SRVGRP_DEVICE_POWER = 0x0009,
-	RPMI_SRVGRP_PERFORMANCE = 0x000A,
-	RPMI_SRVGRP_MANAGEMENT_MODE = 0x000B,
-	RPMI_SRVGRP_RAS_AGENT = 0x000C,
-	RPMI_SRVGRP_REQUEST_FORWARD = 0x000D,
+	RPMI_SRVGRP_ID_MIN		= 0,
+	RPMI_SRVGRP_BASE		= 0x0001,
+	RPMI_SRVGRP_SYSTEM_MSI		= 0x0002,
+	RPMI_SRVGRP_SYSTEM_RESET	= 0x0003,
+	RPMI_SRVGRP_SYSTEM_SUSPEND	= 0x0004,
+	RPMI_SRVGRP_HSM			= 0x0005,
+	RPMI_SRVGRP_CPPC		= 0x0006,
+	RPMI_SRVGRP_VOLTAGE		= 0x0007,
+	RPMI_SRVGRP_CLOCK		= 0x0008,
+	RPMI_SRVGRP_DEVICE_POWER	= 0x0009,
+	RPMI_SRVGRP_PERFORMANCE		= 0x000A,
+	RPMI_SRVGRP_MANAGEMENT_MODE	= 0x000B,
+	RPMI_SRVGRP_RAS_AGENT		= 0x000C,
+	RPMI_SRVGRP_REQUEST_FORWARD	= 0x000D,
 	RPMI_SRVGRP_ID_MAX_COUNT,
 
 	/* Reserved range for service groups */
-	RPMI_SRVGRP_RESERVE_START = RPMI_SRVGRP_ID_MAX_COUNT,
-	RPMI_SRVGRP_RESERVE_END = 0x7BFF,
+	RPMI_SRVGRP_RESERVE_START	= RPMI_SRVGRP_ID_MAX_COUNT,
+	RPMI_SRVGRP_RESERVE_END		= 0x7BFF,
 
 	/* Experimental service groups range */
-	RPMI_SRVGRP_EXPERIMENTAL_START = 0x7C00,
-	RPMI_SRVGRP_EXPERIMENTAL_END = 0x7FFF,
+	RPMI_SRVGRP_EXPERIMENTAL_START	= 0x7C00,
+	RPMI_SRVGRP_EXPERIMENTAL_END	= 0x7FFF,
 
 	/* Vendor/Implementation-specific service groups range */
-	RPMI_SRVGRP_VENDOR_START = 0x8000,
-	RPMI_SRVGRP_VENDOR_END = 0xFFFF,
+	RPMI_SRVGRP_VENDOR_START	= 0x8000,
+	RPMI_SRVGRP_VENDOR_END		= 0xFFFF,
 };
 
 /** RPMI Base ServiceGroup Service IDs */
 enum rpmi_base_service_id {
-	RPMI_BASE_SRV_ENABLE_NOTIFICATION = 0x01,
-	RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION = 0x02,
-	RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN = 0x03,
-	RPMI_BASE_SRV_GET_SPEC_VERSION = 0x04,
-	RPMI_BASE_SRV_GET_PLATFORM_INFO = 0x05,
-	RPMI_BASE_SRV_PROBE_SERVICE_GROUP = 0x06,
-	RPMI_BASE_SRV_GET_ATTRIBUTES = 0x07,
-	RPMI_BASE_SRV_ID_MAX = 0x08,
+	RPMI_BASE_SRV_ENABLE_NOTIFICATION		= 0x01,
+	RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION	= 0x02,
+	RPMI_BASE_SRV_GET_IMPLEMENTATION_IDN		= 0x03,
+	RPMI_BASE_SRV_GET_SPEC_VERSION			= 0x04,
+	RPMI_BASE_SRV_GET_PLATFORM_INFO			= 0x05,
+	RPMI_BASE_SRV_PROBE_SERVICE_GROUP		= 0x06,
+	RPMI_BASE_SRV_GET_ATTRIBUTES			= 0x07,
+	RPMI_BASE_SRV_ID_MAX
 };
 
 #define RPMI_BASE_VERSION_MINOR_POS		0
@@ -233,53 +233,53 @@ enum rpmi_base_service_id {
 
 #define RPMI_BASE_VERSION(__major, __minor)	\
 ((((__major) & RPMI_BASE_VERSION_MAJOR_MASK) << RPMI_BASE_VERSION_MAJOR_POS) | \
- (((__minor) & RPMI_BASE_VERSION_MINOR_MASK) << RPMI_BASE_VERSION_MINOR_POS))
+	(((__minor) & RPMI_BASE_VERSION_MINOR_MASK) << RPMI_BASE_VERSION_MINOR_POS))
 
 #define RPMI_BASE_FLAGS_F0_PRIVILEGE		(1U << 1)
 #define RPMI_BASE_FLAGS_F0_EV_NOTIFY		(1U << 0)
 
 /** RPMI System MSI (SYSMSI) ServiceGroup Service IDs */
 enum rpmi_sysmsi_service_id {
-	RPMI_SYSMSI_SRV_ENABLE_NOTIFICATION = 0x01,
-	RPMI_SYSMSI_SRV_GET_ATTRIBUTES = 0x2,
-	RPMI_SYSMSI_SRV_GET_MSI_ATTRIBUTES = 0x3,
-	RPMI_SYSMSI_SRV_SET_MSI_STATE = 0x4,
-	RPMI_SYSMSI_SRV_GET_MSI_STATE = 0x5,
-	RPMI_SYSMSI_SRV_SET_MSI_TARGET = 0x6,
-	RPMI_SYSMSI_SRV_GET_MSI_TARGET = 0x7,
-	RPMI_SYSMSI_SRV_ID_MAX,
+	RPMI_SYSMSI_SRV_ENABLE_NOTIFICATION	= 0x01,
+	RPMI_SYSMSI_SRV_GET_ATTRIBUTES		= 0x2,
+	RPMI_SYSMSI_SRV_GET_MSI_ATTRIBUTES	= 0x3,
+	RPMI_SYSMSI_SRV_SET_MSI_STATE		= 0x4,
+	RPMI_SYSMSI_SRV_GET_MSI_STATE		= 0x5,
+	RPMI_SYSMSI_SRV_SET_MSI_TARGET		= 0x6,
+	RPMI_SYSMSI_SRV_GET_MSI_TARGET		= 0x7,
+	RPMI_SYSMSI_SRV_ID_MAX
 };
 
 /** RPMI System Reset ServiceGroup Service IDs */
 enum rpmi_sysreset_service_id {
-	RPMI_SYSRST_SRV_ENABLE_NOTIFICATION = 0x01,
-	RPMI_SYSRST_SRV_GET_ATTRIBUTES = 0x02,
-	RPMI_SYSRST_SRV_SYSTEM_RESET = 0x03,
-	RPMI_SYSRST_SRV_ID_MAX = 0x04,
+	RPMI_SYSRST_SRV_ENABLE_NOTIFICATION	= 0x01,
+	RPMI_SYSRST_SRV_GET_ATTRIBUTES		= 0x02,
+	RPMI_SYSRST_SRV_SYSTEM_RESET		= 0x03,
+	RPMI_SYSRST_SRV_ID_MAX			= 0x04,
 };
 
 /** RPMI System Reset types */
 enum rpmi_sysrst_reset_type {
-	RPMI_SYSRST_TYPE_SHUTDOWN = 0x0,
-	RPMI_SYSRST_TYPE_COLD_REBOOT = 0x1,
-	RPMI_SYSRST_TYPE_WARM_REBOOT = 0x2,
-	RPMI_SYSRST_TYPE_MAX,
+	RPMI_SYSRST_TYPE_SHUTDOWN	= 0x0,
+	RPMI_SYSRST_TYPE_COLD_REBOOT	= 0x1,
+	RPMI_SYSRST_TYPE_WARM_REBOOT	= 0x2,
+	RPMI_SYSRST_TYPE_MAX
 };
 
 #define RPMI_SYSRST_ATTRS_FLAGS_RESETTYPE	1U
 
 /** RPMI System Suspend ServiceGroup Service IDs */
 enum rpmi_system_suspend_service_id {
-	RPMI_SYSSUSP_SRV_ENABLE_NOTIFICATION = 0x01,
-	RPMI_SYSSUSP_SRV_GET_ATTRIBUTES = 0x02,
-	RPMI_SYSSUSP_SRV_SYSTEM_SUSPEND = 0x03,
-	RPMI_SYSSUSP_SRV_ID_MAX = 0x04,
+	RPMI_SYSSUSP_SRV_ENABLE_NOTIFICATION	= 0x01,
+	RPMI_SYSSUSP_SRV_GET_ATTRIBUTES		= 0x02,
+	RPMI_SYSSUSP_SRV_SYSTEM_SUSPEND		= 0x03,
+	RPMI_SYSSUSP_SRV_ID_MAX			= 0x04,
 };
 
 /* RPMI Suspend Types */
 enum rpmi_syssusp_suspend_type {
-	RPMI_SYSSUSP_TYPE_SUSPEND_TO_RAM = 0x0,
-	RPMI_SYSSUSP_TYPE_MAX,
+	RPMI_SYSSUSP_TYPE_SUSPEND_TO_RAM	= 0x0,
+	RPMI_SYSSUSP_TYPE_MAX
 };
 
 #define RPMI_SYSSUSP_ATTRS_FLAGS_RESUMEADDR	(1U << 1)
@@ -287,40 +287,40 @@ enum rpmi_syssusp_suspend_type {
 
 /** RPMI Hart State Management (HSM) ServiceGroup Service IDs */
 enum rpmi_hsm_service_id {
-	RPMI_HSM_SRV_ENABLE_NOTIFICATION = 0x01,
-	RPMI_HSM_SRV_GET_HART_STATUS = 0x02,
-	RPMI_HSM_SRV_GET_HART_LIST = 0x03,
-	RPMI_HSM_SRV_GET_SUSPEND_TYPES = 0x04,
-	RPMI_HSM_SRV_GET_SUSPEND_INFO = 0x05,
-	RPMI_HSM_SRV_HART_START = 0x06,
-	RPMI_HSM_SRV_HART_STOP = 0x07,
-	RPMI_HSM_SRV_HART_SUSPEND = 0x08,
-	RPMI_HSM_SRV_ID_MAX = 0x09,
+	RPMI_HSM_SRV_ENABLE_NOTIFICATION	= 0x01,
+	RPMI_HSM_SRV_GET_HART_STATUS		= 0x02,
+	RPMI_HSM_SRV_GET_HART_LIST		= 0x03,
+	RPMI_HSM_SRV_GET_SUSPEND_TYPES		= 0x04,
+	RPMI_HSM_SRV_GET_SUSPEND_INFO		= 0x05,
+	RPMI_HSM_SRV_HART_START			= 0x06,
+	RPMI_HSM_SRV_HART_STOP			= 0x07,
+	RPMI_HSM_SRV_HART_SUSPEND		= 0x08,
+	RPMI_HSM_SRV_ID_MAX
 };
 
 /** RPMI Clock (CLK) ServiceGroup Service IDs */
 enum rpmi_clock_service_id {
-	RPMI_CLK_SRV_ENABLE_NOTIFICATION = 0x01,
-	RPMI_CLK_SRV_GET_NUM_CLOCKS = 0x02,
-	RPMI_CLK_SRV_GET_ATTRIBUTES = 0x03,
-	RPMI_CLK_SRV_GET_SUPPORTED_RATES = 0x04,
-	RPMI_CLK_SRV_SET_CONFIG = 0x05,
-	RPMI_CLK_SRV_GET_CONFIG = 0x06,
-	RPMI_CLK_SRV_SET_RATE = 0x07,
-	RPMI_CLK_SRV_GET_RATE = 0x08,
-	RPMI_CLK_SRV_ID_MAX,
+	RPMI_CLK_SRV_ENABLE_NOTIFICATION	= 0x01,
+	RPMI_CLK_SRV_GET_NUM_CLOCKS		= 0x02,
+	RPMI_CLK_SRV_GET_ATTRIBUTES		= 0x03,
+	RPMI_CLK_SRV_GET_SUPPORTED_RATES	= 0x04,
+	RPMI_CLK_SRV_SET_CONFIG			= 0x05,
+	RPMI_CLK_SRV_GET_CONFIG			= 0x06,
+	RPMI_CLK_SRV_SET_RATE			= 0x07,
+	RPMI_CLK_SRV_GET_RATE			= 0x08,
+	RPMI_CLK_SRV_ID_MAX
 };
 
 /** RPMI CPPC (CPPC) ServiceGroup Service IDs */
 enum rpmi_cppc_service_id {
-	RPMI_CPPC_SRV_ENABLE_NOTIFICATION = 0x01,
-	RPMI_CPPC_SRV_PROBE_REG = 0x02,
-	RPMI_CPPC_SRV_READ_REG = 0x03,
-	RPMI_CPPC_SRV_WRITE_REG = 0x04,
-	RPMI_CPPC_SRV_GET_FAST_CHANNEL_REGION = 0x05,
-	RPMI_CPPC_SRV_GET_FAST_CHANNEL_OFFSET = 0x06,
-	RPMI_CPPC_SRV_GET_HART_LIST = 0x07,
-	RPMI_CPPC_SRV_ID_MAX,
+	RPMI_CPPC_SRV_ENABLE_NOTIFICATION	= 0x01,
+	RPMI_CPPC_SRV_PROBE_REG			= 0x02,
+	RPMI_CPPC_SRV_READ_REG			= 0x03,
+	RPMI_CPPC_SRV_WRITE_REG			= 0x04,
+	RPMI_CPPC_SRV_GET_FAST_CHANNEL_REGION	= 0x05,
+	RPMI_CPPC_SRV_GET_FAST_CHANNEL_OFFSET	= 0x06,
+	RPMI_CPPC_SRV_GET_HART_LIST		= 0x07,
+	RPMI_CPPC_SRV_ID_MAX
 };
 
 /** @} */
@@ -333,7 +333,7 @@ enum rpmi_cppc_service_id {
  * @{
  */
 
-#define LIBRPMI_IMPL_ID				0
+#define LIBRPMI_IMPL_ID					0
 
 #define LIBRPMI_IMPL_VERSION_MAJOR			0
 #define LIBRPMI_IMPL_VERSION_MINOR			1
@@ -469,42 +469,42 @@ void rpmi_shmem_destroy(struct rpmi_shmem *shmem);
  */
 struct rpmi_transport {
 	/** Name of the transport */
-	const char *name;
+	const char	*name;
 
 	/** Endianness of the messages transferred through this transport */
-	rpmi_bool_t is_be;
+	rpmi_bool_t	is_be;
 
 	/**
 	 * Is P2A channel available (in case of shmem based transport
 	 * is p2a req and a2p ack queues)
 	 */
-	rpmi_bool_t is_p2a_channel;
+	rpmi_bool_t	is_p2a_channel;
 
 	/** Slot (or max message) size in transport queues */
-	rpmi_size_t slot_size;
+	rpmi_size_t	slot_size;
 
 	/**
 	 * Callback to check if a RPMI queue type is empty
 	 *
 	 * Note: This function must be called with transport lock held.
 	 */
-	rpmi_bool_t (*is_empty)(struct rpmi_transport *trans,
-				enum rpmi_queue_type qtype);
+	rpmi_bool_t	(*is_empty)(struct rpmi_transport *trans,
+				    enum rpmi_queue_type qtype);
 
 	/**
 	 * Callback to check if a RPMI queue type is full
 	 *
 	 * Note: This function must be called with transport lock held.
 	 */
-	rpmi_bool_t (*is_full)(struct rpmi_transport *trans,
-			       enum rpmi_queue_type qtype);
+	rpmi_bool_t	(*is_full)(struct rpmi_transport *trans,
+				   enum rpmi_queue_type qtype);
 
 	/**
 	 * Callback to enqueue a RPMI message to a specified RPMI queue type
 	 *
 	 * Note: This function must be called with transport lock held.
 	 */
-	enum rpmi_error (*enqueue)(struct rpmi_transport *trans,
+	enum rpmi_error	(*enqueue)(struct rpmi_transport *trans,
 				   enum rpmi_queue_type qtype,
 				   const struct rpmi_message *msg);
 
@@ -518,10 +518,10 @@ struct rpmi_transport {
 				   struct rpmi_message *out_msg);
 
 	/** Lock to synchronize transport access (optional) */
-	void *lock;
+	void		*lock;
 
 	/** Private data of the transport implementation */
-	void *priv;
+	void		*priv;
 };
 
 /**
@@ -640,7 +640,7 @@ void rpmi_context_process_all_events(struct rpmi_context *cntx);
  * @return pointer to RPMI service group upon success and NULL upon failure
  */
 struct rpmi_service_group *rpmi_context_find_group(struct rpmi_context *cntx,
-						rpmi_uint16_t servicegroup_id);
+						   rpmi_uint16_t servicegroup_id);
 
 /**
  * @brief Add a RPMI service group to a RPMI context
@@ -702,17 +702,17 @@ struct rpmi_service_group;
 /** RPMI service instance */
 struct rpmi_service {
 	/** ID of the service */
-	rpmi_uint8_t service_id;
+	rpmi_uint8_t	service_id;
 
 	/** Minimum data length for handling request */
-	rpmi_uint16_t min_a2p_request_datalen;
+	rpmi_uint16_t	min_a2p_request_datalen;
 
 	/**
 	 * Callback to process a2p request
 	 *
 	 * Note: This function must be called with service group lock held.
 	 */
-	enum rpmi_error (*process_a2p_request)(struct rpmi_service_group *group,
+	enum rpmi_error	(*process_a2p_request)(struct rpmi_service_group *group,
 					       struct rpmi_service *service,
 					       struct rpmi_transport *trans,
 					       rpmi_uint16_t request_data_len,
@@ -724,16 +724,16 @@ struct rpmi_service {
 /** RPMI service group instance */
 struct rpmi_service_group {
 	/** Name of the service group */
-	const char *name;
+	const char		*name;
 
 	/** ID of the service group */
-	rpmi_uint16_t servicegroup_id;
+	rpmi_uint16_t		servicegroup_id;
 
 	/** Maximum service ID of the service group */
-	rpmi_uint8_t max_service_id;
+	rpmi_uint8_t		max_service_id;
 
 	/** Service group version */
-	rpmi_uint32_t servicegroup_version;
+	rpmi_uint32_t		servicegroup_version;
 
 	/**
 	 * RISC-V privilege level bitmap where this group
@@ -741,10 +741,10 @@ struct rpmi_service_group {
 	 * values represents the bit positions which if are
 	 * set, the access to that privilege level is enabled
 	 */
-	rpmi_uint32_t privilege_level_bitmap;
+	rpmi_uint32_t		privilege_level_bitmap;
 
 	/** Array of services indexed by service ID */
-	struct rpmi_service *services;
+	struct rpmi_service	*services;
 
 	/**
 	 * Callback to process events for a service group. These events can be:
@@ -755,13 +755,13 @@ struct rpmi_service_group {
 	 *
 	 * Note: This function must be called with service group lock held.
 	 */
-	enum rpmi_error (*process_events)(struct rpmi_service_group *group);
+	enum rpmi_error		(*process_events)(struct rpmi_service_group *group);
 
 	/** Lock to synchronize service group access (optional) */
-	void *lock;
+	void			*lock;
 
 	/** Private data of the service group implementation */
-	void *priv;
+	void			*priv;
 };
 
 /** @} */
@@ -784,36 +784,38 @@ struct rpmi_service_group {
 
 /** RPMI HSM hart states (based on SBI specification) */
 enum rpmi_hsm_hart_state {
-	RPMI_HSM_HART_STATE_STARTED = 0x0,
-	RPMI_HSM_HART_STATE_STOPPED = 0x1,
-	RPMI_HSM_HART_STATE_START_PENDING = 0x2,
-	RPMI_HSM_HART_STATE_STOP_PENDING = 0x3,
-	RPMI_HSM_HART_STATE_SUSPENDED = 0x4,
-	RPMI_HSM_HART_STATE_SUSPEND_PENDING = 0x5,
-	RPMI_HSM_HART_STATE_RESUME_PENDING = 0x6,
+	RPMI_HSM_HART_STATE_STARTED		= 0x0,
+	RPMI_HSM_HART_STATE_STOPPED		= 0x1,
+	RPMI_HSM_HART_STATE_START_PENDING	= 0x2,
+	RPMI_HSM_HART_STATE_STOP_PENDING	= 0x3,
+	RPMI_HSM_HART_STATE_SUSPENDED		= 0x4,
+	RPMI_HSM_HART_STATE_SUSPEND_PENDING	= 0x5,
+	RPMI_HSM_HART_STATE_RESUME_PENDING	= 0x6,
+	RPMI_HSM_HART_STATE_MAX
 };
 
 /** RPMI HW hart states */
 enum rpmi_hart_hw_state {
 	/** Hart is stopped or inactive (i.e. not executing instructions) */
-	RPMI_HART_HW_STATE_STOPPED = 0x0,
+	RPMI_HART_HW_STATE_STOPPED	= 0x0,
 	/** Hart is started or active (i.e. executing instructions) */
-	RPMI_HART_HW_STATE_STARTED = 0x1,
+	RPMI_HART_HW_STATE_STARTED	= 0x1,
 	/** Hart is suspended or idle (i.e. WFI or equivalent state) */
-	RPMI_HART_HW_STATE_SUSPENDED = 0x2,
+	RPMI_HART_HW_STATE_SUSPENDED	= 0x2,
+	RPMI_HART_HW_STATE_MAX
 };
 
 #define RPMI_HSM_SUSPEND_INFO_FLAGS_TIMER_STOP		1U
 
 /** RPMI HSM suspend type */
 struct rpmi_hsm_suspend_type {
-	rpmi_uint32_t type;
+	rpmi_uint32_t		type;
 	struct {
-		rpmi_uint32_t flags;
-		rpmi_uint32_t entry_latency_us;
-		rpmi_uint32_t exit_latency_us;
-		rpmi_uint32_t wakeup_latency_us;
-		rpmi_uint32_t min_residency_us;
+		rpmi_uint32_t	flags;
+		rpmi_uint32_t	entry_latency_us;
+		rpmi_uint32_t	exit_latency_us;
+		rpmi_uint32_t	wakeup_latency_us;
+		rpmi_uint32_t	min_residency_us;
 	} info;
 };
 
@@ -827,33 +829,34 @@ struct rpmi_hsm_platform_ops {
 						     rpmi_uint32_t hart_index);
 
 	/** Prepare a hart to start (optional) */
-	enum rpmi_error (*hart_start_prepare)(void *priv,
+	enum rpmi_error	(*hart_start_prepare)(void *priv,
 					      rpmi_uint32_t hart_index,
 					      rpmi_uint64_t start_addr);
 
 	/** Finalize hart start (optional) */
-	void (*hart_start_finalize)(void *priv,
-				    rpmi_uint32_t hart_index,
-				    rpmi_uint64_t start_addr);
+	void		(*hart_start_finalize)(void *priv,
+					       rpmi_uint32_t hart_index,
+					       rpmi_uint64_t start_addr);
 
 	/** Prepare a hart to stop (optional) */
-	enum rpmi_error (*hart_stop_prepare)(void *priv,
+	enum rpmi_error	(*hart_stop_prepare)(void *priv,
 					     rpmi_uint32_t hart_index);
 
 	/** Finalize hart stop (optional) */
-	void (*hart_stop_finalize)(void *priv, rpmi_uint32_t hart_index);
+	void		(*hart_stop_finalize)(void *priv,
+					      rpmi_uint32_t hart_index);
 
 	/** Prepare a hart to suspend (optional) */
-	enum rpmi_error (*hart_suspend_prepare)(void *priv,
+	enum rpmi_error	(*hart_suspend_prepare)(void *priv,
 						rpmi_uint32_t hart_index,
-			const struct rpmi_hsm_suspend_type *suspend_type,
+						const struct rpmi_hsm_suspend_type *suspend_type,
 						rpmi_uint64_t resume_addr);
 
 	/** Finalize hart suspend (optional) */
-	void (*hart_suspend_finalize)(void *priv,
-				      rpmi_uint32_t hart_index,
-			const struct rpmi_hsm_suspend_type *suspend_type,
-				      rpmi_uint64_t resume_addr);
+	void		(*hart_suspend_finalize)(void *priv,
+						 rpmi_uint32_t hart_index,
+						 const struct rpmi_hsm_suspend_type *suspend_type,
+						 rpmi_uint64_t resume_addr);
 };
 
 /**
@@ -948,7 +951,7 @@ enum rpmi_error rpmi_hsm_hart_stop(struct rpmi_hsm *hsm,
  */
 enum rpmi_error rpmi_hsm_hart_suspend(struct rpmi_hsm *hsm,
 				      rpmi_uint32_t hart_id,
-			const struct rpmi_hsm_suspend_type *suspend_type,
+				      const struct rpmi_hsm_suspend_type *suspend_type,
 				      rpmi_uint64_t resume_addr);
 
 /**
@@ -1063,31 +1066,31 @@ struct rpmi_system_suspend_type {
 /** Platform specific system suspend operations */
 struct rpmi_syssusp_platform_ops {
 	/** Prepare for system suspend */
-	enum rpmi_error (*system_suspend_prepare)(void *priv,
+	enum rpmi_error	(*system_suspend_prepare)(void *priv,
 						  rpmi_uint32_t hart_index,
-			const struct rpmi_system_suspend_type *syssusp_type,
+						  const struct rpmi_system_suspend_type *syssusp_type,
 						  rpmi_uint64_t resume_addr);
 	/**
 	 * Check if the system is ready to suspend
 	 * Returns TRUE if system is ready otherwise FALSE
 	 */
-	rpmi_bool_t (*system_suspend_ready)(void *priv,
-					    rpmi_uint32_t hart_index);
+	rpmi_bool_t	(*system_suspend_ready)(void *priv,
+						rpmi_uint32_t hart_index);
 	/** Finalize system suspend */
-	void (*system_suspend_finalize)(void *priv,
-					rpmi_uint32_t hart_index,
-			const struct rpmi_system_suspend_type *syssusp_type,
-					rpmi_uint64_t resume_addr);
+	void		(*system_suspend_finalize)(void *priv,
+						   rpmi_uint32_t hart_index,
+						   const struct rpmi_system_suspend_type *syssusp_type,
+						   rpmi_uint64_t resume_addr);
 	/**
 	 * Check if the system is ready to resume
 	 * Returns TRUE if system can resume otherwise FALSE
 	 */
-	rpmi_bool_t (*system_suspend_can_resume)(void *priv,
-						 rpmi_uint32_t hart_index);
+	rpmi_bool_t	(*system_suspend_can_resume)(void *priv,
+						     rpmi_uint32_t hart_index);
 	/** Resume from system suspend */
 	enum rpmi_error (*system_suspend_resume)(void *priv,
 						 rpmi_uint32_t hart_index,
-			const struct rpmi_system_suspend_type *syssusp_type,
+						 const struct rpmi_system_suspend_type *syssusp_type,
 						 rpmi_uint64_t resume_addr);
 };
 
@@ -1104,7 +1107,7 @@ struct rpmi_syssusp_platform_ops {
 struct rpmi_service_group *
 rpmi_service_group_syssusp_create(struct rpmi_hsm *hsm,
 				  rpmi_uint32_t syssusp_type_count,
-			const struct rpmi_system_suspend_type *syssusp_types,
+				  const struct rpmi_system_suspend_type *syssusp_types,
 				  const struct rpmi_syssusp_platform_ops *ops,
 				  void *ops_priv);
 
@@ -1143,24 +1146,24 @@ void rpmi_service_group_hsm_destroy(struct rpmi_service_group *group);
 
 /** Clock rate match mode */
 enum rpmi_clock_rate_match {
-	RPMI_CLK_RATE_MATCH_PLATFORM = 0,
-	RPMI_CLK_RATE_MATCH_ROUND_DOWN = 1,
-	RPMI_CLK_RATE_MATCH_ROUND_UP = 2,
-	RPMI_CLK_RATE_MATCH_MAX_IDX,
+	RPMI_CLK_RATE_MATCH_PLATFORM	= 0,
+	RPMI_CLK_RATE_MATCH_ROUND_DOWN	= 1,
+	RPMI_CLK_RATE_MATCH_ROUND_UP	= 2,
+	RPMI_CLK_RATE_MATCH_MAX
 };
 
 /** Supported clock states */
 enum rpmi_clock_state {
-	RPMI_CLK_STATE_DISABLED = 0,
-	RPMI_CLK_STATE_ENABLED = 1,
-	RPMI_CLK_STATE_MAX_IDX,
+	RPMI_CLK_STATE_DISABLED	= 0,
+	RPMI_CLK_STATE_ENABLED	= 1,
+	RPMI_CLK_STATE_MAX
 };
 
 /** Clock type based on rate format */
 enum rpmi_clock_type {
-	RPMI_CLK_TYPE_DISCRETE = 0,
-	RPMI_CLK_TYPE_LINEAR = 1,
-	RPMI_CLK_TYPE_MAX_IDX,
+	RPMI_CLK_TYPE_DISCRETE	= 0,
+	RPMI_CLK_TYPE_LINEAR	= 1,
+	RPMI_CLK_TYPE_MAX
 };
 
 /** A clock rate representation in RPMI */
@@ -1178,31 +1181,31 @@ struct rpmi_clock_rate {
  */
 struct rpmi_clock_data {
 	/* Parent clock ID */
-	rpmi_uint32_t parent_id;
+	rpmi_uint32_t		parent_id;
 	/* Clock transition latency(milli-seconds) */
-	rpmi_uint32_t transition_latency_ms;
+	rpmi_uint32_t		transition_latency_ms;
 	/* Number of rates supported as per the clock format type */
-	rpmi_uint32_t rate_count;
+	rpmi_uint32_t		rate_count;
 	/* Clock rate format type */
-	enum rpmi_clock_type clock_type;
+	enum rpmi_clock_type	clock_type;
 	/* Clock name */
-	const char *name;
+	const char		*name;
 	/* Clock rate array */
-	const rpmi_uint64_t *clock_rate_array;
+	const rpmi_uint64_t	*clock_rate_array;
 };
 
 /** Clock Attributes */
 struct rpmi_clock_attrs {
 	/** clock transition latency in milli-seconds */
-	rpmi_uint32_t transition_latency;
+	rpmi_uint32_t		transition_latency;
 	/** clock rate format type */
-	enum rpmi_clock_type type;
+	enum rpmi_clock_type	type;
 	/** number of supported rates */
-	rpmi_uint32_t rate_count;
+	rpmi_uint32_t		rate_count;
 	/** array of supported rates */
-	const rpmi_uint64_t *rate_array;
+	const rpmi_uint64_t	*rate_array;
 	/* Clock name */
-	const char *name;
+	const char		*name;
 };
 
 /** Platform specific clock operations(synchronous) */
@@ -1225,9 +1228,9 @@ struct rpmi_clock_platform_ops {
 	 * which require change in clock rate.
 	 * Returns TRUE if rate change required otherwise FALSE
 	 */
-	rpmi_bool_t (*rate_change_match)(void *priv,
-					 rpmi_uint32_t clock_id,
-					 rpmi_uint64_t rate);
+	rpmi_bool_t	(*rate_change_match)(void *priv,
+					     rpmi_uint32_t clock_id,
+					     rpmi_uint64_t rate);
 
 	/**
 	 * Set clock rate.
@@ -1505,14 +1508,14 @@ void rpmi_service_group_cppc_destroy(struct rpmi_service_group *group);
 
 struct rpmi_sysmsi_platform_ops {
 	/** Check whether given MSI target address is valid or not (Mandatory) */
-	rpmi_bool_t (*validate_msi_addr)(void *priv, rpmi_uint64_t msi_addr);
+	rpmi_bool_t	(*validate_msi_addr)(void *priv, rpmi_uint64_t msi_addr);
 
 	/** Check whether M-mode is the preferred for handling given system MSI (Optional) */
-	rpmi_bool_t (*mmode_preferred)(void *priv, rpmi_uint32_t msi_index);
+	rpmi_bool_t	(*mmode_preferred)(void *priv, rpmi_uint32_t msi_index);
 
 	/** Get the name of given system MSI (Optional) */
-	void (*get_name)(void *priv, rpmi_uint32_t msi_index,
-			 char *out_name, rpmi_uint32_t out_name_sz);
+	void		(*get_name)(void *priv, rpmi_uint32_t msi_index,
+				    char *out_name, rpmi_uint32_t out_name_sz);
 };
 
 /**

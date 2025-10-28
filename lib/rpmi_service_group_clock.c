@@ -697,7 +697,7 @@ rpmi_clock_sg_set_rate(struct rpmi_service_group *group,
 
 	/* get rate match mode from flags */
 	rate_match = flags & 0b11;
-	if (rate_match >= RPMI_CLK_RATE_MATCH_MAX_IDX) {
+	if (rate_match >= RPMI_CLK_RATE_MATCH_MAX) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		goto done;
