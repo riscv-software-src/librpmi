@@ -604,7 +604,7 @@ struct rpmi_context *rpmi_context_create(const char *name,
 	enum rpmi_error rc;
 
 	if (!name || !trans || !max_num_groups ||
-			privilege_level >= RPMI_PRIVILEGE_LEVEL_MAX_IDX) {
+			privilege_level >= RPMI_PRIVILEGE_LEVEL_MAX) {
 		DPRINTF("%s: invalid parameters\n", __func__);
 		return NULL;
 	}
