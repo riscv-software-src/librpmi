@@ -106,7 +106,7 @@ struct rpmi_message_header {
 /** RPMI Message */
 struct rpmi_message {
 	struct rpmi_message_header	header;
-	rpmi_uint8_t			data[0];
+	rpmi_uint8_t			data[];
 };
 
 /** RPMI Error Types */
