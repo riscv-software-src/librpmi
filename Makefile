@@ -99,7 +99,7 @@ GENFLAGS	=	-Wall -Werror -g
 GENFLAGS	+=	-I$(include_dir) -I$(lib_dir)
 
 ifeq ($(LIBRPMI_DEBUG),y)
-GENFLAGS 	+=	 -O0 -DDEBUG
+GENFLAGS 	+=	 -O0 -DLIBRPMI_DEBUG
 else
 GENFLAGS 	+=	 -O2
 endif

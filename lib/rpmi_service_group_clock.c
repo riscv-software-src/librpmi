@@ -8,7 +8,7 @@
 #include "librpmi_internal.h"
 #include "librpmi_internal_list.h"
 
-#ifdef DEBUG
+#ifdef LIBRPMI_DEBUG
 #define DPRINTF(msg...)		rpmi_env_printf(msg)
 #else
 #define DPRINTF(msg...)
