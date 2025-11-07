@@ -323,6 +323,21 @@ enum rpmi_cppc_service_id {
 	RPMI_CPPC_SRV_ID_MAX
 };
 
+/** RPMI Performance (PERF) ServiceGroup Service IDs */
+enum rpmi_perf_service_id {
+	RPMI_PERF_SRV_ENABLE_NOTIFICATION		= 0x01,
+	RPMI_PERF_SRV_GET_NUM_DOMAINS			= 0x02,
+	RPMI_PERF_SRV_GET_ATTRIBUTES			= 0x03,
+	RPMI_PERF_SRV_GET_SUPPORTED_LEVELS		= 0x04,
+	RPMI_PERF_SRV_GET_PERF_LEVEL			= 0x05,
+	RPMI_PERF_SRV_SET_PERF_LEVEL			= 0x06,
+	RPMI_PERF_SRV_GET_PERF_LIMIT			= 0x07,
+	RPMI_PERF_SRV_SET_PERF_LIMIT			= 0x08,
+	RPMI_PERF_SRV_GET_FAST_CHANNEL_REGION		= 0x09,
+	RPMI_PERF_SRV_GET_FAST_CHANNEL_ATTRIBUTES	= 0x0A,
+	RPMI_PERF_SRV_ID_MAX,
+};
+
 /** RPMI Voltage (Volt) ServiceGroup Service IDs */
 enum rpmi_volt_service_id {
 	RPMI_VOLT_SRV_ENABLE_NOTIFICATION	= 0x01,
@@ -1571,6 +1586,170 @@ rpmi_service_group_sysmsi_create(rpmi_uint32_t num_msi,
 				 rpmi_uint32_t p2a_msi_index,
 				 const struct rpmi_sysmsi_platform_ops *ops,
 				 void *ops_priv);
+
+/** @} */
+
+/******************************************************************************/
+
+/**
+ * \defgroup LIBRPMI_PERFSRVGRP_INTERFACE RPMI Perf Service Group Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for RPMI perf service group.
+ * @{
+ */
+
+/** Perf capabilities */
+#define RPMI_PERF_CAPABILITY_SET_LIMIT			(1U << 2)
+#define RPMI_PERF_CAPABILITY_SET_LEVEL			(1U << 1)
+#define RPMI_PERF_CAPABILITY_FAST_CHANNEL_SUPPORT	(1U << 0)
+
+/** Fastchannel flags */
+#define RPMI_PERF_FST_CHN_DB_REG_08_BITS		(0U << 1)
+#define RPMI_PERF_FST_CHN_DB_REG_16_BITS		(1U << 1)
+#define RPMI_PERF_FST_CHN_DB_REG_32_BITS		(2U << 1)
+
+#define RPMI_PERF_FST_CHN_DB_NOT_SUPP			(0U << 0)
+#define RPMI_PERF_FST_CHN_DB_SUPP			(1U << 0)
+
+/** Fastchannel operation types */
+enum {
+	/* get domain perf level using fastchannel */
+	RPMI_PERF_FC_GET_LEVEL				= 0x0,
+	/* set domain perf level using fastchannel */
+	RPMI_PERF_FC_SET_LEVEL				= 0x1,
+	/* get domain perf limit using fastchannel */
+	RPMI_PERF_FC_GET_LIMIT				= 0x2,
+	/* set domain perf limit using fastchannel */
+	RPMI_PERF_FC_SET_LIMIT				= 0x3,
+	/* maximum number of fastchannel operations */
+	RPMI_PERF_FC_MAX,
+};
+
+/** A Perf level representation in RPMI */
+struct rpmi_perf_level {
+	rpmi_uint32_t level_index;
+	rpmi_uint32_t clock_freq;
+	rpmi_uint32_t power_cost;
+	rpmi_uint32_t transition_latency;
+};
+
+/* Perf fast-channel shared memory info */
+struct rpmi_perf_fc_memory_region {
+	rpmi_uint32_t addr_low;
+	rpmi_uint32_t addr_high;
+	rpmi_uint32_t size_low;
+	rpmi_uint32_t size_high;
+};
+
+/** Perf Domain Fast Channel Attributes */
+struct rpmi_perf_fc_attrs {
+	/** Fast Channel flags */
+	rpmi_uint32_t flags;
+	/** offset of phys addr low */
+	rpmi_uint32_t offset_phys_addr_low;
+	/** offset of phys addr high */
+	rpmi_uint32_t offset_phys_addr_high;
+	/** size */
+	rpmi_uint32_t size;
+	/** doorbell addr low */
+	rpmi_uint32_t db_addr_low;
+	/** doorbell addr high */
+	rpmi_uint32_t db_addr_high;
+	/** doorbell id */
+	rpmi_uint32_t db_id;
+};
+
+/**
+ * Perf Data and Tree details
+ *
+ * This structure represents the static
+ * perf data which platform has to maintain
+ * and pass to create the perf service group.
+ */
+struct rpmi_perf_data {
+	/* Perf domain name */
+	const char			*name;
+	/* Min time required between two consecutive requests (us) */
+	rpmi_uint32_t			trans_latency;
+	/* Perf capabilities */
+	rpmi_uint32_t			perf_capabilities;
+	/* Number of levels supported */
+	rpmi_uint32_t			perf_level_count;
+	/* Perf level array */
+	struct rpmi_perf_level		*perf_level_array;
+	/* Fast Channel attributes array */
+	struct rpmi_perf_fc_attrs	*fc_attrs_array;
+};
+
+/** Perf Domain Attributes */
+struct rpmi_perf_attrs {
+	/** perf service return status */
+	rpmi_int32_t		status;
+	/** perf capabilities and constraints */
+	rpmi_uint32_t		capability;
+	/** number of supported levels */
+	rpmi_uint32_t		level_count;
+	/** min time required between two consecutive requests (us) */
+	rpmi_uint32_t		trans_latency;
+	/** array of supported levels */
+	struct rpmi_perf_level	*level_array;
+	/** perf domain name */
+	const char		*name;
+};
+
+/** Platform specific perf operations(synchronous) */
+struct rpmi_perf_platform_ops {
+	/**
+	 * Get perf level
+	 **/
+	enum rpmi_error (*get_level)(void *priv,
+				     rpmi_uint32_t perf_id,
+				     rpmi_uint32_t *state);
+
+	/**
+	 * Set perf level
+	 **/
+	enum rpmi_error (*set_level)(void *priv,
+				     rpmi_uint32_t perf_id,
+				     rpmi_uint32_t perf_level);
+
+	/**
+	 * Get perf limit
+	 **/
+	enum rpmi_error (*get_limit)(void *priv,
+				     rpmi_uint32_t perf_id,
+				     rpmi_uint32_t *max_perf_limit,
+				     rpmi_uint32_t *min_perf_limit);
+
+	/**
+	 * Set perf limit
+	 **/
+	enum rpmi_error (*set_limit)(void *priv,
+				     rpmi_uint32_t perf_id,
+				     rpmi_uint32_t max_perf_limit,
+				     rpmi_uint32_t min_perf_limit);
+};
+
+/**
+ * @brief Create a performance service group instance
+ *
+ * @param[in] perf_mod          pointer to performance module
+ * @return rpmi_service_group * pointer to RPMI service group instance upon
+ * success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_perf_create(rpmi_uint32_t perf_count,
+			       const struct rpmi_perf_data *perf_tree_data,
+			       const struct rpmi_perf_platform_ops *ops,
+			       const struct rpmi_perf_fc_memory_region *fc_mem_region,
+			       void *ops_priv);
+
+/**
+ * @brief Destroy(free) a performance service group instance
+ *
+ * @param[in] group     pointer to RPMI service group instance
+ */
+void rpmi_service_group_perf_destroy(struct rpmi_service_group *group);
 
 /** @} */
 
