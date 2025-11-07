@@ -323,6 +323,19 @@ enum rpmi_cppc_service_id {
 	RPMI_CPPC_SRV_ID_MAX
 };
 
+/** RPMI Voltage (Volt) ServiceGroup Service IDs */
+enum rpmi_volt_service_id {
+	RPMI_VOLT_SRV_ENABLE_NOTIFICATION	= 0x01,
+	RPMI_VOLT_SRV_GET_NUM_DOMAINS		= 0x02,
+	RPMI_VOLT_SRV_GET_ATTRIBUTES		= 0x03,
+	RPMI_VOLT_SRV_GET_SUPPORTED_LEVELS	= 0x04,
+	RPMI_VOLT_SRV_SET_CONFIG		= 0x05,
+	RPMI_VOLT_SRV_GET_CONFIG		= 0x06,
+	RPMI_VOLT_SRV_SET_VOLT_LEVEL		= 0x07,
+	RPMI_VOLT_SRV_GET_VOLT_LEVEL		= 0x08,
+	RPMI_VOLT_SRV_ID_MAX,
+};
+
 /** @} */
 
 /****************************************************************************/
@@ -1558,6 +1571,174 @@ rpmi_service_group_sysmsi_create(rpmi_uint32_t num_msi,
 				 rpmi_uint32_t p2a_msi_index,
 				 const struct rpmi_sysmsi_platform_ops *ops,
 				 void *ops_priv);
+
+/** @} */
+
+/*************************************************************************************/
+
+/**
+ * \defgroup LIBRPMI_VOLTSRVGRP_INTERFACE RPMI Voltage Service Group Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for RPMI Voltage service group.
+ * @{
+ */
+
+/** Supported voltage domain states */
+enum rpmi_voltage_state {
+	RPMI_VOLT_STATE_INVALID			= -1,
+	RPMI_VOLT_STATE_DISABLED		= 0,
+	RPMI_VOLT_STATE_ENABLED			= 1,
+	RPMI_VOLT_STATE_ALWAYS_ON		= 2,
+	RPMI_VOLT_STATE_MAX,
+};
+
+/** Voltage type based on voltage format */
+enum rpmi_voltage_type {
+	RPMI_VOLT_TYPE_INVALID			= -1,
+	RPMI_VOLT_TYPE_DISCRETE			= 0,
+	RPMI_VOLT_TYPE_LINEAR			= 2,
+	RPMI_VOLT_TYPE_MAX,
+};
+
+/** voltage domain capabilities */
+enum rpmi_voltage_capability {
+	RPMI_VOLT_CAPABILITY_INVALID		= -1,
+	RPMI_VOLT_CAPABILITY_ENABLED_DISABLED	= 0,
+	RPMI_VOLT_CAPABILITY_ALWAYS_ON		= 1,
+	RPMI_VOLT_CAPABILITY_MAX,
+};
+
+/** voltage domain config */
+enum rpmi_voltage_config {
+	RPMI_VOLT_CONFIG_NOT_SUPPORTED		= 0,
+	RPMI_VOLT_CONFIG_ENABLED		= 1,
+	RPMI_VOLT_CONFIG_DISABLED		= 2,
+	RPMI_VOLT_CONFIG_MAX,
+};
+
+struct rpmi_voltage_discrete_range {
+	rpmi_uint32_t *uvolt;
+};
+
+struct rpmi_voltage_linear_range {
+	rpmi_uint32_t uvolt_min;
+	rpmi_uint32_t uvolt_max;
+	rpmi_uint32_t uvolt_step;
+};
+
+/**
+ * Voltage Data and Tree details
+ *
+ * This structure represents the static
+ * voltage domain data which platform has to maintain
+ * and pass to create the voltage service group.
+ */
+struct rpmi_voltage_data {
+	/* voltage domain name */
+	const char				*name;
+	/* voltage format */
+	rpmi_uint32_t				voltage_type;
+	/** regulator control */
+	rpmi_uint32_t				control;
+	/* regulator config */
+	rpmi_uint32_t				config;
+	/** number of supported voltage levels */
+	rpmi_uint32_t				num_levels;
+	/** transition latency */
+	rpmi_uint32_t				trans_latency;
+        /** discrete voltage range */
+        struct rpmi_voltage_discrete_range	*discrete_range;
+        /** linear voltage range */
+        struct rpmi_voltage_linear_range	*linear_range;
+	/** discrete voltage levels */
+	rpmi_int32_t				*discrete_levels;
+	/** linear voltage levels */
+	rpmi_int32_t				*linear_levels;
+	/** voltage level */
+	rpmi_int32_t				level_uv;
+};
+
+/** Voltage Domain Attributes */
+struct rpmi_voltage_attrs {
+	/** voltage service return status */
+	rpmi_int32_t	status;
+	/* regulator capability */
+	rpmi_uint32_t	capability;
+	/* regulator config */
+	rpmi_uint32_t	config;
+	/** number of supported levels */
+	rpmi_uint32_t	num_levels;
+	/* transition latency */
+	rpmi_uint32_t	trans_latency;
+	/** array of supported levels */
+	rpmi_int32_t	*level_array;
+	/* voltage domain name */
+	const char	*name;
+};
+
+/** Platform specific voltage operations(synchronous) */
+struct rpmi_voltage_platform_ops {
+	/**
+	 * set config of voltage regulator
+	 **/
+	enum rpmi_error (*set_config)(void *priv,
+				      rpmi_uint32_t volt_id,
+				      rpmi_uint32_t config);
+
+	/**
+	 * get config of voltage regulator
+	 **/
+	enum rpmi_error (*get_config)(void *priv,
+				      rpmi_uint32_t volt_id,
+				      rpmi_uint32_t *config);
+
+	/**
+	 * set level of voltage regulator
+	 **/
+	enum rpmi_error (*set_level)(void *priv,
+				     rpmi_uint32_t volt_id,
+				     rpmi_int32_t *volt_level);
+
+	/**
+	 * get level of voltage regulator
+	 **/
+	enum rpmi_error (*get_level)(void *priv,
+				     rpmi_uint32_t volt_id,
+				     rpmi_int32_t *volt_level);
+
+	/**
+	 * Get perf supported levels
+	 **/
+	enum rpmi_error (*get_supp_levels)(void *priv,
+					   rpmi_uint32_t volt_id,
+					   rpmi_uint32_t max,
+					   rpmi_uint32_t volt_index,
+					   rpmi_uint32_t *returned_levels,
+					   rpmi_int32_t *level_array);
+};
+
+/**
+ * @brief Create a device voltage service group instance
+ *
+ * @param[in] voltage_count        number of voltage domains
+ * @param[in] voltage_tree_data    pointer to voltage domain data
+ * @param[in] ops                  pointer to platform specific voltage operations
+ * @param[in] ops_priv             pointer to private data of platform operations
+ * @return rpmi_service_group *    pointer to RPMI service group instance upon
+ * success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_voltage_create(rpmi_uint32_t voltage_count,
+				  const struct rpmi_voltage_data *voltage_tree_data,
+				  const struct rpmi_voltage_platform_ops *ops,
+				  void *ops_priv);
+
+/**
+ * @brief Destroy(free) a voltage service group instance
+ *
+ * @param[in] group     pointer to RPMI service group instance
+ */
+void rpmi_service_group_voltage_destroy(struct rpmi_service_group *group);
 
 /** @} */
 

@@ -12,6 +12,7 @@ lib-objs-y += rpmi_service_group_sysreset.o
 lib-objs-y += rpmi_service_group_syssusp.o
 lib-objs-y += rpmi_service_group_clock.o
 lib-objs-y += rpmi_service_group_cppc.o
+lib-objs-y += rpmi_service_group_voltage.o
 lib-objs-y += rpmi_shmem.o
 lib-objs-y += rpmi_transport.o
 lib-objs-y += rpmi_transport_shmem.o
