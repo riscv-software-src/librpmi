@@ -361,6 +361,14 @@ enum rpmi_volt_service_id {
 	RPMI_VOLT_SRV_ID_MAX,
 };
 
+/** RPMI Management Mode (MM) ServiceGroup Service IDs */
+enum rpmi_mm_service_id {
+	RPMI_MM_SRV_ENABLE_NOTIFICATION	= 0x01,
+	RPMI_MM_SRV_GET_ATTRIBUTES	= 0x02,
+	RPMI_MM_SRV_COMMUNICATE		= 0x03,
+	RPMI_MM_SRV_ID_MAX
+};
+
 /** @} */
 
 /****************************************************************************/
@@ -2010,6 +2018,85 @@ rpmi_service_group_voltage_create(rpmi_uint32_t voltage_count,
  * @param[in] group     pointer to RPMI service group instance
  */
 void rpmi_service_group_voltage_destroy(struct rpmi_service_group *group);
+
+/** @} */
+
+/******************************************************************************/
+
+/**
+ * \defgroup LIBRPMI_MMSRVGRP_INTERFACE RPMI MM Service Group Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for RPMI Management Mode service group.
+ * @{
+ */
+
+/** Structure used for MM Communication */
+struct rpmi_mm_comm_req {
+	rpmi_uint32_t	idata_off;
+	rpmi_uint32_t	idata_len;
+	rpmi_uint32_t	odata_off;
+	rpmi_uint32_t	odata_len;
+};
+
+/** Basic data type definition introduced in UEFI */
+struct rpmi_guid_t {
+	rpmi_uint32_t	data1;
+	rpmi_uint16_t	data2;
+	rpmi_uint16_t	data3;
+	rpmi_uint8_t	data4[8];
+};
+
+#define GUID_LENGTH	16	/* in bytes */
+
+/**
+ * Prototype of callback function pointer associated with MM service unit for
+ * its active handling and cleanup (if required - to be called by the library
+ * when the linked group is being destroyed).
+ */
+typedef enum rpmi_error (*srvu_callback_fn_p)(struct rpmi_shmem *shmem,
+					      rpmi_uint16_t req_datalen,
+					      const rpmi_uint8_t *req_data,
+					      rpmi_uint16_t *rsp_datalen,
+					      rpmi_uint8_t *rsp_data,
+					      void *priv_data);
+
+/** Structure used for MM service unit (aka GUID) registration */
+struct rpmi_mm_service {
+	struct rpmi_guid_t	guid;
+	srvu_callback_fn_p	active_cbfn_p;
+	srvu_callback_fn_p	delete_cbfn_p;
+	void			*priv_data;
+};
+
+/**
+ * @brief Create a management mode (MM) service group instance
+ *
+ * @param[in] shmem		pointer to shared memory instance
+ *
+ * @return pointer to RPMI service group instance upon success and NULL upon failure
+ */
+struct rpmi_service_group *rpmi_service_group_mm_create(struct rpmi_shmem *shm);
+
+/**
+ * @brief Destroy (or free) a management mode (MM) service group instance
+ *
+ * @param[in] group	pointer to RPMI service group instance
+ */
+void rpmi_service_group_mm_destroy(struct rpmi_service_group *group);
+
+/**
+ * @brief Register the list of MM service units with associated information
+ *
+ * @param[in] group		pointer to RPMI service group instance
+ * @param[in] num_entries	number of entries in the given input @iplist
+ * @param[in] iplist		list containing @num_entries having MM service
+ *				units to be registered with attached information
+ *
+ * @return enum rpmi_error
+ */
+enum rpmi_error rpmi_mm_service_register(struct rpmi_service_group *group,
+					 rpmi_uint32_t num_entries,
+					 struct rpmi_mm_service *iplist);
 
 /** @} */
 
