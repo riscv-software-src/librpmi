@@ -211,7 +211,7 @@ rpmi_dpwr_get_attributes(struct rpmi_service_group *group,
 	rpmi_uint32_t dpwrid = rpmi_to_xe32(trans->is_be,
 				((const rpmi_uint32_t *)request_data)[0]);
 
-	if (dpwrid > dpwrgrp->dpwr_count) {
+	if (dpwrid >= dpwrgrp->dpwr_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		goto done;
@@ -256,7 +256,7 @@ rpmi_dpwr_get_state(struct rpmi_service_group *group,
 	rpmi_uint32_t dpwrid = rpmi_to_xe32(trans->is_be,
 					    ((const rpmi_uint32_t *)request_data)[0]);
 
-	if (dpwrid > dpwrgrp->dpwr_count) {
+	if (dpwrid >= dpwrgrp->dpwr_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		goto done;
@@ -297,7 +297,7 @@ rpmi_dpwr_set_state(struct rpmi_service_group *group,
 	rpmi_uint32_t dpwr_state = rpmi_to_xe32(trans->is_be,
 					((const rpmi_uint32_t *)request_data)[1]);
 
-	if (dpwrid > dpwrgrp->dpwr_count) {
+	if (dpwrid >= dpwrgrp->dpwr_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		goto done;
