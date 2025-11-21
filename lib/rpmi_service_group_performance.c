@@ -225,6 +225,8 @@ rpmi_perf_tree_init(rpmi_uint32_t perf_count,
 
 	struct rpmi_perf *perf_tree =
 		rpmi_env_zalloc(sizeof(struct rpmi_perf) * perf_count);
+	if (!perf_tree)
+		return NULL;
 
 	/* initialize all perf domain instances */
 	for (perfid = 0; perfid < perf_count; perfid++) {
