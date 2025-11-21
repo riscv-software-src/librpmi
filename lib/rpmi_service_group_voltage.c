@@ -274,7 +274,7 @@ rpmi_volt_get_attributes(struct rpmi_service_group *group,
 	rpmi_uint32_t voltid = rpmi_to_xe32(trans->is_be,
 					    ((const rpmi_uint32_t *)request_data)[0]);
 
-	if (voltid > voltgrp->volt_count) {
+	if (voltid >= voltgrp->volt_count) {
 		resp_dlen = sizeof(*resp);
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
@@ -324,7 +324,7 @@ rpmi_volt_get_config(struct rpmi_service_group *group,
 	rpmi_uint32_t voltid = rpmi_to_xe32(trans->is_be,
 					    ((const rpmi_uint32_t *)request_data)[0]);
 
-	if (voltid > voltgrp->volt_count) {
+	if (voltid >= voltgrp->volt_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		resp_dlen = sizeof(*resp);
@@ -372,7 +372,7 @@ rpmi_volt_set_config(struct rpmi_service_group *group,
 	rpmi_uint32_t volt_config = rpmi_to_xe32(trans->is_be,
 					((const rpmi_uint32_t *)request_data)[1]);
 
-	if (voltid > voltgrp->volt_count) {
+	if (voltid >= voltgrp->volt_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		resp_dlen = sizeof(*resp);
@@ -422,7 +422,7 @@ rpmi_volt_get_supp_levels(struct rpmi_service_group *group,
         rpmi_uint32_t voltid = rpmi_to_xe32(trans->is_be,
                                 ((const rpmi_uint32_t *)request_data)[0]);
 
-        if (voltid > voltgrp->volt_count) {
+        if (voltid >= voltgrp->volt_count) {
                 resp_dlen = sizeof(*resp);
                 resp[0] = rpmi_to_xe32(trans->is_be,
                                        (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
@@ -503,7 +503,7 @@ rpmi_volt_get_level(struct rpmi_service_group *group,
 	rpmi_uint32_t voltid = rpmi_to_xe32(trans->is_be,
 					    ((const rpmi_uint32_t *)request_data)[0]);
 
-	if (voltid > voltgrp->volt_count) {
+	if (voltid >= voltgrp->volt_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		resp_dlen = sizeof(*resp);
@@ -548,7 +548,7 @@ rpmi_volt_set_level(struct rpmi_service_group *group,
 	rpmi_int32_t volt_level = rpmi_to_xe32(trans->is_be,
 					((const rpmi_uint32_t *)request_data)[1]);
 
-	if (voltid > voltgrp->volt_count) {
+	if (voltid >= voltgrp->volt_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		resp_dlen = sizeof(*resp);
