@@ -156,6 +156,8 @@ rpmi_dpwr_tree_init(rpmi_uint32_t dpwr_count,
 
 	struct rpmi_dpwr *dpwr_tree =
 		rpmi_env_zalloc(sizeof(struct rpmi_dpwr) * dpwr_count);
+	if (!dpwr_tree)
+		return NULL;
 
 	/* initialize all dpwr domain instances */
 	for (dpwrid = 0; dpwrid < dpwr_count; dpwrid++) {
