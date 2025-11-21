@@ -280,7 +280,7 @@ rpmi_perf_get_attrs(struct rpmi_service_group *group,
 	rpmi_uint32_t perfid = rpmi_to_xe32(trans->is_be,
 				((const rpmi_uint32_t *)request_data)[0]);
 
-	if (perfid > perfgrp->perf_count) {
+	if (perfid >= perfgrp->perf_count) {
 		resp_dlen = sizeof(*resp);
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
@@ -333,7 +333,7 @@ rpmi_perf_get_supp_levels(struct rpmi_service_group *group,
 	rpmi_uint32_t perfid = rpmi_to_xe32(trans->is_be,
 				((const rpmi_uint32_t *)request_data)[0]);
 
-	if (perfid > perfgrp->perf_count) {
+	if (perfid >= perfgrp->perf_count) {
 		resp_dlen = sizeof(*resp);
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
@@ -424,7 +424,7 @@ rpmi_perf_get_level(struct rpmi_service_group *group,
 	rpmi_uint32_t perfid = rpmi_to_xe32(trans->is_be,
 					    ((const rpmi_uint32_t *)request_data)[0]);
 
-	if (perfid > perfgrp->perf_count) {
+	if (perfid >= perfgrp->perf_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		resp_dlen = sizeof(*resp);
@@ -467,7 +467,7 @@ rpmi_perf_set_level(struct rpmi_service_group *group,
 	rpmi_uint32_t perf_level = rpmi_to_xe32(trans->is_be,
 					((const rpmi_uint32_t *)request_data)[1]);
 
-	if (perfid > perfgrp->perf_count) {
+	if (perfid >= perfgrp->perf_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		resp_dlen = sizeof(*resp);
@@ -509,7 +509,7 @@ rpmi_perf_get_limit(struct rpmi_service_group *group,
 	rpmi_uint32_t perfid = rpmi_to_xe32(trans->is_be,
 					((const rpmi_uint32_t *)request_data)[0]);
 
-	if (perfid > perfgrp->perf_count) {
+	if (perfid >= perfgrp->perf_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		resp_dlen = sizeof(*resp);
@@ -555,7 +555,7 @@ rpmi_perf_set_limit(struct rpmi_service_group *group,
 	rpmi_uint32_t min_perf_limit = rpmi_to_xe32(trans->is_be,
 					((const rpmi_uint32_t *)request_data)[2]);
 
-	if (perfid > perfgrp->perf_count) {
+	if (perfid >= perfgrp->perf_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
 		resp_dlen = sizeof(*resp);
@@ -620,7 +620,7 @@ rpmi_perf_get_fast_channel_attrs(struct rpmi_service_group *group,
 	rpmi_uint32_t perfid = rpmi_to_xe32(trans->is_be,
 				((const rpmi_uint32_t *)request_data)[0]);
 
-	if (perfid > perfgrp->perf_count) {
+	if (perfid >= perfgrp->perf_count) {
 		resp_dlen = sizeof(*resp);
 		resp[0] = rpmi_to_xe32(trans->is_be,
 				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
