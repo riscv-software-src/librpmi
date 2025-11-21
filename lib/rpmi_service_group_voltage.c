@@ -218,6 +218,8 @@ rpmi_voltage_tree_init(rpmi_uint32_t volt_count,
 
 	struct rpmi_voltage *volt_tree =
 		rpmi_env_zalloc(sizeof(struct rpmi_voltage) * volt_count);
+	if (!volt_tree)
+		return NULL;
 
 	/* initialize all volt domain instances */
 	for (voltid = 0; voltid < volt_count; voltid++) {
