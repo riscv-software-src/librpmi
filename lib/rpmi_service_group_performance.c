@@ -759,7 +759,7 @@ rpmi_service_group_perf_create(rpmi_uint32_t perf_count,
 
 	perfgrp->fc_memory_region = rpmi_env_zalloc(sizeof(struct rpmi_perf_fc_memory_region));
 	if (!perfgrp->fc_memory_region) {
-		DPRINTF("%s: failed to allocate perf service group instance\n",
+		DPRINTF("%s: failed to allocate perf fastchannel region\n",
 			__func__);
 		rpmi_env_free(perfgrp);
 		return NULL;
