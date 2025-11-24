@@ -761,6 +761,7 @@ rpmi_service_group_perf_create(rpmi_uint32_t perf_count,
 	if (!perfgrp->fc_memory_region) {
 		DPRINTF("%s: failed to allocate perf service group instance\n",
 			__func__);
+		rpmi_env_free(perfgrp);
 		return NULL;
 	}
 
@@ -770,6 +771,7 @@ rpmi_service_group_perf_create(rpmi_uint32_t perf_count,
 						 ops_priv);
 	if (!perfgrp->perf_tree) {
 		DPRINTF("%s: failed to initialize perf tree\n", __func__);
+		rpmi_env_free(perfgrp->fc_memory_region);
 		rpmi_env_free(perfgrp);
 		return NULL;
 	}
