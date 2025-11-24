@@ -814,6 +814,7 @@ void rpmi_service_group_perf_destroy(struct rpmi_service_group *group)
 		rpmi_env_free_lock(perfgrp->perf_tree[perfid].lock);
 
 	rpmi_env_free(perfgrp->perf_tree);
+	rpmi_env_free(perfgrp->fc_memory_region);
 	rpmi_env_free_lock(group->lock);
 	rpmi_env_free(group->priv);
 }
