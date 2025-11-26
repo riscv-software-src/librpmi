@@ -113,7 +113,10 @@ CPPFLAGS	+=	$(GENFLAGS)
 
 ARFLAGS		=	rcs
 
-ELFFLAGS	+=	-static -L$(build_dir) -lrpmi
+ifneq ($(shell uname -s),Darwin)
+ELFFLAGS	+=	-static
+endif
+ELFFLAGS	+=	-L$(build_dir) -lrpmi
 ELFFLAGS	+=	$(EXTRA_ELFFLAGS)
 
 # Setup functions for compilation
