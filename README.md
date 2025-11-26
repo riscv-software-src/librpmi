@@ -69,8 +69,12 @@ at `build/docs/html`.
 
 ## Test
 Build test binaries -
-```
+```shell
 make LIBRPMI_TEST=y
+```
+Run tests -
+```shell
+make check
 ```
 Refer: [README in test folder](test/README.md)
 
