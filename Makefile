@@ -249,5 +249,22 @@ docs:
 cleandocs:
 	$(CMD_PREFIX)rm -rf $(build_dir)/docs
 
+.PHONY: check
+check: all
+	$(CMD_PREFIX)NFAIL=0; \
+	for test_elf in $(test-elfs-path-y); do \
+		if [ -f "$$test_elf" ]; then \
+			echo "--------------------------------------------------"; \
+			$$test_elf; \
+			RESULT=$$?; \
+			if [ $$RESULT -ne 0 ]; then \
+				NFAIL=$$((NFAIL + 1)); \
+			fi; \
+		fi; \
+	done; \
+	if [ $$NFAIL -ne 0 ]; then \
+	  exit 1; \
+	fi
+
 .PHONY: FORCE
 FORCE:
