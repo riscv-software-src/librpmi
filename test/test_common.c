@@ -106,7 +106,7 @@ static void test_verify(struct rpmi_test *test, struct rpmi_message *msg,
 		}
 	}
 
-	printf("TEST: %-50s \t : %s!\n\n", test->name, failed ? "Failed" : "Succeeded");
+	printf("TEST: %-50s \t : %s!\n", test->name, failed ? "Failed" : "Succeeded");
 }
 
 static void execute_scenario(struct rpmi_test_scenario *scene)
