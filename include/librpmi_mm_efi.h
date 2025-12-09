@@ -101,10 +101,10 @@ struct efi_var_policy_comm_header {
 #define EFI_VAR_FN_GET_RUNTIME_CACHE_INFO               14
 
 /** Size of MM EFI communicate header, without including the payload */
-#define MM_EFI_COMM_HEADER_SIZE   (sizeof(struct mm_efi_comm_header) - 1)
+#define MM_EFI_COMM_HEADER_SIZE   sizeof(struct mm_efi_comm_header)
 
 /** Size of EFI variable communicate header, without including the payload */
-#define EFI_VAR_COMM_HEADER_SIZE  (sizeof(struct efi_var_comm_header) - 1)
+#define EFI_VAR_COMM_HEADER_SIZE  sizeof(struct efi_var_comm_header)
 
 /* Max information size per MM variable: 1 KB (including header) */
 #define MAX_VARINFO_SIZE  1024
