@@ -53,6 +53,13 @@ enum mm_efi_header_guid {
 
 #define EFI_ERROR(n)            RETURN_ERROR(n)
 
+/** Attributes of EFI variable */
+#define EFI_VARIABLE_NON_VOLATILE                 0x00000001
+#define EFI_VARIABLE_BOOTSERVICE_ACCESS           0x00000002
+#define EFI_VARIABLE_RUNTIME_ACCESS               0x00000004
+#define EFI_VARIABLE_HARDWARE_ERROR_RECORD        0x00000008
+#define EFI_VARIABLE_AUTHENTICATED_WRITE_ACCESS   0x00000010
+
 /**
  * struct mm_efi_comm_header - Header used for MM EFI communication
  *
