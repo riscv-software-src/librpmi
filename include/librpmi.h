@@ -198,6 +198,7 @@ enum rpmi_servicegroup_id {
 	RPMI_SRVGRP_MANAGEMENT_MODE	= 0x000B,
 	RPMI_SRVGRP_RAS_AGENT		= 0x000C,
 	RPMI_SRVGRP_REQUEST_FORWARD	= 0x000D,
+	RPMI_SRVGRP_LOGGING			= 0x000E,
 	RPMI_SRVGRP_ID_MAX_COUNT,
 
 	/* Reserved range for service groups */
@@ -367,6 +368,13 @@ enum rpmi_mm_service_id {
 	RPMI_MM_SRV_GET_ATTRIBUTES	= 0x02,
 	RPMI_MM_SRV_COMMUNICATE		= 0x03,
 	RPMI_MM_SRV_ID_MAX
+};
+
+/** RPMI LOGGING ServiceGroup Service IDs */
+enum rpmi_logging_service_id {
+	RPMI_LOGGING_SRV_ENABLE_NOTIFICATION = 0x01,
+	RPMI_LOGGING_SRV_SET_CONFIG = 0x02,
+	RPMI_LOGGING_SRV_ID_MAX,
 };
 
 /** @} */
@@ -2097,6 +2105,38 @@ void rpmi_service_group_mm_destroy(struct rpmi_service_group *group);
 enum rpmi_error rpmi_mm_service_register(struct rpmi_service_group *group,
 					 rpmi_uint32_t num_entries,
 					 struct rpmi_mm_service *iplist);
+
+/**
+ * \defgroup LIBRPMI_LOGGINGSRVGRP_INTERFACE RPMI Logging Service Group Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for RPMI Logging service group.
+ * @{
+ */
+
+/** Platform specific logging operations */
+struct rpmi_logging_platform_ops {
+	enum rpmi_error (*do_set_state)(void *priv, rpmi_uint32_t log_type,
+					rpmi_uint32_t datalen_bytes,
+					const void *data);
+};
+
+/**
+ * @brief Create a logging service group instance
+ *
+ * @param[in] ops_priv	pointer to priv data
+ * @return rpmi_service_group	pointer to RPMI service group instance upon
+ * success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_logging_create(const struct rpmi_logging_platform_ops *ops,
+				  void *ops_priv);
+
+/**
+ * @brief Destroy(free) a logging service group instance
+ *
+ * @param[in] group	pointer to RPMI service group instance
+ */
+void rpmi_service_group_logging_destroy(struct rpmi_service_group *group);
 
 /** @} */
 
