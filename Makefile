@@ -38,6 +38,16 @@ $(error Install root directory is same as build directory.)
 endif
 docs_dir=$(build_dir)/docs
 install_docs_dir=$(install_root_dir)/docs
+LIBRPMI_VERSION ?= 1.0.0
+LIBRPMI_SOVERSION ?= 0
+pkgconfig_dir=$(install_root_dir)/lib/pkgconfig
+rpm_topdir=$(build_dir)/rpmbuild
+rpm_sourcedir=$(build_dir)/rpm
+rpm_spec=$(src_dir)/packaging/rpm/librpmi.spec
+rpm_source_tarball=$(rpm_sourcedir)/librpmi-$(LIBRPMI_VERSION).tar.gz
+RPMBUILD_NODEPS ?= 1
+RPMBUILD_MODE ?= -ba
+DEB_BUILD_ARGS ?= -us -uc -b
 # Check if verbosity is ON for build process
 CMD_PREFIX_DEFAULT := @
 ifeq ($(V), 1)
@@ -108,6 +118,7 @@ EXTRA_CFLAGS	+= 	-Wsign-compare
 
 CFLAGS		=	$(GENFLAGS)
 CFLAGS		+=	$(EXTRA_CFLAGS)
+CFLAGS		+=	-fPIC
 
 CPPFLAGS	+=	$(GENFLAGS)
 
@@ -161,8 +172,26 @@ compile_elf = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 compile_ar = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 	     echo " AR        $(subst $(build_dir)/,,$(1))"; \
 	     $(AR) $(ARFLAGS) $(1) $(2)
+compile_so = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
+	     echo " SO        $(subst $(build_dir)/,,$(1))"; \
+	     $(CC) -shared -Wl,-soname,librpmi.so.$(LIBRPMI_SOVERSION) \
+	       $(LDFLAGS) $(EXTRA_LDFLAGS) -o $(1) $(2)
+gen_pkgconfig = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
+	     echo " GEN       $(subst $(build_dir)/,,$(1))"; \
+	     printf '%s\n' \
+	       'prefix=/usr' \
+	       'libdir=$${prefix}/lib' \
+	       'includedir=$${prefix}/include' \
+	       '' \
+	       'Name: librpmi' \
+	       'Description: RISC-V RPMI protocol helper library' \
+	       'Version: $(LIBRPMI_VERSION)' \
+	       'Libs: -L$${libdir} -lrpmi' \
+	       'Cflags: -I$${includedir}' > $(1)
 
 blobs-y = $(build_dir)/librpmi.a
+blobs-y += $(build_dir)/librpmi.so.$(LIBRPMI_VERSION)
+blobs-y += $(build_dir)/librpmi.pc
 blobs-$(LIBRPMI_TEST) += $(test-elfs-path-y)
 
 # Default rule "make" should always be first rule
@@ -192,6 +221,14 @@ $(build_dir)/%.elf: $(build_dir)/%.o $(test-objs-path-y) $(build_dir)/librpmi.a
 $(build_dir)/librpmi.a: $(lib-objs-path-y)
 	$(call compile_ar,$@,$^)
 
+$(build_dir)/librpmi.so.$(LIBRPMI_VERSION): $(lib-objs-path-y)
+	$(call compile_so,$@,$^)
+	$(CMD_PREFIX)ln -sf librpmi.so.$(LIBRPMI_VERSION) $(build_dir)/librpmi.so.$(LIBRPMI_SOVERSION)
+	$(CMD_PREFIX)ln -sf librpmi.so.$(LIBRPMI_SOVERSION) $(build_dir)/librpmi.so
+
+$(build_dir)/librpmi.pc: Makefile
+	$(call gen_pkgconfig,$@)
+
 $(build_dir)/%.dep: $(src_dir)/%.c
 	$(call compile_cc_dep,$@,$<)
 
@@ -206,9 +243,15 @@ all-deps-2 = $(if $(findstring clean,$(MAKECMDGOALS)),,$(all-deps-1))
 
 # Rule for "make install"
 .PHONY: install
-install: $(build_dir)/librpmi.a $(src_dir)/COPYING.BSD
+install: $(blobs-y) $(src_dir)/COPYING.BSD
 	$(call inst_dir,$(install_root_dir)/include,$(include_dir))
 	$(call inst_file,$(install_root_dir)/lib/librpmi.a,$(build_dir)/librpmi.a)
+	$(call inst_file,$(install_root_dir)/lib/librpmi.so.$(LIBRPMI_VERSION),$(build_dir)/librpmi.so.$(LIBRPMI_VERSION))
+	$(CMD_PREFIX)rm -f $(install_root_dir)/lib/librpmi.so.$(LIBRPMI_SOVERSION)
+	$(CMD_PREFIX)ln -sf librpmi.so.$(LIBRPMI_VERSION) $(install_root_dir)/lib/librpmi.so.$(LIBRPMI_SOVERSION)
+	$(CMD_PREFIX)rm -f $(install_root_dir)/lib/librpmi.so
+	$(CMD_PREFIX)ln -sf librpmi.so.$(LIBRPMI_SOVERSION) $(install_root_dir)/lib/librpmi.so
+	$(call inst_file,$(pkgconfig_dir)/librpmi.pc,$(build_dir)/librpmi.pc)
 	$(call inst_file,$(install_root_dir)/COPYING.BSD,$(src_dir)/COPYING.BSD)
 
 # Rule for "make clean"
@@ -219,6 +262,10 @@ clean:
 	$(CMD_PREFIX)find $(build_dir) -type f -name "*.o" -exec rm -rf {} +
 	$(if $(V), @echo " RM        $(build_dir)/*.a")
 	$(CMD_PREFIX)find $(build_dir) -type f -name "*.a" -exec rm -rf {} +
+	$(if $(V), @echo " RM        $(build_dir)/*.so*")
+	$(CMD_PREFIX)find $(build_dir) -type f -name "*.so*" -exec rm -rf {} +
+	$(CMD_PREFIX)find $(build_dir) -type l -name "*.so*" -exec rm -rf {} +
+	$(CMD_PREFIX)find $(build_dir) -type f -name "*.pc" -exec rm -rf {} +
 	$(if $(V), @echo " RM        $(build_dir)/*.o")
 	$(CMD_PREFIX)find $(build_dir) -type f -name "*.elf" -exec rm -rf {} +
 
@@ -268,3 +315,26 @@ check: all
 
 .PHONY: FORCE
 FORCE:
+
+# Rule for "make rpm-pkg"
+.PHONY: rpm-pkg
+rpm-pkg:
+	$(CMD_PREFIX)command -v rpmbuild >/dev/null 2>&1 || { echo "ERROR: rpmbuild not found"; exit 1; }
+	$(CMD_PREFIX)mkdir -p $(rpm_sourcedir) $(rpm_topdir)/SPECS $(rpm_topdir)/SOURCES \
+		$(rpm_topdir)/BUILD $(rpm_topdir)/BUILDROOT $(rpm_topdir)/RPMS $(rpm_topdir)/SRPMS
+	$(CMD_PREFIX)git -C $(src_dir) archive --format=tar.gz \
+		--prefix=librpmi-$(LIBRPMI_VERSION)/ HEAD > $(rpm_source_tarball)
+	$(CMD_PREFIX)cp -f $(rpm_source_tarball) $(rpm_topdir)/SOURCES/
+	$(CMD_PREFIX)cp -f $(rpm_spec) $(rpm_topdir)/SPECS/
+	$(CMD_PREFIX)rpm_nodeps_opt=""; \
+	if [ "$(RPMBUILD_NODEPS)" = "1" ]; then rpm_nodeps_opt="--nodeps"; fi; \
+	rpmbuild $(RPMBUILD_MODE) $(rpm_topdir)/SPECS/librpmi.spec $$rpm_nodeps_opt \
+		--define "_topdir $(rpm_topdir)" \
+		--define "version $(LIBRPMI_VERSION)" \
+		--define "soversion $(LIBRPMI_SOVERSION)"
+
+# Rule for "make deb-pkg"
+.PHONY: deb-pkg
+deb-pkg:
+	$(CMD_PREFIX)command -v dpkg-buildpackage >/dev/null 2>&1 || { echo "ERROR: dpkg-buildpackage not found"; exit 1; }
+	$(CMD_PREFIX)dpkg-buildpackage $(DEB_BUILD_ARGS)

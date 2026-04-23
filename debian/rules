@@ -1,0 +1,18 @@
+#!/usr/bin/make -f
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+UPSTREAM_VERSION := $(shell dpkg-parsechangelog -SVersion | sed 's/-[^-]*$$//')
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	dh_auto_build -- V=1 CC=gcc AR=ar AS=as LD=ld LIBRPMI_VERSION=$(UPSTREAM_VERSION) LIBRPMI_SOVERSION=0
+
+override_dh_auto_install:
+	dh_auto_install -- I=$(CURDIR)/debian/tmp/usr CC=gcc AR=ar AS=as LD=ld LIBRPMI_VERSION=$(UPSTREAM_VERSION) LIBRPMI_SOVERSION=0
+	rm -f debian/tmp/usr/COPYING.BSD
+	mkdir -p debian/tmp/usr/src/librpmi
+	cp -a Makefile README.md COPYING.BSD debian/tmp/usr/src/librpmi/
+	if [ -f 0001-lib-Add-Logging-service-group.patch ]; then cp -a 0001-lib-Add-Logging-service-group.patch debian/tmp/usr/src/librpmi/; fi
+	cp -a include lib test docs debian/tmp/usr/src/librpmi/

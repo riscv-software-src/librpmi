@@ -1,0 +1,18 @@
+librpmi (1.0.0-1) unstable; urgency=medium
+
+  * Bump package/library version to 1.0.0.
+
+ -- Subrahmanya Lingappa <subrahmanya.lingappa@qualcomm.com>  Thu, 23 Apr 2026 12:05:00 +0530
+
+librpmi (0.1.0-2) unstable; urgency=medium
+
+  * Add librpmi-src package with source tree under /usr/src/librpmi.
+  * Keep librpmi-dev shipping public headers and pkg-config metadata.
+
+ -- Subrahmanya Lingappa <subrahmanya.lingappa@qualcomm.com>  Thu, 23 Apr 2026 11:05:00 +0530
+
+librpmi (0.1.0-1) unstable; urgency=medium
+
+  * Initial Debian packaging.
+
+ -- Subrahmanya Lingappa <subrahmanya.lingappa@qualcomm.com>  Thu, 23 Apr 2026 09:45:00 +0530
