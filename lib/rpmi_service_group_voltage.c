@@ -319,7 +319,6 @@ rpmi_volt_get_config(struct rpmi_service_group *group,
 	enum rpmi_error ret;
 	struct rpmi_voltage_group *voltgrp = group->priv;
 	rpmi_uint32_t *resp = (void *)response_data;
-	struct rpmi_voltage *volt;
 
 	rpmi_uint32_t voltid = rpmi_to_xe32(trans->is_be,
 					    ((const rpmi_uint32_t *)request_data)[0]);
@@ -331,16 +330,12 @@ rpmi_volt_get_config(struct rpmi_service_group *group,
 		goto done;
 	}
 
-	volt = rpmi_get_voltage(voltgrp, voltid);
-
-	rpmi_env_lock(volt->lock);
 	ret = __rpmi_volt_get_config(voltgrp, voltid, &volt_config);
 	if (ret) {
 		resp_dlen = sizeof(*resp);
 		resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)ret);
 		goto done;
 	}
-	rpmi_env_unlock(volt->lock);
 
 	resp[1] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)volt_config);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
@@ -365,7 +360,6 @@ rpmi_volt_set_config(struct rpmi_service_group *group,
 	enum rpmi_error ret;
 	struct rpmi_voltage_group *voltgrp = group->priv;
 	rpmi_uint32_t *resp = (void *)response_data;
-	struct rpmi_voltage *volt;
 
 	rpmi_uint32_t voltid = rpmi_to_xe32(trans->is_be,
 					((const rpmi_uint32_t *)request_data)[0]);
@@ -379,16 +373,12 @@ rpmi_volt_set_config(struct rpmi_service_group *group,
 		goto done;
 	}
 
-	volt = rpmi_get_voltage(voltgrp, voltid);
-
-	rpmi_env_lock(volt->lock);
 	ret = __rpmi_volt_set_config(voltgrp, voltid, volt_config);
 	if (ret) {
 		resp_dlen = sizeof(*resp);
 		resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)ret);
 		goto done;
 	}
-	rpmi_env_unlock(volt->lock);
 
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 
@@ -541,7 +531,6 @@ rpmi_volt_set_level(struct rpmi_service_group *group,
 	enum rpmi_error ret;
 	struct rpmi_voltage_group *voltgrp = group->priv;
 	rpmi_uint32_t *resp = (void *)response_data;
-	struct rpmi_voltage *volt;
 
 	rpmi_uint32_t voltid = rpmi_to_xe32(trans->is_be,
 					((const rpmi_uint32_t *)request_data)[0]);
@@ -555,16 +544,12 @@ rpmi_volt_set_level(struct rpmi_service_group *group,
 		goto done;
 	}
 
-	volt = rpmi_get_voltage(voltgrp, voltid);
-
-	rpmi_env_lock(volt->lock);
 	ret = __rpmi_volt_set_level(voltgrp, voltid, &volt_level);
 	if (ret) {
 		resp_dlen = sizeof(*resp);
 		resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)ret);
 		goto done;
 	}
-	rpmi_env_unlock(volt->lock);
 
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 
