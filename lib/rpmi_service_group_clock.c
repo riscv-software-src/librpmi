@@ -149,9 +149,6 @@ static enum rpmi_error __rpmi_clock_set_rate(struct rpmi_clock_group *clkgrp,
 	rpmi_uint64_t curr_rate;
 	rpmi_bool_t rate_change_req;
 
-	if (clk->current_state == RPMI_CLK_STATE_DISABLED)
-		return RPMI_ERR_DENIED;
-
 	rate_change_req = clkgrp->ops->rate_change_match(clkgrp->ops_priv,
 							clk->id, rate);
 	if (!rate_change_req)
