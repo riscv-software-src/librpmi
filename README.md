@@ -78,6 +78,11 @@ make check
 ```
 Refer: [README in test folder](test/README.md)
 
+## Project process
+
+- [Contributing guide](CONTRIBUTING.md)
+- [Maintainers](MAINTAINERS.md)
+- [Release process](RELEASE.md)
 
 ## License
 
