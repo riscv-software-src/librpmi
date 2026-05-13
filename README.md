@@ -38,11 +38,11 @@ separate OpenSBI domain
 service groups will be added soon.
 
 ## Development
-The librpmi supports GNU Make and comes with a simple Makefile generates
-`librpmi.a` under `build` directory and test applications in `build\test`
-directory.
+The librpmi supports GNU Make and comes with a simple Makefile that generates
+`librpmi.a`, shared library objects (`librpmi.so.*`), and test applications
+under the `build` directory.
 
-### librpmi.a
+### librpmi.a and shared library objects
 ```
 // defaut without debug logs and tests, compiler optimizations are on
 make
@@ -53,6 +53,11 @@ make LIBRPMI_TEST=y LIBRPMI_DEBUG=y
 // Cross compilation
 make CROSS_COMPILE=<compiler prefix>
 ```
+By default, `make` generates:
+- `build/librpmi.a`
+- `build/librpmi.so.<major>.<minor>.<patch>`
+- symlinks `build/librpmi.so.<soversion>` and `build/librpmi.so`
+
 The platform vendors may also integrate librpmi sources directly into the
 platform microcontroller firmware and extend firmware build system to
 build the librpmi sources rather than using `librpmi.a`.

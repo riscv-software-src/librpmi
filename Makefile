@@ -38,6 +38,22 @@ $(error Install root directory is same as build directory.)
 endif
 docs_dir=$(build_dir)/docs
 install_docs_dir=$(install_root_dir)/docs
+LIBRPMI_HEADER := $(src_dir)/include/librpmi.h
+LIBRPMI_IMPL_VERSION_MAJOR := $(strip $(shell sed -n 's/^#define[[:space:]]\+LIBRPMI_IMPL_VERSION_MAJOR[[:space:]]\+\([0-9][0-9]*\).*/\1/p' $(LIBRPMI_HEADER)))
+LIBRPMI_IMPL_VERSION_MINOR := $(strip $(shell sed -n 's/^#define[[:space:]]\+LIBRPMI_IMPL_VERSION_MINOR[[:space:]]\+\([0-9][0-9]*\).*/\1/p' $(LIBRPMI_HEADER)))
+ifeq ($(LIBRPMI_IMPL_VERSION_MAJOR),)
+$(error Failed to parse LIBRPMI_IMPL_VERSION_MAJOR from $(LIBRPMI_HEADER))
+endif
+ifeq ($(LIBRPMI_IMPL_VERSION_MINOR),)
+$(error Failed to parse LIBRPMI_IMPL_VERSION_MINOR from $(LIBRPMI_HEADER))
+endif
+LIBRPMI_PATCH_VERSION ?= 0
+LIBRPMI_VERSION ?= $(LIBRPMI_IMPL_VERSION_MAJOR).$(LIBRPMI_IMPL_VERSION_MINOR).$(LIBRPMI_PATCH_VERSION)
+LIBRPMI_SOVERSION ?= 0
+LIBRPMI_LIBDIR ?= lib
+LIBRPMI_PKGCONFIG_LIBDIR ?= /$(LIBRPMI_LIBDIR)
+install_lib_dir=$(install_root_dir)/$(LIBRPMI_LIBDIR)
+pkgconfig_dir=$(install_lib_dir)/pkgconfig
 # Check if verbosity is ON for build process
 CMD_PREFIX_DEFAULT := @
 ifeq ($(V), 1)
@@ -108,6 +124,7 @@ EXTRA_CFLAGS	+= 	-Wsign-compare
 
 CFLAGS		=	$(GENFLAGS)
 CFLAGS		+=	$(EXTRA_CFLAGS)
+CFLAGS		+=	-fPIC
 
 CPPFLAGS	+=	$(GENFLAGS)
 
@@ -161,8 +178,26 @@ compile_elf = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 compile_ar = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 	     echo " AR        $(subst $(build_dir)/,,$(1))"; \
 	     $(AR) $(ARFLAGS) $(1) $(2)
+compile_so = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
+	     echo " SO        $(subst $(build_dir)/,,$(1))"; \
+	     $(CC) -shared -Wl,-soname,librpmi.so.$(LIBRPMI_SOVERSION) \
+	       $(LDFLAGS) $(EXTRA_LDFLAGS) -o $(1) $(2)
+gen_pkgconfig = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
+	     echo " GEN       $(subst $(build_dir)/,,$(1))"; \
+	     printf '%s\n' \
+	       'prefix=/usr' \
+	       'libdir=$${prefix}$(LIBRPMI_PKGCONFIG_LIBDIR)' \
+	       'includedir=$${prefix}/include' \
+	       '' \
+	       'Name: librpmi' \
+	       'Description: RISC-V Platform Management Interface (RPMI) protocol helper library' \
+	       'Version: $(LIBRPMI_VERSION)' \
+	       'Libs: -L$${libdir} -lrpmi' \
+	       'Cflags: -I$${includedir}' > $(1)
 
 blobs-y = $(build_dir)/librpmi.a
+blobs-y += $(build_dir)/librpmi.so.$(LIBRPMI_VERSION)
+blobs-y += $(build_dir)/librpmi.pc
 blobs-$(LIBRPMI_TEST) += $(test-elfs-path-y)
 
 # Default rule "make" should always be first rule
@@ -192,6 +227,14 @@ $(build_dir)/%.elf: $(build_dir)/%.o $(test-objs-path-y) $(build_dir)/librpmi.a
 $(build_dir)/librpmi.a: $(lib-objs-path-y)
 	$(call compile_ar,$@,$^)
 
+$(build_dir)/librpmi.so.$(LIBRPMI_VERSION): $(lib-objs-path-y)
+	$(call compile_so,$@,$^)
+	$(CMD_PREFIX)ln -sf librpmi.so.$(LIBRPMI_VERSION) $(build_dir)/librpmi.so.$(LIBRPMI_SOVERSION)
+	$(CMD_PREFIX)ln -sf librpmi.so.$(LIBRPMI_SOVERSION) $(build_dir)/librpmi.so
+
+$(build_dir)/librpmi.pc: Makefile
+	$(call gen_pkgconfig,$@)
+
 $(build_dir)/%.dep: $(src_dir)/%.c
 	$(call compile_cc_dep,$@,$<)
 
@@ -206,9 +249,15 @@ all-deps-2 = $(if $(findstring clean,$(MAKECMDGOALS)),,$(all-deps-1))
 
 # Rule for "make install"
 .PHONY: install
-install: $(build_dir)/librpmi.a $(src_dir)/COPYING.BSD
+install: $(blobs-y) $(src_dir)/COPYING.BSD
 	$(call inst_dir,$(install_root_dir)/include,$(include_dir))
-	$(call inst_file,$(install_root_dir)/lib/librpmi.a,$(build_dir)/librpmi.a)
+	$(call inst_file,$(install_lib_dir)/librpmi.a,$(build_dir)/librpmi.a)
+	$(call inst_file,$(install_lib_dir)/librpmi.so.$(LIBRPMI_VERSION),$(build_dir)/librpmi.so.$(LIBRPMI_VERSION))
+	$(CMD_PREFIX)rm -f $(install_lib_dir)/librpmi.so.$(LIBRPMI_SOVERSION)
+	$(CMD_PREFIX)ln -sf librpmi.so.$(LIBRPMI_VERSION) $(install_lib_dir)/librpmi.so.$(LIBRPMI_SOVERSION)
+	$(CMD_PREFIX)rm -f $(install_lib_dir)/librpmi.so
+	$(CMD_PREFIX)ln -sf librpmi.so.$(LIBRPMI_SOVERSION) $(install_lib_dir)/librpmi.so
+	$(call inst_file,$(pkgconfig_dir)/librpmi.pc,$(build_dir)/librpmi.pc)
 	$(call inst_file,$(install_root_dir)/COPYING.BSD,$(src_dir)/COPYING.BSD)
 
 # Rule for "make clean"
@@ -219,6 +268,10 @@ clean:
 	$(CMD_PREFIX)find $(build_dir) -type f -name "*.o" -exec rm -rf {} +
 	$(if $(V), @echo " RM        $(build_dir)/*.a")
 	$(CMD_PREFIX)find $(build_dir) -type f -name "*.a" -exec rm -rf {} +
+	$(if $(V), @echo " RM        $(build_dir)/*.so*")
+	$(CMD_PREFIX)find $(build_dir) -type f -name "*.so*" -exec rm -rf {} +
+	$(CMD_PREFIX)find $(build_dir) -type l -name "*.so*" -exec rm -rf {} +
+	$(CMD_PREFIX)find $(build_dir) -type f -name "*.pc" -exec rm -rf {} +
 	$(if $(V), @echo " RM        $(build_dir)/*.o")
 	$(CMD_PREFIX)find $(build_dir) -type f -name "*.elf" -exec rm -rf {} +
 
