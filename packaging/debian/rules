@@ -1,0 +1,45 @@
+#!/usr/bin/make -f
+# SPDX-License-Identifier: BSD-2-Clause
+
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+LIBRPMI_HEADER := $(CURDIR)/include/librpmi.h
+LIBRPMI_IMPL_VERSION_MAJOR := $(strip $(shell sed -n 's/^#define[[:space:]]\+LIBRPMI_IMPL_VERSION_MAJOR[[:space:]]\+\([0-9][0-9]*\).*/\1/p' $(LIBRPMI_HEADER)))
+LIBRPMI_IMPL_VERSION_MINOR := $(strip $(shell sed -n 's/^#define[[:space:]]\+LIBRPMI_IMPL_VERSION_MINOR[[:space:]]\+\([0-9][0-9]*\).*/\1/p' $(LIBRPMI_HEADER)))
+LIBRPMI_PATCH_VERSION ?= 0
+LIBRPMI_SOVERSION ?= 0
+LIBRPMI_VERSION := $(LIBRPMI_IMPL_VERSION_MAJOR).$(LIBRPMI_IMPL_VERSION_MINOR).$(LIBRPMI_PATCH_VERSION)
+DEB_UPSTREAM_VERSION := $(shell dpkg-parsechangelog -SVersion | sed 's/-[^-]*$$//')
+DEB_HOST_GNU_TYPE := $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
+MAKE_ARGS := V=1 CC=$(DEB_HOST_GNU_TYPE)-gcc AR=$(DEB_HOST_GNU_TYPE)-ar AS=$(DEB_HOST_GNU_TYPE)-as LD=$(DEB_HOST_GNU_TYPE)-ld LIBRPMI_VERSION=$(LIBRPMI_VERSION) LIBRPMI_SOVERSION=$(LIBRPMI_SOVERSION)
+
+ifeq ($(LIBRPMI_IMPL_VERSION_MAJOR),)
+$(error Failed to parse LIBRPMI_IMPL_VERSION_MAJOR from $(LIBRPMI_HEADER))
+endif
+ifeq ($(LIBRPMI_IMPL_VERSION_MINOR),)
+$(error Failed to parse LIBRPMI_IMPL_VERSION_MINOR from $(LIBRPMI_HEADER))
+endif
+ifneq ($(DEB_UPSTREAM_VERSION),$(LIBRPMI_VERSION))
+$(error debian/changelog upstream version $(DEB_UPSTREAM_VERSION) does not match header-derived version $(LIBRPMI_VERSION))
+endif
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	dh_auto_build -- $(MAKE_ARGS)
+
+override_dh_auto_test:
+	dh_auto_test -- $(MAKE_ARGS)
+
+override_dh_shlibdeps:
+	dh_shlibdeps -a -- -l/usr/$(DEB_HOST_GNU_TYPE)/lib
+
+override_dh_auto_install:
+	dh_auto_install -- I=$(CURDIR)/debian/tmp/usr $(MAKE_ARGS)
+	rm -f debian/tmp/usr/COPYING.BSD
+	mkdir -p debian/tmp/usr/src/librpmi
+	cp -a Makefile README.md COPYING.BSD debian/tmp/usr/src/librpmi/
+	if [ -f 0001-lib-Add-Logging-service-group.patch ]; then cp -a 0001-lib-Add-Logging-service-group.patch debian/tmp/usr/src/librpmi/; fi
+	cp -a include lib test docs debian/tmp/usr/src/librpmi/
+	printf "usr/lib/librpmi.so.%s\nusr/lib/librpmi.so.%s\n" \
+		"$(LIBRPMI_VERSION)" "$(LIBRPMI_SOVERSION)" > debian/librpmi0.install

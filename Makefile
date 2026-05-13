@@ -54,6 +54,18 @@ LIBRPMI_LIBDIR ?= lib
 LIBRPMI_PKGCONFIG_LIBDIR ?= /$(LIBRPMI_LIBDIR)
 install_lib_dir=$(install_root_dir)/$(LIBRPMI_LIBDIR)
 pkgconfig_dir=$(install_lib_dir)/pkgconfig
+rpm_topdir=$(build_dir)/rpmbuild
+rpm_sourcedir=$(build_dir)/rpm
+rpm_spec=$(src_dir)/packaging/rpm/librpmi.spec
+rpm_source_tarball=$(rpm_sourcedir)/librpmi-$(LIBRPMI_VERSION).tar.gz
+deb_pkg_dir=$(src_dir)/packaging/debian
+deb_output_dir=$(build_dir)/deb
+deb_staging_dir=$(deb_output_dir)/librpmi-$(LIBRPMI_VERSION)
+deb_exclude_build=$(patsubst $(src_dir)/%,./%,$(build_dir))
+deb_exclude_install=$(patsubst $(src_dir)/%,./%,$(install_root_dir))
+RPMBUILD_NODEPS ?= 1
+RPMBUILD_MODE ?= -ba
+DEB_BUILD_ARGS ?= -us -uc -b
 # Check if verbosity is ON for build process
 CMD_PREFIX_DEFAULT := @
 ifeq ($(V), 1)
@@ -321,3 +333,39 @@ check: all
 
 .PHONY: FORCE
 FORCE:
+
+# Rule for "make rpm-pkg"
+.PHONY: rpm-pkg
+rpm-pkg:
+	$(CMD_PREFIX)command -v rpmbuild >/dev/null 2>&1 || { echo "ERROR: rpmbuild not found"; exit 1; }
+	$(CMD_PREFIX)mkdir -p $(rpm_sourcedir) $(rpm_topdir)/SPECS $(rpm_topdir)/SOURCES \
+		$(rpm_topdir)/BUILD $(rpm_topdir)/BUILDROOT $(rpm_topdir)/RPMS $(rpm_topdir)/SRPMS
+	$(CMD_PREFIX)git -C $(src_dir) archive --format=tar.gz \
+		--prefix=librpmi-$(LIBRPMI_VERSION)/ HEAD > $(rpm_source_tarball)
+	$(CMD_PREFIX)cp -f $(rpm_source_tarball) $(rpm_topdir)/SOURCES/
+	$(CMD_PREFIX)cp -f $(rpm_spec) $(rpm_topdir)/SPECS/
+	$(CMD_PREFIX)rpm_nodeps_opt=""; \
+	if [ "$(RPMBUILD_NODEPS)" = "1" ]; then rpm_nodeps_opt="--nodeps"; fi; \
+	rpmbuild $(RPMBUILD_MODE) $(rpm_topdir)/SPECS/librpmi.spec $$rpm_nodeps_opt \
+		--define "_topdir $(rpm_topdir)" \
+		--define "version $(LIBRPMI_VERSION)" \
+		--define "soversion $(LIBRPMI_SOVERSION)"
+
+# Rule for "make deb-pkg"
+.PHONY: deb-pkg
+deb-pkg:
+	$(CMD_PREFIX)command -v dpkg-buildpackage >/dev/null 2>&1 || { echo "ERROR: dpkg-buildpackage not found"; exit 1; }
+	$(CMD_PREFIX)test -f $(deb_pkg_dir)/control || { echo "ERROR: Debian packaging not found at $(deb_pkg_dir)"; exit 1; }
+	$(CMD_PREFIX)rm -rf $(deb_staging_dir)
+	$(CMD_PREFIX)mkdir -p $(deb_staging_dir)
+	$(CMD_PREFIX)tar -C $(src_dir) \
+		--exclude='./.git' \
+		--exclude='$(deb_exclude_build)' \
+		--exclude='$(deb_exclude_install)' \
+		--exclude='./debian' \
+		-cf - . | tar -C $(deb_staging_dir) -xf -
+	$(CMD_PREFIX)rm -rf $(deb_staging_dir)/debian
+	$(CMD_PREFIX)cp -a $(deb_pkg_dir) $(deb_staging_dir)/debian
+	$(CMD_PREFIX)chmod +x $(deb_staging_dir)/debian/rules
+	$(CMD_PREFIX)cd $(deb_staging_dir) && dpkg-buildpackage $(DEB_BUILD_ARGS)
+	$(CMD_PREFIX)echo "DEB packages are under $(deb_output_dir)"

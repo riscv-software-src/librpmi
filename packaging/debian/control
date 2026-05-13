@@ -1,0 +1,33 @@
+Source: librpmi
+Section: libs
+Priority: optional
+Maintainer: Subrahmanya Lingappa <subrahmanya.lingappa@qti.qualcomm.com>
+Build-Depends: debhelper-compat (= 13), gcc, make
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+Homepage: https://github.com/riscv-software-src/librpmi
+
+Package: librpmi0
+Section: libs
+Architecture: any
+Multi-Arch: same
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: RISC-V RPMI helper runtime library
+ Runtime shared library implementing RPMI core, transports and service groups.
+
+Package: librpmi-dev
+Section: libdevel
+Architecture: any
+Multi-Arch: same
+Depends: librpmi0 (= ${binary:Version}), ${misc:Depends}
+Description: Development files for librpmi
+ Header files, static/shared linker targets and pkg-config metadata for
+ building software against librpmi.
+
+Package: librpmi-src
+Section: devel
+Architecture: all
+Depends: ${misc:Depends}
+Description: Source files for librpmi
+ Source tree for librpmi under /usr/src/librpmi, including headers,
+ library implementation, tests and documentation assets.
