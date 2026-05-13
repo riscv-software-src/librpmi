@@ -1,0 +1,6 @@
+usr/include/librpmi.h
+usr/include/librpmi_env.h
+usr/include/librpmi_mm_efi.h
+usr/lib/librpmi.a
+usr/lib/librpmi.so
+usr/lib/pkgconfig/librpmi.pc

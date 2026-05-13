@@ -1,0 +1,9 @@
+librpmi (0.1.0-1) unstable; urgency=medium
+
+  * Initial Debian packaging.
+  * Add librpmi-src package with source tree under /usr/src/librpmi.
+  * Keep librpmi-dev shipping public headers and pkg-config metadata.
+  * Keep Debian upstream version aligned with header-derived librpmi version
+    (0.1.0).
+
+ -- Subrahmanya Lingappa <subrahmanya.lingappa@qti.qualcomm.com>  Thu, 14 May 2026 15:20:00 +0530

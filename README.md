@@ -62,6 +62,51 @@ The platform vendors may also integrate librpmi sources directly into the
 platform microcontroller firmware and extend firmware build system to
 build the librpmi sources rather than using `librpmi.a`.
 
+## Packaging
+The repository can build Debian and RPM packages for systems that want to
+consume librpmi as an installed library instead of integrating the source tree
+or manually copying build artifacts. These packages provide a repeatable way to
+install the runtime library, development files, and source content needed by
+downstream projects such as emulators, hypervisors, firmware build flows, and
+distribution packaging pipelines.
+
+Debian packages can be built with:
+```shell
+make deb-pkg
+```
+
+This stages the Debian packaging from `packaging/debian` and writes the package
+outputs under `build/deb`. The generated packages are:
+- `librpmi0`: runtime shared library (`librpmi.so.*`).
+- `librpmi-dev`: headers, static library, linker symlink, and `pkg-config`
+  metadata for building applications against librpmi.
+- `librpmi-src`: source content installed under `/usr/src/librpmi` for users
+  that need to inspect or rebuild the library sources.
+
+Install the generated Debian packages with:
+```shell
+sudo dpkg -i build/deb/librpmi0_*.deb \
+             build/deb/librpmi-dev_*.deb \
+             build/deb/librpmi-src_*.deb
+```
+
+RPM packages can be built with:
+```shell
+make rpm-pkg
+```
+
+This uses `packaging/rpm/librpmi.spec` and writes the RPM build tree under
+`build/rpmbuild`. The generated RPM packages are:
+- `librpmi`: runtime shared library (`librpmi.so.*`).
+- `librpmi-devel`: headers, static library, linker symlink, and `pkg-config`
+  metadata for building applications against librpmi.
+- `librpmi-source`: source content installed under `/usr/src/librpmi`.
+
+Install the generated RPM packages with the system package manager, for example:
+```shell
+sudo dnf install build/rpmbuild/RPMS/*/*.rpm
+```
+
 ## Documentation
 The librpmi supports doxygen which can generate both html and pdf
 documentation under `build\docs` directory.
