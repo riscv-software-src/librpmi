@@ -202,24 +202,14 @@ static enum rpmi_error __rpmi_clock_set_state(struct rpmi_clock_group *clkgrp,
 		if (clk->current_state == RPMI_CLK_STATE_DISABLED) {
 			return RPMI_SUCCESS;
 		}
-		/* If the clock has no child or its a parent with single enable
-		 * count then - disable, update cache and return */
-		if (!clk->child_count || clk->enable_count == 1) {
-			ret = clkgrp->ops->set_state(clkgrp->ops_priv,
-							clk->id, state);
-			if (ret)
-				return ret;
-
-			clk->current_state = state;
-			clk->enable_count -= 1;
-			goto done;
-		}
 
 		/* Check if all child clocks are disabled, otherwise deny */
-		rpmi_list_for_each(pos, &clk->child_clock) {
-			struct rpmi_clock *cc = to_rpmi_clock(pos);
-			if (cc->current_state == RPMI_CLK_STATE_ENABLED)
-				return RPMI_ERR_DENIED;
+		if (clk->child_count) {
+			rpmi_list_for_each(pos, &clk->child_clock) {
+				struct rpmi_clock *cc = to_rpmi_clock(pos);
+				if (cc->current_state == RPMI_CLK_STATE_ENABLED)
+					return RPMI_ERR_DENIED;
+			}
 		}
 
 		ret = clkgrp->ops->set_state(clkgrp->ops_priv, clk->id, state);
@@ -238,21 +228,12 @@ static enum rpmi_error __rpmi_clock_set_state(struct rpmi_clock_group *clkgrp,
 		if (clk->current_state == RPMI_CLK_STATE_ENABLED)
 			return RPMI_SUCCESS;
 
-		if (!clk->parent) {
-			ret = clkgrp->ops->set_state(clkgrp->ops_priv,
-							clk->id, state);
-			if (ret)
-				return ret;
-
-			clk->current_state = state;
-			clk->enable_count += 1;
-			goto done;
-		}
-
 		/* Enable all parents recursively up to the root */
-		ret = __rpmi_clock_set_state(clkgrp, clk->parent, state);
-		if (ret && ret != RPMI_ERR_ALREADY)
-			return ret;
+		if (clk->parent) {
+			ret = __rpmi_clock_set_state(clkgrp, clk->parent, state);
+			if (ret && ret != RPMI_ERR_ALREADY)
+				return ret;
+		}
 
 		ret = clkgrp->ops->set_state(clkgrp->ops_priv, clk->id, state);
 		if (ret)
@@ -262,7 +243,6 @@ static enum rpmi_error __rpmi_clock_set_state(struct rpmi_clock_group *clkgrp,
 		clk->enable_count += 1;
 	}
 
-done:
 	return RPMI_SUCCESS;
 }
 
