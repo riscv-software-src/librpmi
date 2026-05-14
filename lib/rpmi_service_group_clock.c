@@ -152,7 +152,7 @@ static enum rpmi_error __rpmi_clock_set_rate(struct rpmi_clock_group *clkgrp,
 	rate_change_req = clkgrp->ops->rate_change_match(clkgrp->ops_priv,
 							clk->id, rate);
 	if (!rate_change_req)
-		return RPMI_ERR_ALREADY;
+		return RPMI_SUCCESS;
 
 	ret = clkgrp->ops->set_rate(clkgrp->ops_priv, clk->id, match,
 					rate, &curr_rate);
@@ -197,16 +197,10 @@ static enum rpmi_error __rpmi_clock_set_state(struct rpmi_clock_group *clkgrp,
 	enum rpmi_error ret = 0;
 	struct rpmi_dlist *pos;
 
-	/**
-	 * To disable a clock:
-	 * - Must not be disabled already if its a leaf or independent clock.
-	 * - If clock is a parent then all child clocks must be in disabled
-	 *   state already.
-	 **/
 	if (state == RPMI_CLK_STATE_DISABLED) {
 		/* If clock already disabled? use the cached state */
 		if (clk->current_state == RPMI_CLK_STATE_DISABLED) {
-			return RPMI_ERR_ALREADY;
+			return RPMI_SUCCESS;
 		}
 		/* If the clock has no child or its a parent with single enable
 		 * count then - disable, update cache and return */
@@ -239,16 +233,10 @@ static enum rpmi_error __rpmi_clock_set_state(struct rpmi_clock_group *clkgrp,
 		 * clock. Need to traverse the parents to check if the disable
 		 * condition is met or not and disable if rules are met */
 	}
-	/**
-	 * To enable a clock:
-	 * - Must not be enabled already if its a independent clock
-	 * - If a child clock(at any level in clock tree) then all its parent
-	 *   must be enabled.
-	 */
 	else if (state == RPMI_CLK_STATE_ENABLED) {
 		/* If clock is already enabled? use the cached state */
 		if (clk->current_state == RPMI_CLK_STATE_ENABLED)
-			return RPMI_ERR_ALREADY;
+			return RPMI_SUCCESS;
 
 		if (!clk->parent) {
 			ret = clkgrp->ops->set_state(clkgrp->ops_priv,
@@ -261,6 +249,7 @@ static enum rpmi_error __rpmi_clock_set_state(struct rpmi_clock_group *clkgrp,
 			goto done;
 		}
 
+		/* Enable all parents recursively up to the root */
 		ret = __rpmi_clock_set_state(clkgrp, clk->parent, state);
 		if (ret && ret != RPMI_ERR_ALREADY)
 			return ret;
