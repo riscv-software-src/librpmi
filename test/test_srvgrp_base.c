@@ -50,6 +50,27 @@ static rpmi_uint32_t probe_expdata_default[] = {
 	RPMI_BASE_VERSION(1, 0),
 };
 
+static rpmi_uint32_t probe_sysreset_reqdata_default[] = {
+	RPMI_SRVGRP_SYSTEM_RESET,
+};
+
+static rpmi_uint32_t probe_unsupported_expdata_default[] = {
+	RPMI_SUCCESS,
+	0,
+};
+
+static rpmi_uint32_t probe_experimental_reqdata_default[] = {
+	RPMI_SRVGRP_EXPERIMENTAL_START,
+};
+
+static rpmi_uint32_t probe_vendor_reqdata_default[] = {
+	RPMI_SRVGRP_VENDOR_START,
+};
+
+static rpmi_uint32_t invalid_service_expdata_default[] = {
+	RPMI_ERR_NOTSUPP,
+};
+
 static rpmi_uint32_t attribs_expdata_default[] = {
 	RPMI_SUCCESS,
 	RPMI_BASE_FLAGS_F0_PRIVILEGE,
@@ -70,7 +91,7 @@ static struct rpmi_test_scenario scenario_base_default = {
 	.init = test_scenario_default_init,
 	.cleanup = test_scenario_default_cleanup,
 
-	.num_tests = 7,
+	.num_tests = 11,
 	.tests = {
 		{
 			.name = "RPMI_BASE_SRV_ENABLE_NOTIFICATION",
@@ -139,6 +160,59 @@ static struct rpmi_test_scenario scenario_base_default = {
 				.expected_data_len = sizeof(probe_expdata_default),
 			},
 			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "RPMI_BASE_SRV_PROBE_SERVICE_GROUP unsupported",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_PROBE_SERVICE_GROUP,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = probe_sysreset_reqdata_default,
+				.request_data_len = sizeof(probe_sysreset_reqdata_default),
+				.expected_data = probe_unsupported_expdata_default,
+				.expected_data_len = sizeof(probe_unsupported_expdata_default),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "RPMI_BASE_SRV_PROBE_SERVICE_GROUP experimental",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_PROBE_SERVICE_GROUP,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = probe_experimental_reqdata_default,
+				.request_data_len = sizeof(probe_experimental_reqdata_default),
+				.expected_data = probe_unsupported_expdata_default,
+				.expected_data_len = sizeof(probe_unsupported_expdata_default),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "RPMI_BASE_SRV_PROBE_SERVICE_GROUP vendor",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_PROBE_SERVICE_GROUP,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = probe_vendor_reqdata_default,
+				.request_data_len = sizeof(probe_vendor_reqdata_default),
+				.expected_data = probe_unsupported_expdata_default,
+				.expected_data_len = sizeof(probe_unsupported_expdata_default),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "RPMI_BASE invalid service",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_ID_MAX,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.expected_data = invalid_service_expdata_default,
+				.expected_data_len = sizeof(invalid_service_expdata_default),
+			},
 			.init_expected_data = test_init_expected_data_from_attrs,
 		},
 		{
