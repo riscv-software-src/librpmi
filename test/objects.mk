@@ -48,3 +48,8 @@ test-elfs-y += test_srvgrp_device_power
 
 test_srvgrp_device_power-objs-y += test/test_log.o
 test_srvgrp_device_power-objs-y += test/test_common.o
+
+test-elfs-y += test_srvgrp_performance
+
+test_srvgrp_performance-objs-y += test/test_log.o
+test_srvgrp_performance-objs-y += test/test_common.o
