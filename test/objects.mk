@@ -18,3 +18,8 @@ test-elfs-y += test_srvgrp_hsm
 
 test_srvgrp_hsm-objs-y += test/test_log.o
 test_srvgrp_hsm-objs-y += test/test_common.o
+
+test-elfs-y += test_srvgrp_voltage
+
+test_srvgrp_voltage-objs-y += test/test_log.o
+test_srvgrp_voltage-objs-y += test/test_common.o
