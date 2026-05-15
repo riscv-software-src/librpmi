@@ -96,6 +96,33 @@ static rpmi_uint32_t get_hart_state_invalid_hartid_expdata[] = {
 	TEST_HART_STATE_IGNORED_VALUE
 };
 
+/* Get Suspend Types - Request Data */
+static rpmi_uint32_t get_suspend_types_reqdata[] = {
+	0,
+};
+
+/* Get Suspend Types - Response Data */
+static rpmi_uint32_t get_suspend_types_expdata[] = {
+	RPMI_SUCCESS,
+	0,
+	0,
+};
+
+/* Get Suspend Info invalid type - Request Data */
+static rpmi_uint32_t get_suspend_info_invalid_reqdata[] = {
+	0,
+};
+
+/* Get Suspend Info invalid type - Response Data */
+static rpmi_uint32_t get_suspend_info_invalid_expdata[] = {
+	RPMI_ERR_INVALID_PARAM,
+	0,
+	0,
+	0,
+	0,
+	0,
+};
+
 /* Hart Start (valid hartid) - Request Data */
 static rpmi_uint32_t hart_start_valid_hartid_reqdata[] = {
 	TEST_HART_ID_VALID,
@@ -148,6 +175,19 @@ static rpmi_uint32_t hart_suspend_notsupp_reqdata[] = {
 /* Harts Suspend (not supported) - Response Data */
 static rpmi_uint32_t hart_suspend_notsupp_expdata[] = {
 	RPMI_ERR_NOTSUPP,
+};
+
+/* Hart Suspend invalid type - Request Data */
+static rpmi_uint32_t hart_suspend_invalid_type_reqdata[] = {
+	TEST_HART_ID_VALID,
+	0,
+	0,
+	0,
+};
+
+/* Hart Suspend invalid type - Response Data */
+static rpmi_uint32_t hart_suspend_invalid_type_expdata[] = {
+	RPMI_ERR_INVALID_PARAM,
 };
 
 /**
@@ -253,7 +293,7 @@ static struct rpmi_test_scenario scenario_hsm_default = {
 	.init = test_hsm_scenario_init,
 	.cleanup = test_scenario_default_cleanup,
 
-	.num_tests = 10,
+	.num_tests = 13,
 	.tests = {
 		{
 			.name = "ENABLE NOTIFICATION TEST (notifications not supported)",
@@ -326,6 +366,34 @@ static struct rpmi_test_scenario scenario_hsm_default = {
 			.init_expected_data = test_init_expected_data_from_attrs,
 		},
 		{
+			.name = "GET SUSPEND TYPES (none configured)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_HSM,
+				.service_id = RPMI_HSM_SRV_GET_SUSPEND_TYPES,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = get_suspend_types_reqdata,
+				.request_data_len = sizeof(get_suspend_types_reqdata),
+				.expected_data = get_suspend_types_expdata,
+				.expected_data_len = sizeof(get_suspend_types_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "GET SUSPEND INFO (invalid type)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_HSM,
+				.service_id = RPMI_HSM_SRV_GET_SUSPEND_INFO,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = get_suspend_info_invalid_reqdata,
+				.request_data_len = sizeof(get_suspend_info_invalid_reqdata),
+				.expected_data = get_suspend_info_invalid_expdata,
+				.expected_data_len = sizeof(get_suspend_info_invalid_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
 			.name = "HART START (valid hart id, hart already started)",
 			.attrs = {
 				.servicegroup_id = RPMI_SRVGRP_HSM,
@@ -377,6 +445,20 @@ static struct rpmi_test_scenario scenario_hsm_default = {
 				.request_data_len = sizeof(hart_stop_stopped_hart_reqdata),
 				.expected_data = hart_stop_stopped_hart_expdata,
 				.expected_data_len = sizeof(hart_stop_stopped_hart_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "HART Suspend (invalid type)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_HSM,
+				.service_id = RPMI_HSM_SRV_HART_SUSPEND,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = hart_suspend_invalid_type_reqdata,
+				.request_data_len = sizeof(hart_suspend_invalid_type_reqdata),
+				.expected_data = hart_suspend_invalid_type_expdata,
+				.expected_data_len = sizeof(hart_suspend_invalid_type_expdata),
 			},
 			.init_request_data = test_init_request_data_from_attrs,
 			.init_expected_data = test_init_expected_data_from_attrs,
