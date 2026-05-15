@@ -11,6 +11,10 @@
 #include <librpmi.h>
 #include <stdlib.h>
 
+#ifndef ARRAY_SIZE
+#define ARRAY_SIZE(x)	(sizeof(x) / sizeof((x)[0]))
+#endif
+
 /*
  * Qemu shared memory offsets.
  * its better to decode these data from DTS file, hardcoding for now.
@@ -51,6 +55,8 @@ struct rpmi_test {
 		   struct rpmi_message *msg);
 	void (*wait)(struct rpmi_test_scenario *scene, struct rpmi_test *test,
 		    struct rpmi_message *msg);
+	int (*verify)(struct rpmi_test_scenario *scene, struct rpmi_test *test,
+		      struct rpmi_message *msg);
 	void (*cleanup)(struct rpmi_test_scenario *scene, struct rpmi_test *test);
 };
 
