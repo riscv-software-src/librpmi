@@ -28,3 +28,8 @@ test-elfs-y += test_srvgrp_sysmsi
 
 test_srvgrp_sysmsi-objs-y += test/test_log.o
 test_srvgrp_sysmsi-objs-y += test/test_common.o
+
+test-elfs-y += test_srvgrp_cppc
+
+test_srvgrp_cppc-objs-y += test/test_log.o
+test_srvgrp_cppc-objs-y += test/test_common.o
