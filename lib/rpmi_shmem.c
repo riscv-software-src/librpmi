@@ -104,7 +104,7 @@ enum rpmi_error rpmi_shmem_read(struct rpmi_shmem *shmem, rpmi_uint32_t offset,
 		DPRINTF("%s: invalid parameters\n", __func__);
 		return RPMI_ERR_INVALID_PARAM;
 	}
-	if ((offset + len) > shmem->size) {
+	if (((rpmi_uint64_t)offset + len) > shmem->size) {
 		DPRINTF("%s: %s: invalid offset 0x%x or len 0x%x\n",
 			__func__, shmem->name, offset, len);
 		return RPMI_ERR_BAD_RANGE;
@@ -119,7 +119,7 @@ enum rpmi_error rpmi_shmem_write(struct rpmi_shmem *shmem, rpmi_uint32_t offset,
 		DPRINTF("%s: invalid parameters\n", __func__);
 		return RPMI_ERR_INVALID_PARAM;
 	}
-	if ((offset + len) > shmem->size) {
+	if (((rpmi_uint64_t)offset + len) > shmem->size) {
 		DPRINTF("%s: %s: invalid offset 0x%x or len 0x%x\n",
 			__func__, shmem->name, offset, len);
 		return RPMI_ERR_BAD_RANGE;
@@ -134,7 +134,7 @@ enum rpmi_error rpmi_shmem_fill(struct rpmi_shmem *shmem, rpmi_uint32_t offset,
 		DPRINTF("%s: invalid parameters\n", __func__);
 		return RPMI_ERR_INVALID_PARAM;
 	}
-	if ((offset + len) > shmem->size) {
+	if (((rpmi_uint64_t)offset + len) > shmem->size) {
 		DPRINTF("%s: %s: invalid offset 0x%x or len 0x%x\n",
 			__func__, shmem->name, offset, len);
 		return RPMI_ERR_BAD_RANGE;
