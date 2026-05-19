@@ -1,6 +1,6 @@
 Name:           librpmi
 Version:        %{?version}%{!?version:1.0.0}
-Release:        1%{?dist}
+Release:        0%{?dist}
 Summary:        RISC-V RPMI helper library
 
 License:        BSD-2-Clause
@@ -77,5 +77,5 @@ fi
 /usr/src/librpmi
 
 %changelog
-* Thu Apr 23 2026 Subrahmanya Lingappa <subrahmanya.lingappa@qti.qualcomm.com> - %{version}-1
+* Thu Apr 23 2026 Subrahmanya Lingappa <subrahmanya.lingappa@qti.qualcomm.com> - %{version}-0
 - Initial RPM packaging for librpmi (runtime, devel, source subpackages)
