@@ -186,13 +186,13 @@ static enum rpmi_error rpmi_mm_get_attributes(struct rpmi_service_group *group,
 		rsp[3] = rpmi_to_xe32(xport->is_be, shmem_base >> 32);
 		rsp[4] = rpmi_to_xe32(xport->is_be, shmem_size);
 
-		*response_datalen = 5 * sizeof(rpmi_uint32_t);
 		status = RPMI_SUCCESS;
 	} else {
 		status = RPMI_ERR_NO_DATA;
 	}
 
 	rsp[0] = rpmi_to_xe32(xport->is_be, (rpmi_int32_t)status);
+	*response_datalen = 5 * sizeof(*rsp);
 
 	return RPMI_SUCCESS;
 }
@@ -212,30 +212,34 @@ static enum rpmi_error rpmi_mm_communicate(struct rpmi_service_group *group,
 	struct rpmi_guid_t guid;
 	enum rpmi_error status;
 
-	if (!request_data || !sgmm)
-		return RPMI_ERR_NO_DATA;
-
 	DPRINTF("ENTER");
 
 	mmc_req = (struct rpmi_mm_comm_req *)request_data;
-	rpmi_shmem_read(sgmm->shmem, mmc_req->idata_off, &guid, GUID_LENGTH);
+	*response_datalen = 0;
+
+	status = rpmi_shmem_read(sgmm->shmem, mmc_req->idata_off, &guid,
+				 GUID_LENGTH);
+	if (status)
+		goto done;
 
 	srvunit = get_mm_service_unit(sgmm, &guid);
-
-	if (!srvunit || !srvunit->active_cbfn_p)
-		return RPMI_ERR_NO_DATA;
+	if (!srvunit || !srvunit->active_cbfn_p) {
+		status = RPMI_ERR_INVALID_PARAM;
+		goto done;
+	}
 
 	status = srvunit->active_cbfn_p(sgmm->shmem, request_datalen,
 					request_data, response_datalen,
 					response_data, srvunit->priv_data);
 
+done:
 	rsp[0] = rpmi_to_xe32(xport->is_be, (rpmi_int32_t)status);
 	rsp[1] = rpmi_to_xe32(xport->is_be, (rpmi_uint32_t)(*response_datalen));
-	*response_datalen = 2 * sizeof(rpmi_uint32_t);
+	*response_datalen = 2 * sizeof(*rsp);
 
 	DPRINTF("EXIT: response length = %u status = %d", rsp[1], status);
 
-	return status;
+	return RPMI_SUCCESS;
 }
 
 /* Keep entry index same as service_id value */
@@ -252,7 +256,7 @@ static struct rpmi_service rpmi_mm_services[RPMI_MM_SRV_ID_MAX] = {
 	},
 	[RPMI_MM_SRV_COMMUNICATE] = {
 		.service_id = RPMI_MM_SRV_COMMUNICATE,
-		.min_a2p_request_datalen = 4,
+		.min_a2p_request_datalen = sizeof(struct rpmi_mm_comm_req),
 		.process_a2p_request = rpmi_mm_communicate,
 	},
 };
