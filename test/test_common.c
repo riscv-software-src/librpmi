@@ -78,8 +78,61 @@ static void test_wait(struct rpmi_test_scenario *scene, struct rpmi_test *test,
 	}
 }
 
+static int test_check_no_ack(struct rpmi_test_scenario *scene,
+			     struct rpmi_test *test,
+			     struct rpmi_message *resp_msg)
+{
+	int rc;
+
+	rpmi_env_memset(resp_msg, 0, sizeof(*resp_msg));
+	rc = rpmi_transport_dequeue(scene->xport, RPMI_QUEUE_P2A_ACK, resp_msg);
+	if (rc == RPMI_ERR_IO)
+		return 0;
+
+	if (rc == RPMI_SUCCESS)
+		printf("%s: unexpected acknowledgment for posted request\n", test->name);
+	else
+		printf("%s: failed to check acknowledgment queue (error %d)\n",
+		       test->name, rc);
+
+	return 1;
+}
+
+static int test_verify_header(struct rpmi_test *test, struct rpmi_message *msg,
+			      rpmi_uint16_t token)
+{
+	int failed = 0;
+
+	if (msg->header.flags != RPMI_MSG_ACKNOWLEDGEMENT) {
+		printf("%s: response flags mismatch: expected: %d, got: %d\n",
+		       test->name, RPMI_MSG_ACKNOWLEDGEMENT, msg->header.flags);
+		failed = 1;
+	}
+
+	if (msg->header.servicegroup_id != test->attrs.servicegroup_id) {
+		printf("%s: response servicegroup mismatch: expected: %d, got: %d\n",
+		       test->name, test->attrs.servicegroup_id, msg->header.servicegroup_id);
+		failed = 1;
+	}
+
+	if (msg->header.service_id != test->attrs.service_id) {
+		printf("%s: response service mismatch: expected: %d, got: %d\n",
+		       test->name, test->attrs.service_id, msg->header.service_id);
+		failed = 1;
+	}
+
+	if (msg->header.token != token) {
+		printf("%s: response token mismatch: expected: %d, got: %d\n",
+		       test->name, token, msg->header.token);
+		failed = 1;
+	}
+
+	return failed;
+}
+
 static void test_verify(struct rpmi_test *test, struct rpmi_message *msg,
-			void *exp_data, rpmi_uint16_t exp_data_len)
+			void *exp_data, rpmi_uint16_t exp_data_len,
+			int *nfail)
 {
 	int failed = 0;
 
@@ -107,33 +160,36 @@ static void test_verify(struct rpmi_test *test, struct rpmi_message *msg,
 	}
 
 	printf("TEST: %-50s \t : %s!\n", test->name, failed ? "Failed" : "Succeeded");
+	if (failed)
+		(*nfail)++;
 }
 
-static void execute_scenario(struct rpmi_test_scenario *scene)
+static int execute_scenario(struct rpmi_test_scenario *scene)
 {
 	struct rpmi_message *req_msg, *resp_msg;
 	rpmi_uint16_t exp_data_len;
 	struct rpmi_test *test;
 	void *exp_data;
-	int i, rc;
+	rpmi_uint16_t token;
+	int i, rc, failed, nfail = 0;
 
 	req_msg = rpmi_env_zalloc(scene->slot_size);
 	if (!req_msg) {
 		printf("Failed to allocate request message\n");
-		return;
+		return 1;
 	}
 	exp_data = rpmi_env_zalloc(RPMI_MSG_DATA_SIZE(scene->slot_size));
 	if (!exp_data) {
 		printf("Failed to allocate expected message\n");
 		rpmi_env_free(req_msg);
-		return;
+		return 1;
 	}
 	resp_msg = rpmi_env_zalloc(scene->slot_size);
 	if (!resp_msg) {
 		printf("Failed to allocate response message\n");
 		rpmi_env_free(exp_data);
 		rpmi_env_free(req_msg);
-		return;
+		return 1;
 	}
 
 	printf("\nExecuting %s test scenario :\n", scene->name);
@@ -148,13 +204,16 @@ static void execute_scenario(struct rpmi_test_scenario *scene)
 			rc = 0;
 		if (rc) {
 			printf("Failed to initialize test %s (error %d)\n", test->name, rc);
+			nfail++;
 			continue;
 		}
 
 		/* Initialize request message header */
 		req_msg->header.servicegroup_id = test->attrs.servicegroup_id;
 		req_msg->header.service_id = test->attrs.service_id;
+		req_msg->header.flags = test->attrs.flags;
 		req_msg->header.datalen = 0;
+		token = scene->token_sequence;
 		req_msg->header.token = scene->token_sequence;
 		scene->token_sequence++;
 
@@ -178,6 +237,7 @@ static void execute_scenario(struct rpmi_test_scenario *scene)
 			rc = test_run(scene, test, req_msg);
 		if (rc) {
 			printf("Failed to run test %s (error %d)\n", test->name, rc);
+			nfail++;
 			goto skip;
 		}
 
@@ -186,14 +246,25 @@ static void execute_scenario(struct rpmi_test_scenario *scene)
 		else
 			scenario_process(scene);
 
+		failed = 0;
+		if ((test->attrs.flags & RPMI_MSG_FLAGS_TYPE) == RPMI_MSG_POSTED_REQUEST)
+			failed = test_check_no_ack(scene, test, resp_msg);
+
 		/* Wait for test to finish */
 		if (test->wait)
 			test->wait(scene, test, resp_msg);
-		else
+		else if (!failed)
 			test_wait(scene, test, resp_msg);
 
+		if (!failed && (test->attrs.flags & RPMI_MSG_FLAGS_TYPE) == RPMI_MSG_NORMAL_REQUEST)
+			failed = test_verify_header(test, resp_msg, token);
+
 		/* Verify and report */
-		test_verify(test, resp_msg, exp_data, exp_data_len);
+		test_verify(test, resp_msg, exp_data, exp_data_len, &failed);
+		if (test->verify)
+			failed += test->verify(scene, test, resp_msg);
+		if (failed)
+			nfail++;
 
 skip:
 		/* Cleanup if needed */
@@ -204,6 +275,8 @@ skip:
 	rpmi_env_free(resp_msg);
 	rpmi_env_free(exp_data);
 	rpmi_env_free(req_msg);
+
+	return nfail;
 }
 
 rpmi_uint16_t test_init_request_data_from_attrs(struct rpmi_test_scenario *scene,
@@ -313,13 +386,14 @@ int test_scenario_execute(struct rpmi_test_scenario *scene)
 		return rc;
 	}
 
-	execute_scenario(scene);
+	rc = execute_scenario(scene);
+	if (rc)
+		printf("%d test(s) failed in scenario %s\n", rc, scene->name);
 
-	rc = scene->cleanup(scene);
-	if (rc) {
+	if (scene->cleanup(scene)) {
 		printf("Failed to cleanup test scenario %s\n", scene->name);
-		return rc;
+		return RPMI_ERR_FAILED;
 	}
 
-	return 0;
+	return rc ? RPMI_ERR_FAILED : 0;
 }

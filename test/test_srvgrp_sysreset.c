@@ -66,8 +66,24 @@ static rpmi_uint32_t reset_reqdata_supp[] = {
 	RPMI_SYSRST_TYPE_COLD_REBOOT,
 };
 
+static rpmi_uint32_t reset_reqdata_shutdown[] = {
+	RPMI_SYSRST_TYPE_SHUTDOWN,
+};
+
+static rpmi_uint32_t reset_reqdata_unsupported[] = {
+	RPMI_SYSRST_TYPE_WARM_REBOOT,
+};
+
+static rpmi_uint32_t reset_type_cold = RPMI_SYSRST_TYPE_COLD_REBOOT;
+static rpmi_uint32_t reset_type_shutdown = RPMI_SYSRST_TYPE_SHUTDOWN;
+
+static rpmi_uint32_t test_reset_call_count;
+static rpmi_uint32_t test_reset_last_type = RPMI_SYSRST_TYPE_MAX;
+
 static void rpmi_do_system_reset(void *priv, rpmi_uint32_t reset_type)
 {
+	test_reset_call_count++;
+	test_reset_last_type = reset_type;
 	if (reset_type == RPMI_SYSRST_TYPE_WARM_REBOOT) {
 		printf("platform callback: warm reset\n");
 	} else if (reset_type == RPMI_SYSRST_TYPE_COLD_REBOOT) {
@@ -84,6 +100,48 @@ static void rpmi_do_system_reset(void *priv, rpmi_uint32_t reset_type)
 struct rpmi_sysreset_platform_ops rpmi_reset_ops = {
 	.do_system_reset = rpmi_do_system_reset
 };
+
+static int test_reset_callback_init(struct rpmi_test_scenario *scene,
+				    struct rpmi_test *test)
+{
+	test_reset_call_count = 0;
+	test_reset_last_type = RPMI_SYSRST_TYPE_MAX;
+	return 0;
+}
+
+static int test_reset_callback_verify(struct rpmi_test_scenario *scene,
+				      struct rpmi_test *test,
+				      struct rpmi_message *msg)
+{
+	rpmi_uint32_t expected_type = *(rpmi_uint32_t *)test->priv;
+
+	if (test_reset_call_count != 1) {
+		printf("%s: expected one reset callback, got %d\n",
+		       test->name, test_reset_call_count);
+		return 1;
+	}
+
+	if (test_reset_last_type != expected_type) {
+		printf("%s: expected reset type %d, got %d\n",
+		       test->name, expected_type, test_reset_last_type);
+		return 1;
+	}
+
+	return 0;
+}
+
+static int test_no_reset_callback_verify(struct rpmi_test_scenario *scene,
+					 struct rpmi_test *test,
+					 struct rpmi_message *msg)
+{
+	if (test_reset_call_count) {
+		printf("%s: unexpected reset callback count %d, last type %d\n",
+		       test->name, test_reset_call_count, test_reset_last_type);
+		return 1;
+	}
+
+	return 0;
+}
 
 static int test_sysreset_scenario_init(struct rpmi_test_scenario *scene)
 {
@@ -112,7 +170,7 @@ static struct rpmi_test_scenario scenario_sysreset_default = {
 	.init = test_sysreset_scenario_init,
 	.cleanup = test_scenario_default_cleanup,
 
-	.num_tests = 5,
+	.num_tests = 7,
 	.tests = {
 		{
 			.name = "ENABLE NOTIFICATION TEST (notifications not supported)",
@@ -180,6 +238,36 @@ static struct rpmi_test_scenario scenario_sysreset_default = {
 				.request_data_len = sizeof(reset_reqdata_supp),
 			},
 			.init_request_data = test_init_request_data_from_attrs,
+			.init = test_reset_callback_init,
+			.verify = test_reset_callback_verify,
+			.priv = &reset_type_cold,
+		},
+		{
+			.name = "SYSTEM RESET (shutdown reset type)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_SYSTEM_RESET,
+				.service_id = RPMI_SYSRST_SRV_SYSTEM_RESET,
+				.flags = RPMI_MSG_POSTED_REQUEST,
+				.request_data = reset_reqdata_shutdown,
+				.request_data_len = sizeof(reset_reqdata_shutdown),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init = test_reset_callback_init,
+			.verify = test_reset_callback_verify,
+			.priv = &reset_type_shutdown,
+		},
+		{
+			.name = "SYSTEM RESET (unsupported reset type)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_SYSTEM_RESET,
+				.service_id = RPMI_SYSRST_SRV_SYSTEM_RESET,
+				.flags = RPMI_MSG_POSTED_REQUEST,
+				.request_data = reset_reqdata_unsupported,
+				.request_data_len = sizeof(reset_reqdata_unsupported),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init = test_reset_callback_init,
+			.verify = test_no_reset_callback_verify,
 		},
 	},
 };
