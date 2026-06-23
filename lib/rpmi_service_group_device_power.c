@@ -41,7 +41,7 @@ struct rpmi_dpwr_group {
 	struct rpmi_service_group group;
 };
 
-/** Get a struct rpmi_dpwr instance pointer from perf id */
+/** Get a struct rpmi_dpwr instance pointer from dpwr id */
 static inline struct rpmi_dpwr *
 rpmi_get_dpwr(struct rpmi_dpwr_group *dpwr_group, rpmi_uint32_t dpwr_id)
 {
