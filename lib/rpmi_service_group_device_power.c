@@ -16,10 +16,6 @@
 
 #define RPMI_DPWR_NAME_MAX_LEN  16
 
-/** Convert list node pointer to struct rpmi_perf instance pointer */
-#define to_rpmi_perf(__node)    \
-	container_of((__node), struct rpmi_perf, node)
-
 /* A device power domain instance */
 struct rpmi_dpwr {
 	/* Lock to invoke the platform operations to
