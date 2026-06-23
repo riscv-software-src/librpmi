@@ -370,7 +370,7 @@ rpmi_service_group_dpwr_create(rpmi_uint32_t dpwr_count,
 						 ops,
 						 ops_priv);
 	if (!dpwrgrp->dpwr_tree) {
-		DPRINTF("%s: failed to initialize clock tree\n", __func__);
+		DPRINTF("%s: failed to initialize dpwr tree\n", __func__);
 		rpmi_env_free(dpwrgrp);
 		return NULL;
 	}
