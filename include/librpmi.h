@@ -1883,9 +1883,22 @@ enum rpmi_voltage_state {
 enum rpmi_voltage_type {
 	RPMI_VOLT_TYPE_INVALID			= -1,
 	RPMI_VOLT_TYPE_DISCRETE			= 0,
-	RPMI_VOLT_TYPE_LINEAR			= 2,
+	RPMI_VOLT_TYPE_LINEAR			= 1,
 	RPMI_VOLT_TYPE_MAX,
 };
+
+#define RPMI_VOLT_CAPABILITY_CONTROL_POS		0U
+#define RPMI_VOLT_CAPABILITY_CONTROL_MASK	0x1U
+#define RPMI_VOLT_CAPABILITY_FORMAT_POS		1U
+#define RPMI_VOLT_CAPABILITY_FORMAT_MASK		0x7U
+
+#define RPMI_VOLT_CAPABILITY_CONTROL(__control)				\
+	(((__control) & RPMI_VOLT_CAPABILITY_CONTROL_MASK) <<		\
+	 RPMI_VOLT_CAPABILITY_CONTROL_POS)
+
+#define RPMI_VOLT_CAPABILITY_FORMAT(__format)				\
+	(((__format) & RPMI_VOLT_CAPABILITY_FORMAT_MASK) <<		\
+	 RPMI_VOLT_CAPABILITY_FORMAT_POS)
 
 /** voltage domain capabilities */
 enum rpmi_voltage_capability {

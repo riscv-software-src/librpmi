@@ -70,7 +70,9 @@ static enum rpmi_error __rpmi_volt_get_attributes(struct rpmi_voltage_group *vol
 	}
 
 	attrs->name = volt->vdata->name;
-	attrs->capability = volt->vdata->voltage_type | volt->vdata->control;
+	attrs->capability =
+		RPMI_VOLT_CAPABILITY_FORMAT(volt->vdata->voltage_type) |
+		RPMI_VOLT_CAPABILITY_CONTROL(volt->vdata->control);
 	attrs->num_levels = volt->vdata->num_levels;
 	attrs->trans_latency = volt->vdata->trans_latency;
 	attrs->config = volt->vdata->config;
