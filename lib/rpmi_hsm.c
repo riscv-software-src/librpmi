@@ -12,6 +12,13 @@
 #define DPRINTF(msg...)
 #endif
 
+/*
+ * Bound the polling loop used to refresh a pending STOP state before START.
+ * This is not a time value; each iteration samples the platform HW-state hook
+ * once while holding the hart lock.
+ */
+#define RPMI_HSM_STOP_PENDING_RETRIES	10000
+
 struct rpmi_hsm_hart {
 	/** Lock to protect this structure and perform platform operations */
 	void *lock;
@@ -288,6 +295,16 @@ enum rpmi_error rpmi_hsm_hart_start(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id,
 
 	hart = &hsm->leaf.harts[hart_index];
 	rpmi_env_lock(hart->lock);
+	__rpmi_hsm_process_hart_state_changes(hsm, hart, hart_index);
+	if (hart->state == RPMI_HSM_HART_STATE_STOP_PENDING) {
+		rpmi_uint32_t retries;
+
+		for (retries = 0; retries < RPMI_HSM_STOP_PENDING_RETRIES &&
+				hart->state == RPMI_HSM_HART_STATE_STOP_PENDING;
+				retries++) {
+			__rpmi_hsm_process_hart_state_changes(hsm, hart, hart_index);
+		}
+	}
 
 	if (hart->state == RPMI_HSM_HART_STATE_STARTED) {
 		DPRINTF("%s: hart_id 0x%x already started\n", __func__, hart_id);
@@ -352,6 +369,7 @@ enum rpmi_error rpmi_hsm_hart_stop(struct rpmi_hsm *hsm, rpmi_uint32_t hart_id)
 
 	hart = &hsm->leaf.harts[hart_index];
 	rpmi_env_lock(hart->lock);
+	__rpmi_hsm_process_hart_state_changes(hsm, hart, hart_index);
 
 	if (hart->state == RPMI_HSM_HART_STATE_STOPPED) {
 		DPRINTF("%s: hart_id 0x%x already stopped\n", __func__, hart_id);
@@ -418,6 +436,7 @@ enum rpmi_error rpmi_hsm_hart_suspend(struct rpmi_hsm *hsm, rpmi_uint32_t hart_i
 
 	hart = &hsm->leaf.harts[hart_index];
 	rpmi_env_lock(hart->lock);
+	__rpmi_hsm_process_hart_state_changes(hsm, hart, hart_index);
 
 	if (hart->state == RPMI_HSM_HART_STATE_SUSPENDED) {
 		DPRINTF("%s: hart_id 0x%x already suspended\n", __func__, hart_id);
