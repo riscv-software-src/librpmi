@@ -43,3 +43,8 @@ test-elfs-y += test_srvgrp_mm
 
 test_srvgrp_mm-objs-y += test/test_log.o
 test_srvgrp_mm-objs-y += test/test_common.o
+
+test-elfs-y += test_srvgrp_syssusp
+
+test_srvgrp_syssusp-objs-y += test/test_log.o
+test_srvgrp_syssusp-objs-y += test/test_common.o
