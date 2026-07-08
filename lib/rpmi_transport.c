@@ -99,8 +99,8 @@ enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
 
 	/* Convert header fields to match transport endianness */
 	mhdr = &msg->header;
-	mhdr->servicegroup_id = rpmi_to_xe32(trans->is_be, mhdr->servicegroup_id);
-	mhdr->datalen = rpmi_to_xe32(trans->is_be, mhdr->datalen);
+	mhdr->servicegroup_id = rpmi_to_xe16(trans->is_be, mhdr->servicegroup_id);
+	mhdr->datalen = rpmi_to_xe16(trans->is_be, mhdr->datalen);
 	mhdr->token = rpmi_to_xe16(trans->is_be, mhdr->token);
 
 	/* Enqueue the message */
@@ -114,7 +114,7 @@ enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
 	rpmi_env_unlock(trans->lock);
 
 	/* Reverse the endian conversion of header fields */
-	mhdr->servicegroup_id = rpmi_to_xe32(trans->is_be, mhdr->servicegroup_id);
+	mhdr->servicegroup_id = rpmi_to_xe16(trans->is_be, mhdr->servicegroup_id);
 	mhdr->datalen = rpmi_to_xe16(trans->is_be, mhdr->datalen);
 	mhdr->token = rpmi_to_xe16(trans->is_be, mhdr->token);
 
@@ -164,7 +164,7 @@ enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
 	/* Convert header fields to native endianness */
 	if (!rc) {
 		mhdr = &out_msg->header;
-		mhdr->servicegroup_id = rpmi_to_xe32(trans->is_be, mhdr->servicegroup_id);
+		mhdr->servicegroup_id = rpmi_to_xe16(trans->is_be, mhdr->servicegroup_id);
 		mhdr->datalen = rpmi_to_xe16(trans->is_be, mhdr->datalen);
 		mhdr->token = rpmi_to_xe16(trans->is_be, mhdr->token);
 	}
