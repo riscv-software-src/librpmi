@@ -68,3 +68,8 @@ test-elfs-y += test_srvgrp_ras
 
 test_srvgrp_ras-objs-y += test/test_log.o
 test_srvgrp_ras-objs-y += test/test_common.o
+
+test-elfs-y += test_srvgrp_reqfwd
+
+test_srvgrp_reqfwd-objs-y += test/test_log.o
+test_srvgrp_reqfwd-objs-y += test/test_common.o
