@@ -362,6 +362,19 @@ enum rpmi_volt_service_id {
 	RPMI_VOLT_SRV_ID_MAX,
 };
 
+/** RPMI Request Forward (REQFWD) ServiceGroup Service IDs */
+enum rpmi_reqfwd_service_id {
+	RPMI_REQFWD_SRV_ENABLE_NOTIFICATION		= 0x01,
+	RPMI_REQFWD_SRV_RETRIEVE_CURRENT_MESSAGE	= 0x02,
+	RPMI_REQFWD_SRV_COMPLETE_CURRENT_MESSAGE	= 0x03,
+	RPMI_REQFWD_SRV_ID_MAX,
+};
+
+/** RPMI Request Forward Event IDs */
+enum rpmi_reqfwd_event_id {
+	RPMI_REQFWD_EVENT_NEW_MESSAGE	= 0x01,
+};
+
 /** RPMI Management Mode (MM) ServiceGroup Service IDs */
 enum rpmi_mm_service_id {
 	RPMI_MM_SRV_ENABLE_NOTIFICATION	= 0x01,
@@ -2150,6 +2163,71 @@ rpmi_service_group_logging_create(const struct rpmi_logging_platform_ops *ops,
  * @param[in] group	pointer to RPMI service group instance
  */
 void rpmi_service_group_logging_destroy(struct rpmi_service_group *group);
+
+/** @} */
+
+/******************************************************************************/
+
+/**
+ * \defgroup LIBRPMI_REQFWDSRVGRP_INTERFACE RPMI Request Forward Service Group Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for RPMI Request Forward service group.
+ * @{
+ */
+
+/** Forwarded RPMI Request Message */
+struct rpmi_reqfwd_message {
+	rpmi_uint32_t	msg_size;
+	const rpmi_uint8_t *msg_data;
+};
+
+/** Platform specific Request Forward operations */
+struct rpmi_reqfwd_platform_ops {
+	/**
+	 * Get the current (oldest) forwarded RPMI request message
+	 **/
+	enum rpmi_error (*get_current_message)(void *priv,
+					       struct rpmi_reqfwd_message *msg);
+
+	/**
+	 * Complete the current forwarded RPMI request message
+	 **/
+	enum rpmi_error (*complete_current_message)(void *priv,
+						    rpmi_uint32_t resp_data_len,
+						    const rpmi_uint8_t *resp_data,
+						    rpmi_uint32_t *num_messages);
+};
+
+/**
+ * @brief Create a Request Forward service group instance
+ *
+ * @param[in] ops		pointer to platform specific request forward operations
+ * @param[in] ops_priv		pointer to private data of platform operations
+ * @return rpmi_service_group *	pointer to RPMI service group instance upon
+ * success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_reqfwd_create(const struct rpmi_reqfwd_platform_ops *ops,
+				 void *ops_priv);
+
+/**
+ * @brief Destroy(free) a Request Forward service group instance
+ *
+ * @param[in] group	pointer to RPMI service group instance
+ */
+void rpmi_service_group_reqfwd_destroy(struct rpmi_service_group *group);
+
+/**
+ * @brief Trigger REQFWD_NEW_MESSAGE notification event
+ *
+ * @param[in] group		pointer to RPMI service group instance
+ * @param[in] event_data_len	length of event data (first N bytes of message)
+ * @param[in] event_data	pointer to event data
+ * @return enum rpmi_error	RPMI_SUCCESS on success, error code otherwise
+ */
+enum rpmi_error rpmi_reqfwd_trigger_new_message(struct rpmi_service_group *group,
+						rpmi_uint32_t event_data_len,
+						const rpmi_uint8_t *event_data);
 
 /** @} */
 
