@@ -155,7 +155,7 @@ static int test_sysreset_scenario_init(struct rpmi_test_scenario *scene)
 	grp = rpmi_service_group_sysreset_create(
 				sizeof(test_rpmi_reset_types) / sizeof(rpmi_uint32_t),
 				(const rpmi_uint32_t *)&test_rpmi_reset_types,
-				&rpmi_reset_ops, scene->cntx);
+				&rpmi_reset_ops, NULL);
 	rpmi_context_add_group(scene->cntx, grp);
 	return 0;
 }
