@@ -4,6 +4,7 @@ EXTRACT_ALL = YES
 INPUT += @@SRC_DIR@@/include/librpmi.h 
 INPUT += @@SRC_DIR@@/include/librpmi_env.h 
 INPUT += README.md
+INPUT += COMPLIANCE.md
 RECURSIVE = YES
 HIDE_UNDOC_RELATIONS = NO
 HAVE_DOT = YES
