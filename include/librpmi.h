@@ -349,6 +349,21 @@ enum rpmi_perf_service_id {
 	RPMI_PERF_SRV_ID_MAX,
 };
 
+/** RPMI RAS Agent (RAS) ServiceGroup Service IDs */
+enum rpmi_ras_service_id {
+	RPMI_RAS_SRV_ENABLE_NOTIFICATION	= 0x01,
+	RPMI_RAS_SRV_GET_NUM_ERR_SRCS		= 0x02,
+	RPMI_RAS_SRV_GET_ERR_SRCS_ID_LIST	= 0x03,
+	RPMI_RAS_SRV_GET_ERR_SRC_DESC		= 0x04,
+	RPMI_RAS_SRV_ID_MAX,
+};
+
+/** RAS Error Source Descriptor Format Types */
+enum rpmi_ras_desc_format {
+	RPMI_RAS_DESC_FORMAT_GHESV2		= 0x0,
+	RPMI_RAS_DESC_FORMAT_IMPL_SPECIFIC	= 0xF,
+};
+
 /** RPMI Voltage (Volt) ServiceGroup Service IDs */
 enum rpmi_volt_service_id {
 	RPMI_VOLT_SRV_ENABLE_NOTIFICATION	= 0x01,
@@ -2118,6 +2133,92 @@ void rpmi_service_group_mm_destroy(struct rpmi_service_group *group);
 enum rpmi_error rpmi_mm_service_register(struct rpmi_service_group *group,
 					 rpmi_uint32_t num_entries,
 					 struct rpmi_mm_service *iplist);
+
+/** @} */
+
+/******************************************************************************/
+
+/**
+ * \defgroup LIBRPMI_RASAGENTSRVGRP_INTERFACE RPMI RAS Agent Service Group Library Interface
+ * @brief Global functions and data structures implemented by the RPMI library
+ * for RPMI RAS Agent service group.
+ * @{
+ */
+
+/** RAS error source descriptor data */
+struct rpmi_ras_err_src_desc {
+	/** Error source ID */
+	rpmi_uint32_t err_src_id;
+	/** Descriptor format (RPMI_RAS_DESC_FORMAT_*) */
+	rpmi_uint32_t desc_format;
+	/** Total descriptor size in bytes */
+	rpmi_uint32_t desc_size;
+	/** Pointer to descriptor data */
+	const rpmi_uint8_t *desc_data;
+};
+
+/** Platform specific RAS Agent operations */
+struct rpmi_ras_platform_ops {
+	/**
+	 * Optional: initialize platform state, called once during create.
+	 * Returns RPMI_SUCCESS on success, error code otherwise.
+	 */
+	enum rpmi_error (*init)(void *priv);
+
+	/**
+	 * Optional: enable or disable a notification event.
+	 * Returns RPMI_SUCCESS on success, RPMI_ERR_NOTSUPP if not provided.
+	 */
+	enum rpmi_error (*enable_notification)(void *priv, rpmi_uint32_t event_id,
+					       rpmi_bool_t enable);
+
+	/**
+	 * Get total number of error sources.
+	 * Returns RPMI_SUCCESS on success, error code otherwise.
+	 */
+	enum rpmi_error (*get_num_error_sources)(void *priv,
+						 rpmi_uint32_t *num_err_srcs);
+
+	/**
+	 * Get up to @count error source IDs starting at @start_index into @ids.
+	 * Caller guarantees start_index + count <= total from get_num_error_sources.
+	 * Returns RPMI_SUCCESS on success, error code otherwise.
+	 */
+	enum rpmi_error (*get_err_src_id_list)(void *priv,
+					       rpmi_uint32_t start_index,
+					       rpmi_uint32_t count,
+					       rpmi_uint32_t *ids);
+
+	/**
+	 * Get error source descriptor for a given error source ID.
+	 * Returns RPMI_SUCCESS on success, error code otherwise.
+	 */
+	enum rpmi_error (*get_err_src_desc)(void *priv,
+					    rpmi_uint32_t err_src_id,
+					    struct rpmi_ras_err_src_desc *desc);
+};
+
+/**
+ * @brief Create a RAS Agent service group instance
+ *
+ * @param[in] ops		pointer to platform specific RAS operations
+ * @param[in] ops_priv		pointer to private data of platform operations
+ * @return pointer to RPMI service group instance upon success and NULL upon failure
+ */
+struct rpmi_service_group *
+rpmi_service_group_ras_create(const struct rpmi_ras_platform_ops *ops,
+			      void *ops_priv);
+
+/**
+ * @brief Destroy (or free) a RAS Agent service group instance
+ *
+ * @param[in] group	pointer to RPMI service group instance
+ */
+void rpmi_service_group_ras_destroy(struct rpmi_service_group *group);
+
+/** @} */
+
+/******************************************************************************/
 
 /**
  * \defgroup LIBRPMI_LOGGINGSRVGRP_INTERFACE RPMI Logging Service Group Library Interface
