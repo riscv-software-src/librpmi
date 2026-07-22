@@ -239,6 +239,11 @@ enum rpmi_base_service_id {
 #define RPMI_BASE_FLAGS_F0_PRIVILEGE		(1U << 1)
 #define RPMI_BASE_FLAGS_F0_EV_NOTIFY		(1U << 0)
 
+/** RPMI Base ServiceGroup Event IDs */
+enum rpmi_base_event_id {
+	RPMI_BASE_EVENT_REQUEST_HANDLE_ERROR	= 0x01,
+};
+
 /** RPMI System MSI (SYSMSI) ServiceGroup Service IDs */
 enum rpmi_sysmsi_service_id {
 	RPMI_SYSMSI_SRV_ENABLE_NOTIFICATION	= 0x01,
@@ -685,6 +690,18 @@ void rpmi_context_process_group_events(struct rpmi_context *cntx,
  * @param[in] cntx		pointer to the RPMI context
  */
 void rpmi_context_process_all_events(struct rpmi_context *cntx);
+
+/**
+ * @brief Trigger REQUEST_HANDLE_ERROR event on the Base service group
+ *
+ * This function triggers a REQUEST_HANDLE_ERROR notification event
+ * when the platform firmware cannot handle an application processor's
+ * request (e.g., when ACK enqueue fails). Can be called from outside
+ * librpmi.
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ */
+void rpmi_context_base_request_handle_error(struct rpmi_context *cntx);
 
 /**
  * @brief Find a RPMI service group in a RPMI context

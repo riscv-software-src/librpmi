@@ -58,6 +58,15 @@ struct rpmi_base_group {
 	/* Platform info string */
 	char *plat_info;
 
+	/* Notification enabled state for REQUEST_HANDLE_ERROR event */
+	rpmi_bool_t notif_enabled;
+
+	/* Pending REQUEST_HANDLE_ERROR notification flag */
+	rpmi_bool_t pending_request_handle_err;
+
+	/* Pre-allocated notification message buffer */
+	struct rpmi_message *notif_msg;
+
 	struct rpmi_service_group group;
 };
 
@@ -163,6 +172,52 @@ static enum rpmi_error rpmi_base_probe_group(struct rpmi_service_group *group,
 	return RPMI_SUCCESS;
 }
 
+static enum rpmi_error rpmi_base_enable_notification(struct rpmi_service_group *group,
+						     struct rpmi_service *service,
+						     struct rpmi_transport *trans,
+						     rpmi_uint16_t request_datalen,
+						     const rpmi_uint8_t *request_data,
+						     rpmi_uint16_t *response_datalen,
+						     rpmi_uint8_t *response_data)
+{
+	const rpmi_uint32_t *req = (const rpmi_uint32_t *)request_data;
+	rpmi_uint32_t *resp = (void *)response_data;
+	struct rpmi_base_group *base = group->priv;
+	rpmi_uint32_t event_id, req_state;
+
+	event_id = rpmi_to_xe32(trans->is_be, req[0]);
+	req_state = rpmi_to_xe32(trans->is_be, req[1]);
+
+	/* Only REQUEST_HANDLE_ERROR event is supported */
+	if (event_id != RPMI_BASE_EVENT_REQUEST_HANDLE_ERROR) {
+		*response_datalen = sizeof(*resp);
+		resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
+		return RPMI_SUCCESS;
+	}
+
+	switch (req_state) {
+	case 0: /* Disable */
+		base->notif_enabled = false;
+		break;
+	case 1: /* Enable */
+		base->notif_enabled = true;
+		break;
+	case 2: /* Query current state */
+		break;
+	default:
+		*response_datalen = sizeof(*resp);
+		resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
+		return RPMI_SUCCESS;
+	}
+
+	/* Return current state in response */
+	*response_datalen = 2 * sizeof(*resp);
+	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
+	resp[1] = rpmi_to_xe32(trans->is_be, base->notif_enabled ? 1U : 0U);
+
+	return RPMI_SUCCESS;
+}
+
 static enum rpmi_error rpmi_base_get_attributes(struct rpmi_service_group *group,
 						struct rpmi_service *service,
 						struct rpmi_transport *trans,
@@ -179,6 +234,9 @@ static enum rpmi_error rpmi_base_get_attributes(struct rpmi_service_group *group
 	flags |= (cntx->privilege_level == RPMI_PRIVILEGE_M_MODE) ?
 					RPMI_BASE_FLAGS_F0_PRIVILEGE : 0;
 
+	/* Set the event notification support flag */
+	flags |= RPMI_BASE_FLAGS_F0_EV_NOTIFY;
+
 	*response_datalen = 5 * sizeof(*resp);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 	resp[1] = rpmi_to_xe32(trans->is_be, flags);
@@ -189,11 +247,52 @@ static enum rpmi_error rpmi_base_get_attributes(struct rpmi_service_group *group
 	return RPMI_SUCCESS;
 }
 
+static enum rpmi_error rpmi_base_process_events(struct rpmi_service_group *group)
+{
+	struct rpmi_base_group *base = group->priv;
+	struct rpmi_transport *trans = base->cntx->trans;
+	struct rpmi_message *notif_msg = base->notif_msg;
+	rpmi_uint32_t *data;
+	enum rpmi_error rc;
+
+	/* Check if notification is enabled and there's a pending event */
+	if (!base->notif_enabled || !base->pending_request_handle_err)
+		return RPMI_SUCCESS;
+
+	/* Prepare P2A notification message */
+	notif_msg->header.servicegroup_id = RPMI_SRVGRP_BASE;
+	notif_msg->header.service_id = 0; /* Not used for notifications */
+	notif_msg->header.flags = RPMI_MSG_NOTIFICATION;
+	notif_msg->header.token = 0; /* Not used for notifications */
+	notif_msg->header.datalen = 2 * sizeof(rpmi_uint32_t);
+
+	data = (rpmi_uint32_t *)notif_msg->data;
+	data[0] = rpmi_to_xe32(trans->is_be, RPMI_BASE_EVENT_REQUEST_HANDLE_ERROR);
+	data[1] = rpmi_to_xe32(trans->is_be, 0); /* Event-specific data (reserved) */
+
+	/* Try to enqueue the notification */
+	rc = rpmi_transport_enqueue(trans, RPMI_QUEUE_P2A_REQ, notif_msg);
+	if (rc == RPMI_SUCCESS) {
+		/* Clear the pending flag on successful enqueue */
+		base->pending_request_handle_err = false;
+	} else if (rc == RPMI_ERR_IO) {
+		/* Queue is full, will retry later */
+		return RPMI_ERR_BUSY;
+	} else {
+		/* Other error occurred */
+		DPRINTF("%s: failed to enqueue notification (error %d)\n",
+			__func__, rc);
+		return rc;
+	}
+
+	return RPMI_SUCCESS;
+}
+
 static struct rpmi_service rpmi_base_services[RPMI_BASE_SRV_ID_MAX] = {
 	[RPMI_BASE_SRV_ENABLE_NOTIFICATION] = {
 		.service_id = RPMI_BASE_SRV_ENABLE_NOTIFICATION,
 		.min_a2p_request_datalen = 8,
-		.process_a2p_request = NULL,
+		.process_a2p_request = rpmi_base_enable_notification,
 	},
 	[RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION] = {
 		.service_id = RPMI_BASE_SRV_GET_IMPLEMENTATION_VERSION,
@@ -262,6 +361,15 @@ static struct rpmi_service_group *rpmi_base_group_create(struct rpmi_context *cn
 		rpmi_env_strncpy(base->plat_info, plat_info, plat_info_len);
 	}
 
+	/* Initialize notification state */
+	base->notif_enabled = false;
+	base->pending_request_handle_err = false;
+
+	/* Allocate pre-allocated notification message buffer */
+	base->notif_msg = rpmi_env_zalloc(cntx->trans->slot_size);
+	if (!base->notif_msg)
+		goto fail_free_plat_info;
+
 	group = &base->group;
 	group->name = "base";
 	group->servicegroup_id = RPMI_SRVGRP_BASE;
@@ -272,10 +380,15 @@ static struct rpmi_service_group *rpmi_base_group_create(struct rpmi_context *cn
 		RPMI_PRIVILEGE_M_MODE_MASK | RPMI_PRIVILEGE_S_MODE_MASK;
 	group->max_service_id = RPMI_BASE_SRV_ID_MAX;
 	group->services = rpmi_base_services;
+	group->process_events = rpmi_base_process_events;
 	group->lock = rpmi_env_alloc_lock();
 	group->priv = base;
 
 	return group;
+
+fail_free_plat_info:
+	if (base->plat_info)
+		rpmi_env_free(base->plat_info);
 
 fail_free_base:
 	rpmi_env_free(base);
@@ -286,6 +399,8 @@ static void rpmi_base_group_destroy(struct rpmi_service_group *group)
 {
 	struct rpmi_base_group *base = group->priv;
 
+	if (base->notif_msg)
+		rpmi_env_free(base->notif_msg);
 	if (base->plat_info)
 		rpmi_env_free(base->plat_info);
 	rpmi_env_free_lock(group->lock);
@@ -407,6 +522,8 @@ void rpmi_context_process_a2p_request(struct rpmi_context *cntx)
 		if (rc) {
 			DPRINTF("%s: %s: group %s p2a acknowledgement failed (error %d)\n",
 				__func__, cntx->name, group->name, rc);
+			/* Trigger REQUEST_HANDLE_ERROR event on ACK failure */
+			rpmi_context_base_request_handle_error(cntx);
 		}
 
 		if ((rmsg->header.flags & RPMI_MSG_FLAGS_DOORBELL) &&
@@ -479,6 +596,23 @@ void rpmi_context_process_all_events(struct rpmi_context *cntx)
 	}
 
 	rpmi_env_unlock(cntx->groups_lock);
+}
+
+void rpmi_context_base_request_handle_error(struct rpmi_context *cntx)
+{
+	struct rpmi_base_group *base;
+
+	if (!cntx || !cntx->base_group) {
+		DPRINTF("%s: invalid parameters\n", __func__);
+		return;
+	}
+
+	base = (struct rpmi_base_group *)cntx->base_group->priv;
+
+	/* Set the pending flag for REQUEST_HANDLE_ERROR event */
+	rpmi_env_lock(cntx->base_group->lock);
+	base->pending_request_handle_err = true;
+	rpmi_env_unlock(cntx->base_group->lock);
 }
 
 struct rpmi_service_group *rpmi_context_find_group(struct rpmi_context *cntx,
