@@ -39,8 +39,8 @@ endif
 docs_dir=$(build_dir)/docs
 install_docs_dir=$(install_root_dir)/docs
 LIBRPMI_HEADER := $(src_dir)/include/librpmi.h
-LIBRPMI_IMPL_VERSION_MAJOR := $(strip $(shell sed -n 's/^#define[[:space:]]\+LIBRPMI_IMPL_VERSION_MAJOR[[:space:]]\+\([0-9][0-9]*\).*/\1/p' $(LIBRPMI_HEADER)))
-LIBRPMI_IMPL_VERSION_MINOR := $(strip $(shell sed -n 's/^#define[[:space:]]\+LIBRPMI_IMPL_VERSION_MINOR[[:space:]]\+\([0-9][0-9]*\).*/\1/p' $(LIBRPMI_HEADER)))
+LIBRPMI_IMPL_VERSION_MAJOR := $(strip $(shell grep 'define LIBRPMI_IMPL_VERSION_MAJOR' $(LIBRPMI_HEADER) | awk '{print $$NF}'))
+LIBRPMI_IMPL_VERSION_MINOR := $(strip $(shell grep 'define LIBRPMI_IMPL_VERSION_MINOR' $(LIBRPMI_HEADER) | awk '{print $$NF}'))
 ifeq ($(LIBRPMI_IMPL_VERSION_MAJOR),)
 $(error Failed to parse LIBRPMI_IMPL_VERSION_MAJOR from $(LIBRPMI_HEADER))
 endif
@@ -142,10 +142,7 @@ CPPFLAGS	+=	$(GENFLAGS)
 
 ARFLAGS		=	rcs
 
-ifneq ($(shell uname -s),Darwin)
-ELFFLAGS	+=	-static
-endif
-ELFFLAGS	+=	-L$(build_dir) -lrpmi
+ELFFLAGS	+=	$(build_dir)/librpmi.a
 ELFFLAGS	+=	$(EXTRA_ELFFLAGS)
 
 # Setup functions for compilation
@@ -190,10 +187,18 @@ compile_elf = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 compile_ar = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 	     echo " AR        $(subst $(build_dir)/,,$(1))"; \
 	     $(AR) $(ARFLAGS) $(1) $(2)
+ifeq ($(shell uname -s),Darwin)
+compile_so = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
+	     echo " SO        $(subst $(build_dir)/,,$(1))"; \
+	     $(CC) -shared -Wl,-install_name,librpmi.so.$(LIBRPMI_SOVERSION) \
+	       -Wl,-undefined,dynamic_lookup \
+	       $(LDFLAGS) $(EXTRA_LDFLAGS) -o $(1) $(2)
+else
 compile_so = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 	     echo " SO        $(subst $(build_dir)/,,$(1))"; \
 	     $(CC) -shared -Wl,-soname,librpmi.so.$(LIBRPMI_SOVERSION) \
 	       $(LDFLAGS) $(EXTRA_LDFLAGS) -o $(1) $(2)
+endif
 gen_pkgconfig = $(CMD_PREFIX)mkdir -p `dirname $(1)`; \
 	     echo " GEN       $(subst $(build_dir)/,,$(1))"; \
 	     printf '%s\n' \

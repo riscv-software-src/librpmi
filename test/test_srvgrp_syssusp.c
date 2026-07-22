@@ -203,7 +203,7 @@ static int test_syssusp_scenario_init(struct rpmi_test_scenario *scene)
 	int ret;
 	struct rpmi_service_group *grp;
 	struct rpmi_hsm *hsm_cntx;
-	rpmi_uint32_t test_hartid_array[1] = { TEST_HART_ID };
+	static rpmi_uint32_t test_hartid_array[1] = { TEST_HART_ID };
 
 	ret = test_scenario_default_init(scene);
 	if (ret)
