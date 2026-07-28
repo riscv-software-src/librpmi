@@ -2119,6 +2119,10 @@ enum rpmi_error rpmi_mm_service_register(struct rpmi_service_group *group,
 					 rpmi_uint32_t num_entries,
 					 struct rpmi_mm_service *iplist);
 
+/** @} */
+
+/****************************************************************************/
+
 /**
  * \defgroup LIBRPMI_LOGGINGSRVGRP_INTERFACE RPMI Logging Service Group Library Interface
  * @brief Global functions and data structures implemented by the RPMI library
