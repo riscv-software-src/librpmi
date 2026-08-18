@@ -12,23 +12,27 @@ on:
 jobs:
   checkpatch:
     runs-on: ubuntu-24.04
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Install checkpatch
-        run: |
-          wget -q https://raw.githubusercontent.com/torvalds/linux/master/scripts/checkpatch.pl
-          wget -q https://raw.githubusercontent.com/torvalds/linux/master/scripts/spelling.txt
-          wget -q https://raw.githubusercontent.com/torvalds/linux/master/scripts/const_structs.checkpatch
-          chmod +x checkpatch.pl
-      - name: Run checkpatch
-        run: |
-          git format-patch --no-merges origin/${{ github.base_ref }}..HEAD --stdout \
-            | ./checkpatch.pl --no-tree --ignore FILE_PATH_CHANGES
+          ref: ${{ github.event.pull_request.head.sha }}
+      - name: Fetch upstream main
+        run: >-
+          git fetch --no-tags https://github.com/riscv-software-src/librpmi.git
+          main:refs/remotes/upstream/main
+      - name: Test checkpatch wrapper
+        run: scripts/test-checkpatch.sh
+      - name: Run checkpatch on commits new in this PR
+        run: >-
+          scripts/checkpatch.sh
+          "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          upstream/main
 
   commit-format:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -51,7 +55,7 @@ jobs:
           fi
 
   docs:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: dorny/paths-filter@v3
@@ -61,6 +65,8 @@ jobs:
             docs:
               - 'docs/**'
               - 'include/**'
+              - 'Makefile'
+              - 'README.md'
       - name: Install doxygen
         if: steps.changes.outputs.docs == 'true'
         run: sudo apt-get install -y doxygen graphviz

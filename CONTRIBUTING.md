@@ -23,6 +23,7 @@ Signed-off-by: Your Name <you@example.com>
 
 ## Required checks before PR
 
+- `scripts/checkpatch.sh`
 - `make`
 - `make check`
 - `make LIBRPMI_TEST=y`
@@ -38,6 +39,28 @@ If documentation changes are included, also run:
 - Keep commit messages self-contained and explain user impact.
 
 Recommended (when applicable): `Reviewed-by:`, `Tested-by:`, `Acked-by:`.
+
+## Coding style
+
+librpmi follows the [Linux kernel coding style](https://www.kernel.org/doc/html/latest/process/coding-style.html).
+
+Every pull request is checked with the kernel's `checkpatch.pl` in CI and
+must pass with no errors or warnings. Check commits locally before opening a
+pull request:
+
+```
+scripts/checkpatch.sh                   # commits in origin/main..HEAD
+scripts/checkpatch.sh <base>..<head>    # a specific range
+scripts/checkpatch.sh -f lib/foo.c       # whole files
+KERNEL_TAG=master scripts/checkpatch.sh  # opt in to the latest checker
+```
+
+CI uses the reviewed and checksum-verified Linux `v7.2` checker. The
+`KERNEL_TAG` override is intended only for local experimentation and is not
+checksum-verified.
+
+The repository also provides `.clang-format` (use `git clang-format` on
+staged changes) and `.editorconfig`.
 
 ## DCO
 
