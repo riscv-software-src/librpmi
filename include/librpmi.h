@@ -373,7 +373,7 @@ enum rpmi_mm_service_id {
 /** RPMI LOGGING ServiceGroup Service IDs */
 enum rpmi_logging_service_id {
 	RPMI_LOGGING_SRV_ENABLE_NOTIFICATION = 0x01,
-	RPMI_LOGGING_SRV_SET_CONFIG = 0x02,
+	RPMI_LOGGING_SRV_LOG_DATA = 0x02,
 	RPMI_LOGGING_SRV_ID_MAX,
 };
 
@@ -2132,9 +2132,9 @@ enum rpmi_error rpmi_mm_service_register(struct rpmi_service_group *group,
 
 /** Platform specific logging operations */
 struct rpmi_logging_platform_ops {
-	enum rpmi_error (*do_set_state)(void *priv, rpmi_uint32_t log_type,
-					rpmi_uint32_t datalen_bytes,
-					const void *data);
+	enum rpmi_error (*log_data)(void *priv, rpmi_uint32_t log_type,
+				    rpmi_uint32_t num_words,
+				    const rpmi_uint32_t *words);
 };
 
 /**
