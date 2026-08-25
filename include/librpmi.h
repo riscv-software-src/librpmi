@@ -1534,17 +1534,26 @@ struct rpmi_cppc_platform_ops {
 					rpmi_uint32_t hart_index,
 					rpmi_uint64_t val);
 	/**
-	 * cppc update performance level for a hart
+	 * cppc update performance level for a hart (passive/normal mode)
 	 */
 	enum rpmi_error (*cppc_update_perf)(void *priv,
 					    rpmi_uint32_t hart_index,
 					    rpmi_uint32_t desired_perf);
+
 	/**
 	 * cppc get current frequency in hertz for a hart
 	 */
 	enum rpmi_error (*cppc_get_current_freq)(void *priv,
 						 rpmi_uint32_t hart_index,
 						 rpmi_uint64_t *current_freq_hz);
+
+	/**
+	 * cppc update performance bounds for a hart (autonomous mode)
+	 */
+	enum rpmi_error (*cppc_update_perf_auto)(void *priv,
+						 rpmi_uint32_t hart_index,
+						 rpmi_uint32_t min_perf,
+						 rpmi_uint32_t max_perf);
 };
 
 /**
