@@ -466,10 +466,10 @@ rpmi_cppc_sg_probe_reg(struct rpmi_service_group *group,
 	struct rpmi_cppc_group *cppcgrp = group->priv;
 	rpmi_uint32_t *resp = (void *)response_data;
 
-	hart_id = rpmi_to_xe32(trans->is_be,
-			((const rpmi_uint32_t *)request_data)[0]);
 	cppc_reg_id = rpmi_to_xe32(trans->is_be,
-			    ((const rpmi_uint32_t *)request_data)[1]);
+			    ((const rpmi_uint32_t *)request_data)[0]);
+	hart_id = rpmi_to_xe32(trans->is_be,
+			       ((const rpmi_uint32_t *)request_data)[1]);
 
 	/** valid cppc register */
 	if (!__cppc_reg_valid(cppc_reg_id)) {
@@ -514,10 +514,10 @@ rpmi_cppc_sg_read_reg(struct rpmi_service_group *group,
 	struct rpmi_cppc_group *cppcgrp = group->priv;
 	rpmi_uint32_t *resp = (void *)response_data;
 
-	hart_id = rpmi_to_xe32(trans->is_be,
-			((const rpmi_uint32_t *)request_data)[0]);
 	cppc_reg_id = rpmi_to_xe32(trans->is_be,
-			    ((const rpmi_uint32_t *)request_data)[1]);
+			    ((const rpmi_uint32_t *)request_data)[0]);
+	hart_id = rpmi_to_xe32(trans->is_be,
+			       ((const rpmi_uint32_t *)request_data)[1]);
 
 	data_lo = 0;
 	data_hi = 0;
@@ -585,10 +585,10 @@ rpmi_cppc_sg_write_reg(struct rpmi_service_group *group,
 	struct rpmi_cppc_group *cppcgrp = group->priv;
 	rpmi_uint32_t *resp = (void *)response_data;
 
-	hart_id = rpmi_to_xe32(trans->is_be,
-			((const rpmi_uint32_t *)request_data)[0]);
 	cppc_reg_id = rpmi_to_xe32(trans->is_be,
-			    ((const rpmi_uint32_t *)request_data)[1]);
+			    ((const rpmi_uint32_t *)request_data)[0]);
+	hart_id = rpmi_to_xe32(trans->is_be,
+			       ((const rpmi_uint32_t *)request_data)[1]);
 
 	data_lo = rpmi_to_xe32(trans->is_be,
 			((const rpmi_uint32_t *)request_data)[2]);
