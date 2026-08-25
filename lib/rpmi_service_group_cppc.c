@@ -665,16 +665,10 @@ rpmi_cppc_sg_get_fast_channel_region(struct rpmi_service_group *group,
 	resp[6] = 0;
 	/* doorbell addr high */
 	resp[7] = 0;
-	/* doorbell set mask low */
+	/* doorbell write value */
 	resp[8] = 0;
-	/* doorbell set mask high */
-	resp[9] = 0;
-	/* doorbell preserve mask low */
-	resp[10] = 0;
-	/* doorbell preserve mask high */
-	resp[11] = 0;
 
-	resp_dlen = 12 * sizeof(*resp);
+	resp_dlen = 9 * sizeof(*resp);
 
 done:
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)status);
