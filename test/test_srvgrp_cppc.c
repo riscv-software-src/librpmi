@@ -235,11 +235,8 @@ static rpmi_uint16_t init_fastchan_region_expected(struct rpmi_test_scenario *sc
 	exp[6] = 0;
 	exp[7] = 0;
 	exp[8] = 0;
-	exp[9] = 0;
-	exp[10] = 0;
-	exp[11] = 0;
 
-	return 12 * sizeof(*exp);
+	return 9 * sizeof(*exp);
 }
 
 struct test_cppc_scenario_config {
@@ -662,11 +659,8 @@ static rpmi_uint16_t init_auto_fastchan_region_expected(struct rpmi_test_scenari
 	exp[6] = 0;
 	exp[7] = 0;
 	exp[8] = 0;
-	exp[9] = 0;
-	exp[10] = 0;
-	exp[11] = 0;
 
-	return 12 * sizeof(*exp);
+	return 9 * sizeof(*exp);
 }
 
 static int test_cppc_auto_scenario_init(struct rpmi_test_scenario *scene)
