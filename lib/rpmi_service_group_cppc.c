@@ -58,6 +58,9 @@ struct rpmi_cppc_group {
 	/** CPPC mode of operation */
 	enum rpmi_cppc_mode cppc_mode;
 
+	/** current value of AutonomousSelectionEnable register */
+	rpmi_uint32_t autonomous_selection_enable;
+
 	/**
 	 * hsm context representing all harts managed
 	 * by CPPC service group
@@ -114,7 +117,7 @@ __cppc_hart_fc_perf_feedback_offset(struct rpmi_cppc_fastchan *fastchan_ctx,
 }
 
 /**
- * Get the desired_perf value from fastchannel of a hart
+ * Get the desired_perf value from fastchannel of a hart (passive mode)
  */
 static inline rpmi_uint32_t
 __cppc_get_fc_desired_perf(struct rpmi_cppc_group *cppcgrp,
@@ -125,6 +128,49 @@ __cppc_get_fc_desired_perf(struct rpmi_cppc_group *cppcgrp,
 	rpmi_uint64_t offset;
 
 	offset = __cppc_hart_fc_perf_request_offset(cppcgrp->fastchan_ctx, hart_index);
+
+	rc = rpmi_shmem_read(cppcgrp->fastchan_ctx->shmem, offset, &val,
+			     sizeof(rpmi_uint32_t));
+	if (rc)
+		return 0;
+
+	return val;
+}
+
+/**
+ * Get the min_perf value from fastchannel of a hart (autonomous mode)
+ */
+static inline rpmi_uint32_t
+__cppc_get_fc_min_perf(struct rpmi_cppc_group *cppcgrp, rpmi_uint32_t hart_index)
+{
+	int rc;
+	rpmi_uint32_t val;
+	rpmi_uint64_t offset;
+
+	/* active.min_perf is the first u32 of the fastchannel entry */
+	offset = __cppc_hart_fc_perf_request_offset(cppcgrp->fastchan_ctx, hart_index);
+
+	rc = rpmi_shmem_read(cppcgrp->fastchan_ctx->shmem, offset, &val,
+			     sizeof(rpmi_uint32_t));
+	if (rc)
+		return 0;
+
+	return val;
+}
+
+/**
+ * Get the max_perf value from fastchannel of a hart (autonomous mode)
+ */
+static inline rpmi_uint32_t
+__cppc_get_fc_max_perf(struct rpmi_cppc_group *cppcgrp, rpmi_uint32_t hart_index)
+{
+	int rc;
+	rpmi_uint32_t val;
+	rpmi_uint64_t offset;
+
+	/* active.max_perf is the second u32 of the fastchannel entry */
+	offset = __cppc_hart_fc_perf_request_offset(cppcgrp->fastchan_ctx, hart_index)
+		 + sizeof(rpmi_uint32_t);
 
 	rc = rpmi_shmem_read(cppcgrp->fastchan_ctx->shmem, offset, &val,
 			     sizeof(rpmi_uint32_t));
@@ -184,17 +230,36 @@ static enum rpmi_error __rpmi_cppc_probe_reg(struct rpmi_cppc_group *cppcgrp,
 		status = RPMI_SUCCESS;
 		len = BITS(sizeof(rpmi_uint64_t));
 		break;
-	/** Not implemented registers (will be in future) */
-	case RPMI_CPPC_MAX_PERF:
-	case RPMI_CPPC_MIN_PERF:
+	/* Available in both modes */
 	case RPMI_CPPC_GUARANTEED_PERF:
-	case RPMI_CPPC_TIME_WINDOW:
-	case RPMI_CPPC_PERF_REDUCTION_TOLERANCE:
-	case RPMI_CPPC_AUTONOMOUS_SELECTION_ENABLE:
 	case RPMI_CPPC_CPPC_ENABLE:
+		status = RPMI_SUCCESS;
+		len = BITS(sizeof(rpmi_uint32_t));
+		break;
 	case RPMI_CPPC_COUNTER_WRAPAROUND_TIME:
+		status = RPMI_SUCCESS;
+		len = BITS(sizeof(rpmi_uint64_t));
+		break;
+	/* Available in both modes */
+	case RPMI_CPPC_MIN_PERF:
+	case RPMI_CPPC_MAX_PERF:
+		status = RPMI_SUCCESS;
+		len = BITS(sizeof(rpmi_uint32_t));
+		break;
+	/* Autonomous (CPPC2) mode only */
+	case RPMI_CPPC_PERF_REDUCTION_TOLERANCE:
+	case RPMI_CPPC_TIME_WINDOW:
+	case RPMI_CPPC_AUTONOMOUS_SELECTION_ENABLE:
 	case RPMI_CPPC_AUTONOMOUS_ACTIVITY_WINDOW:
 	case RPMI_CPPC_ENERGY_PERF_PREFERENCE:
+		if (cppcgrp->cppc_mode != RPMI_CPPC_AUTO_MODE) {
+			status = RPMI_ERR_NOTSUPP;
+			len = 0;
+			break;
+		}
+		status = RPMI_SUCCESS;
+		len = BITS(sizeof(rpmi_uint32_t));
+		break;
 	default:
 		DPRINTF("%s: CPPC reg-%u not implemented\n", __func__, reg_id);
 		status = RPMI_ERR_NOTSUPP;
@@ -264,6 +329,49 @@ static enum rpmi_error __rpmi_cppc_read_reg(struct rpmi_cppc_group *cppcgrp,
 	case RPMI_CPPC_TRANSITION_LATENCY:
 		val = cppcgrp->regs->transition_latency;
 		break;
+	/* Available in both modes, static from regs struct */
+	case RPMI_CPPC_GUARANTEED_PERF:
+		val = cppcgrp->regs->guaranteed_perf;
+		break;
+	case RPMI_CPPC_COUNTER_WRAPAROUND_TIME:
+		val = cppcgrp->regs->counter_wraparound_time;
+		break;
+	/* Available in both modes, delegated to platform */
+	case RPMI_CPPC_CPPC_ENABLE:
+		status = cppcgrp->ops->cppc_get_reg(cppcgrp->ops_priv,
+						    RPMI_CPPC_CPPC_ENABLE,
+						    hart_index, &val);
+		break;
+	/* Available in both modes: fastchannel in autonomous mode if present */
+	case RPMI_CPPC_MIN_PERF:
+		if (cppcgrp->cppc_mode == RPMI_CPPC_AUTO_MODE &&
+		    cppcgrp->autonomous_selection_enable &&
+		    cppcgrp->fastchan_ctx)
+			val = __cppc_get_fc_min_perf(cppcgrp, hart_index);
+		else
+			status = cppcgrp->ops->cppc_get_reg(cppcgrp->ops_priv,
+							    RPMI_CPPC_MIN_PERF,
+							    hart_index, &val);
+		break;
+	case RPMI_CPPC_MAX_PERF:
+		if (cppcgrp->cppc_mode == RPMI_CPPC_AUTO_MODE &&
+		    cppcgrp->autonomous_selection_enable &&
+		    cppcgrp->fastchan_ctx)
+			val = __cppc_get_fc_max_perf(cppcgrp, hart_index);
+		else
+			status = cppcgrp->ops->cppc_get_reg(cppcgrp->ops_priv,
+							    RPMI_CPPC_MAX_PERF,
+							    hart_index, &val);
+		break;
+	/* Autonomous mode only, delegated to platform */
+	case RPMI_CPPC_PERF_REDUCTION_TOLERANCE:
+	case RPMI_CPPC_TIME_WINDOW:
+	case RPMI_CPPC_AUTONOMOUS_SELECTION_ENABLE:
+	case RPMI_CPPC_AUTONOMOUS_ACTIVITY_WINDOW:
+	case RPMI_CPPC_ENERGY_PERF_PREFERENCE:
+		status = cppcgrp->ops->cppc_get_reg(cppcgrp->ops_priv,
+						    reg_id, hart_index, &val);
+		break;
 	default:
 		/* No read permission */
 		status = RPMI_ERR_DENIED;
@@ -296,6 +404,32 @@ static enum rpmi_error __rpmi_cppc_write_reg(struct rpmi_cppc_group *cppcgrp,
 						    hart_index,
 						    reg_val);
 		break;
+	/* Available in both modes, delegated to platform */
+	case RPMI_CPPC_MIN_PERF:
+	case RPMI_CPPC_MAX_PERF:
+		if ((rpmi_uint32_t)reg_val < cppcgrp->regs->lowest_perf ||
+		    (rpmi_uint32_t)reg_val > cppcgrp->regs->highest_perf) {
+			status = RPMI_ERR_INVALID_PARAM;
+			break;
+		}
+		status = cppcgrp->ops->cppc_set_reg(cppcgrp->ops_priv,
+						    reg_id, hart_index, reg_val);
+		break;
+	/* Writable in both modes via message interface */
+	case RPMI_CPPC_CPPC_ENABLE:
+	/* Autonomous mode only, writable via message interface */
+	case RPMI_CPPC_AUTONOMOUS_SELECTION_ENABLE:
+		if (reg_id == RPMI_CPPC_AUTONOMOUS_SELECTION_ENABLE)
+			cppcgrp->autonomous_selection_enable =
+				(rpmi_uint32_t)reg_val;
+		fallthrough;
+	case RPMI_CPPC_AUTONOMOUS_ACTIVITY_WINDOW:
+	case RPMI_CPPC_ENERGY_PERF_PREFERENCE:
+	case RPMI_CPPC_TIME_WINDOW:
+	case RPMI_CPPC_PERF_REDUCTION_TOLERANCE:
+		status = cppcgrp->ops->cppc_set_reg(cppcgrp->ops_priv,
+						    reg_id, hart_index, reg_val);
+		break;
 	case RPMI_CPPC_DELIVERED_PERF_COUNTER:
 	case RPMI_CPPC_REFERENCE_PERF_COUNTER:
 	case RPMI_CPPC_HIGHEST_PERF:
@@ -303,6 +437,8 @@ static enum rpmi_error __rpmi_cppc_write_reg(struct rpmi_cppc_group *cppcgrp,
 	case RPMI_CPPC_LOWEST_NON_LINEAR_PERF:
 	case RPMI_CPPC_LOWEST_PERF:
 	case RPMI_CPPC_REFERENCE_PERF:
+	case RPMI_CPPC_GUARANTEED_PERF:
+	case RPMI_CPPC_COUNTER_WRAPAROUND_TIME:
 	case RPMI_CPPC_PERF_LIMITED:
 	case RPMI_CPPC_LOWEST_FREQ:
 	case RPMI_CPPC_NOMINAL_FREQ:
@@ -512,8 +648,8 @@ rpmi_cppc_sg_get_fast_channel_region(struct rpmi_service_group *group,
 	fastchan_region_base = rpmi_shmem_base(cppcgrp->fastchan_ctx->shmem);
 	fastchan_region_size = rpmi_shmem_size(cppcgrp->fastchan_ctx->shmem);
 
-	/* No doorbell, and mode is passive */
-	flags = 0;
+	/* FLAGS[4:3]: 0b00 = normal/passive, 0b01 = autonomous. No doorbell. */
+	flags = (cppcgrp->cppc_mode == RPMI_CPPC_AUTO_MODE) ? (0x01U << 3) : 0;
 
 	status = RPMI_SUCCESS;
 	resp[1] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)flags);
@@ -680,34 +816,55 @@ static struct rpmi_service rpmi_cppc_services[RPMI_CPPC_SRV_ID_MAX] = {
 
 static enum rpmi_error rpmi_cppc_process_events(struct rpmi_service_group *group)
 {
-
 	enum rpmi_error status = RPMI_SUCCESS;
-	rpmi_uint32_t hart_idx, desired_perf;
-	rpmi_uint64_t current_freq;
+	rpmi_uint32_t hart_idx, desired_perf, min_perf, max_perf;
+	rpmi_uint64_t current_freq = 0;
 	union rpmi_cppc_perf_request_fastchan *hart_perf_request;
 	struct rpmi_cppc_group *cppcgrp = group->priv;
 
 	for (hart_idx = 0; hart_idx < cppcgrp->hart_count; hart_idx++) {
 		hart_perf_request = &cppcgrp->fastchan_ctx->hart_perf_request[hart_idx];
-		desired_perf = __cppc_get_fc_desired_perf(cppcgrp, hart_idx);
 
-		if (hart_perf_request->passive.desired_perf != desired_perf) {
-			hart_perf_request->passive.desired_perf = desired_perf;
-			status = cppcgrp->ops->cppc_update_perf(cppcgrp->ops_priv,
-					   hart_idx,
-					   desired_perf);
-			/**
-			 * Dont throw error at this point and
-			 * directly get the current frequency for hart
-			 * for which the cppc_update_perf is called. If
-			 * the performance level update failed, it will
-			 * be reflected into the performance feedback
-			 **/
-			cppcgrp->ops->cppc_get_current_freq(cppcgrp->ops_priv,
-							    hart_idx,
-							    &current_freq);
-			status = __cppc_set_fc_current_freq(cppcgrp, hart_idx,
-							    current_freq);
+		if (cppcgrp->cppc_mode == RPMI_CPPC_PASSIVE_MODE) {
+			desired_perf = __cppc_get_fc_desired_perf(cppcgrp, hart_idx);
+
+			if (hart_perf_request->passive.desired_perf != desired_perf) {
+				hart_perf_request->passive.desired_perf = desired_perf;
+				status = cppcgrp->ops->cppc_update_perf(cppcgrp->ops_priv,
+								hart_idx, desired_perf);
+				/*
+				 * Don't bail on update error — get the current
+				 * frequency anyway so the feedback fastchannel
+				 * reflects the actual state.
+				 */
+				current_freq = 0;
+				if (!cppcgrp->ops->cppc_get_current_freq(cppcgrp->ops_priv,
+									 hart_idx,
+									 &current_freq))
+					status = __cppc_set_fc_current_freq(cppcgrp,
+									    hart_idx,
+									    current_freq);
+			}
+		} else if (cppcgrp->autonomous_selection_enable) {
+			min_perf = __cppc_get_fc_min_perf(cppcgrp, hart_idx);
+			max_perf = __cppc_get_fc_max_perf(cppcgrp, hart_idx);
+
+			if (hart_perf_request->active.min_perf != min_perf ||
+			    hart_perf_request->active.max_perf != max_perf) {
+				hart_perf_request->active.min_perf = min_perf;
+				hart_perf_request->active.max_perf = max_perf;
+				if (cppcgrp->ops->cppc_update_perf_auto)
+					status = cppcgrp->ops->cppc_update_perf_auto(cppcgrp->ops_priv,
+									hart_idx,
+									min_perf, max_perf);
+				current_freq = 0;
+				if (!cppcgrp->ops->cppc_get_current_freq(cppcgrp->ops_priv,
+									 hart_idx,
+									 &current_freq))
+					status = __cppc_set_fc_current_freq(cppcgrp,
+									    hart_idx,
+									    current_freq);
+			}
 		}
 	}
 
@@ -871,8 +1028,8 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 		return NULL;
 	}
 
-	if (mode != RPMI_CPPC_PASSIVE_MODE) {
-		DPRINTF("%s: cppc mode not supported\n", __func__);
+	if (mode != RPMI_CPPC_PASSIVE_MODE && mode != RPMI_CPPC_AUTO_MODE) {
+		DPRINTF("%s: unknown cppc mode\n", __func__);
 		return NULL;
 	}
 
@@ -918,6 +1075,9 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 	 * conversion is done by platform only.
 	 */
 	cppcgrp->regs = cppc_regs;
+	cppcgrp->cppc_mode = mode;
+	cppcgrp->autonomous_selection_enable =
+		cppc_regs->autonomous_selection_enable;
 	cppcgrp->fastchan_ctx = cppc_fastchan_ctx;
 	cppcgrp->hart_count = hart_count;
 	cppcgrp->hsm = hsm;
