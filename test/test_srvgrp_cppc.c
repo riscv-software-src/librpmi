@@ -60,8 +60,8 @@ static rpmi_uint32_t enable_notif_expdata[] = {
 };
 
 static rpmi_uint32_t probe_highest_reqdata[] = {
-	TEST_HART_ID,
 	RPMI_CPPC_HIGHEST_PERF,
+	TEST_HART_ID,
 };
 
 static rpmi_uint32_t probe_32bit_expdata[] = {
@@ -70,8 +70,8 @@ static rpmi_uint32_t probe_32bit_expdata[] = {
 };
 
 static rpmi_uint32_t probe_not_supp_reqdata[] = {
-	TEST_HART_ID,
 	RPMI_CPPC_ENERGY_PERF_PREFERENCE,
+	TEST_HART_ID,
 };
 
 static rpmi_uint32_t probe_not_supp_expdata[] = {
@@ -80,8 +80,8 @@ static rpmi_uint32_t probe_not_supp_expdata[] = {
 };
 
 static rpmi_uint32_t probe_invalid_reg_reqdata[] = {
-	TEST_HART_ID,
 	RPMI_CPPC_NON_ACPI_REG_MAX_IDX,
+	TEST_HART_ID,
 };
 
 static rpmi_uint32_t invalid_param_expdata[] = {
@@ -89,8 +89,8 @@ static rpmi_uint32_t invalid_param_expdata[] = {
 };
 
 static rpmi_uint32_t read_highest_reqdata[] = {
-	TEST_HART_ID,
 	RPMI_CPPC_HIGHEST_PERF,
+	TEST_HART_ID,
 };
 
 static rpmi_uint32_t read_highest_expdata[] = {
@@ -100,8 +100,8 @@ static rpmi_uint32_t read_highest_expdata[] = {
 };
 
 static rpmi_uint32_t read_counter_reqdata[] = {
-	TEST_HART_ID,
 	RPMI_CPPC_REFERENCE_PERF_COUNTER,
+	TEST_HART_ID,
 };
 
 static rpmi_uint32_t read_counter_expdata[] = {
@@ -111,13 +111,13 @@ static rpmi_uint32_t read_counter_expdata[] = {
 };
 
 static rpmi_uint32_t read_invalid_hart_reqdata[] = {
-	TEST_HART_ID_INVALID,
 	RPMI_CPPC_HIGHEST_PERF,
+	TEST_HART_ID_INVALID,
 };
 
 static rpmi_uint32_t write_readonly_reqdata[] = {
-	TEST_HART_ID,
 	RPMI_CPPC_HIGHEST_PERF,
+	TEST_HART_ID,
 	1,
 	0,
 };
@@ -540,12 +540,12 @@ static struct rpmi_cppc_regs test_cppc_auto_regs = {
 
 /* PROBE: autonomous-mode-only register → SUCCESS + 32 */
 static rpmi_uint32_t probe_min_perf_reqdata[] = {
-	TEST_HART_ID, RPMI_CPPC_MIN_PERF,
+	RPMI_CPPC_MIN_PERF, TEST_HART_ID,
 };
 
 /* PROBE: both-modes register (64-bit) → SUCCESS + 64 */
 static rpmi_uint32_t probe_wraparound_reqdata[] = {
-	TEST_HART_ID, RPMI_CPPC_COUNTER_WRAPAROUND_TIME,
+	RPMI_CPPC_COUNTER_WRAPAROUND_TIME, TEST_HART_ID,
 };
 
 static rpmi_uint32_t probe_64bit_expdata[] = {
@@ -554,17 +554,17 @@ static rpmi_uint32_t probe_64bit_expdata[] = {
 
 /* PROBE: guaranteed_perf (both modes, 32-bit) */
 static rpmi_uint32_t probe_guaranteed_reqdata[] = {
-	TEST_HART_ID, RPMI_CPPC_GUARANTEED_PERF,
+	RPMI_CPPC_GUARANTEED_PERF, TEST_HART_ID,
 };
 
 /* PROBE: energy_perf_preference (auto only) */
 static rpmi_uint32_t probe_energy_pref_reqdata[] = {
-	TEST_HART_ID, RPMI_CPPC_ENERGY_PERF_PREFERENCE,
+	RPMI_CPPC_ENERGY_PERF_PREFERENCE, TEST_HART_ID,
 };
 
 /* READ: guaranteed_perf from regs struct */
 static rpmi_uint32_t read_guaranteed_reqdata[] = {
-	TEST_HART_ID, RPMI_CPPC_GUARANTEED_PERF,
+	RPMI_CPPC_GUARANTEED_PERF, TEST_HART_ID,
 };
 
 static rpmi_uint32_t read_guaranteed_expdata[] = {
@@ -573,7 +573,7 @@ static rpmi_uint32_t read_guaranteed_expdata[] = {
 
 /* READ: counter_wraparound_time (64-bit) from regs struct */
 static rpmi_uint32_t read_wraparound_reqdata[] = {
-	TEST_HART_ID, RPMI_CPPC_COUNTER_WRAPAROUND_TIME,
+	RPMI_CPPC_COUNTER_WRAPAROUND_TIME, TEST_HART_ID,
 };
 
 static rpmi_uint32_t read_wraparound_expdata[] = {
@@ -582,7 +582,7 @@ static rpmi_uint32_t read_wraparound_expdata[] = {
 
 /* READ: energy_perf_preference via cppc_get_reg */
 static rpmi_uint32_t read_energy_pref_reqdata[] = {
-	TEST_HART_ID, RPMI_CPPC_ENERGY_PERF_PREFERENCE,
+	RPMI_CPPC_ENERGY_PERF_PREFERENCE, TEST_HART_ID,
 };
 
 static rpmi_uint32_t read_energy_pref_expdata[] = {
@@ -591,7 +591,7 @@ static rpmi_uint32_t read_energy_pref_expdata[] = {
 
 /* WRITE: energy_perf_preference via cppc_set_reg → SUCCESS */
 static rpmi_uint32_t write_energy_pref_reqdata[] = {
-	TEST_HART_ID, RPMI_CPPC_ENERGY_PERF_PREFERENCE, TEST_CPPC_ENERGY_PREF_VAL, 0,
+	RPMI_CPPC_ENERGY_PERF_PREFERENCE, TEST_HART_ID, TEST_CPPC_ENERGY_PREF_VAL, 0,
 };
 
 static rpmi_uint32_t success_expdata[] = {
@@ -600,7 +600,7 @@ static rpmi_uint32_t success_expdata[] = {
 
 /* WRITE: min_perf while fastchannel is active → DENIED */
 static rpmi_uint32_t write_min_perf_fc_reqdata[] = {
-	TEST_HART_ID, RPMI_CPPC_MIN_PERF, 0x20, 0,
+	RPMI_CPPC_MIN_PERF, TEST_HART_ID, 0x20, 0,
 };
 
 static rpmi_uint16_t init_auto_event_request(struct rpmi_test_scenario *scene,
