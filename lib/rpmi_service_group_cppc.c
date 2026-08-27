@@ -422,7 +422,7 @@ static enum rpmi_error __rpmi_cppc_write_reg(struct rpmi_cppc_group *cppcgrp,
 		if (reg_id == RPMI_CPPC_AUTONOMOUS_SELECTION_ENABLE)
 			cppcgrp->autonomous_selection_enable =
 				(rpmi_uint32_t)reg_val;
-		fallthrough;
+		/* fallthrough */
 	case RPMI_CPPC_AUTONOMOUS_ACTIVITY_WINDOW:
 	case RPMI_CPPC_ENERGY_PERF_PREFERENCE:
 	case RPMI_CPPC_TIME_WINDOW:
