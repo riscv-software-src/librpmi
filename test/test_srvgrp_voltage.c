@@ -8,18 +8,27 @@
 #include "test_common.h"
 #include "test_log.h"
 
-#define TEST_VOLT_COUNT		2
+#define TEST_VOLT_COUNT		4
 #define TEST_VOLT_CPU		0
 #define TEST_VOLT_MEM		1
+#define TEST_VOLT_PAGED_D	2
+#define TEST_VOLT_PAGED_L	3
 #define TEST_VOLT_INVALID	TEST_VOLT_COUNT
 #define TEST_EVENT_ID		0x0
 #define TEST_REQUEST_STATE_ENABLE	0x1
 #define TEST_VOLT_CPU_LATENCY	10
 #define TEST_VOLT_MEM_LATENCY	20
+#define TEST_VOLT_PAGED_LATENCY	30
 #define TEST_VOLT_CPU_INITIAL	800000
 #define TEST_VOLT_CPU_TARGET	1000000
 #define TEST_VOLT_CPU_UNSUPP	1100000
 #define TEST_VOLT_BAD_CONFIG	RPMI_VOLT_CONFIG_MAX
+
+#define TEST_VOLT_LEVELS_PER_MSG					\
+	((RPMI_MSG_DATA_SIZE(RPMI_SLOT_SIZE) -				\
+	  (4 * sizeof(rpmi_uint32_t))) / sizeof(rpmi_uint32_t))
+#define TEST_VOLT_TUPLES_PER_MSG					\
+	(TEST_VOLT_LEVELS_PER_MSG / ARRAY_SIZE(test_paged_l_levels[0]))
 
 struct test_volt_attrs_expdata {
 	rpmi_uint32_t status;
@@ -50,6 +59,47 @@ static struct rpmi_voltage_linear_range test_mem_range = {
 	.uvolt_step = 100000,
 };
 
+static rpmi_int32_t test_mem_tuples[][3] = {
+	{ 1800000, 1900000, 100000 },
+};
+
+static rpmi_int32_t test_paged_d_levels[] = {
+	600000,
+	625000,
+	650000,
+	675000,
+	700000,
+	725000,
+	750000,
+	775000,
+	800000,
+	825000,
+	850000,
+	875000,
+};
+
+static rpmi_int32_t test_paged_d_buf[ARRAY_SIZE(test_paged_d_levels)];
+
+static rpmi_int32_t test_paged_l_levels[][3] = {
+	{ 1000000, 1100000, 50000 },
+	{ 1200000, 1300000, 50000 },
+	{ 1400000, 1500000, 50000 },
+	{ 1600000, 1700000, 50000 },
+};
+
+static rpmi_int32_t test_paged_l_buf[ARRAY_SIZE(test_paged_l_levels)]
+				    [ARRAY_SIZE(test_paged_l_levels[0])];
+
+static struct rpmi_voltage_discrete_range test_paged_d_range = {
+	.uvolt = (rpmi_uint32_t *)test_paged_d_levels,
+};
+
+static struct rpmi_voltage_linear_range test_paged_l_range = {
+	.uvolt_min = 1000000,
+	.uvolt_max = 1700000,
+	.uvolt_step = 50000,
+};
+
 static struct rpmi_voltage_data test_voltage_data[TEST_VOLT_COUNT] = {
 	[TEST_VOLT_CPU] = {
 		.name = "vdd_cpu",
@@ -67,22 +117,48 @@ static struct rpmi_voltage_data test_voltage_data[TEST_VOLT_COUNT] = {
 		.voltage_type = RPMI_VOLT_TYPE_LINEAR,
 		.control = RPMI_VOLT_CAPABILITY_ALWAYS_ON,
 		.config = RPMI_VOLT_CONFIG_NOT_SUPPORTED,
-		.num_levels = ARRAY_SIZE(test_mem_levels),
+		.num_levels = ARRAY_SIZE(test_mem_tuples),
 		.trans_latency = TEST_VOLT_MEM_LATENCY,
 		.linear_range = &test_mem_range,
-		.linear_levels = test_mem_levels,
+		.linear_levels = test_mem_tuples[0],
 		.level_uv = 1800000,
+	},
+	[TEST_VOLT_PAGED_D] = {
+		.name = "vdd_paged_d",
+		.voltage_type = RPMI_VOLT_TYPE_DISCRETE,
+		.control = RPMI_VOLT_CAPABILITY_ALWAYS_ON,
+		.config = RPMI_VOLT_CONFIG_NOT_SUPPORTED,
+		.num_levels = ARRAY_SIZE(test_paged_d_levels),
+		.trans_latency = TEST_VOLT_PAGED_LATENCY,
+		.discrete_range = &test_paged_d_range,
+		.discrete_levels = test_paged_d_buf,
+		.level_uv = 600000,
+	},
+	[TEST_VOLT_PAGED_L] = {
+		.name = "vdd_paged_l",
+		.voltage_type = RPMI_VOLT_TYPE_LINEAR,
+		.control = RPMI_VOLT_CAPABILITY_ALWAYS_ON,
+		.config = RPMI_VOLT_CONFIG_NOT_SUPPORTED,
+		.num_levels = ARRAY_SIZE(test_paged_l_levels),
+		.trans_latency = TEST_VOLT_PAGED_LATENCY,
+		.linear_range = &test_paged_l_range,
+		.linear_levels = test_paged_l_buf[0],
+		.level_uv = 1000000,
 	},
 };
 
 static rpmi_uint32_t test_current_config[TEST_VOLT_COUNT] = {
 	RPMI_VOLT_CONFIG_DISABLED,
 	RPMI_VOLT_CONFIG_NOT_SUPPORTED,
+	RPMI_VOLT_CONFIG_NOT_SUPPORTED,
+	RPMI_VOLT_CONFIG_NOT_SUPPORTED,
 };
 
 static rpmi_int32_t test_current_level[TEST_VOLT_COUNT] = {
 	TEST_VOLT_CPU_INITIAL,
 	1800000,
+	600000,
+	1000000,
 };
 
 static rpmi_uint32_t enable_notif_reqdata[] = {
@@ -126,9 +202,23 @@ static struct test_volt_attrs_expdata get_attrs_mem_expdata = {
 	.capability =
 		RPMI_VOLT_CAPABILITY_FORMAT(RPMI_VOLT_TYPE_LINEAR) |
 		RPMI_VOLT_CAPABILITY_CONTROL(RPMI_VOLT_CAPABILITY_ALWAYS_ON),
-	.num_levels = ARRAY_SIZE(test_mem_levels),
+	.num_levels = ARRAY_SIZE(test_mem_tuples),
 	.trans_latency = TEST_VOLT_MEM_LATENCY,
 	.name = "vdd_mem",
+};
+
+static rpmi_uint32_t volt_paged_l_reqdata[] = {
+	TEST_VOLT_PAGED_L,
+};
+
+static struct test_volt_attrs_expdata get_attrs_paged_l_expdata = {
+	.status = RPMI_SUCCESS,
+	.capability =
+		RPMI_VOLT_CAPABILITY_FORMAT(RPMI_VOLT_TYPE_LINEAR) |
+		RPMI_VOLT_CAPABILITY_CONTROL(RPMI_VOLT_CAPABILITY_ALWAYS_ON),
+	.num_levels = ARRAY_SIZE(test_paged_l_levels),
+	.trans_latency = TEST_VOLT_PAGED_LATENCY,
+	.name = "vdd_paged_l",
 };
 
 static rpmi_uint32_t invalid_param_expdata[] = {
@@ -154,13 +244,81 @@ static rpmi_uint32_t get_mem_levels_reqdata[] = {
 	0,
 };
 
+/* One tuple returned, none remaining, carrying all three of its words. */
 static rpmi_uint32_t get_mem_levels_expdata[] = {
 	RPMI_SUCCESS,
 	0,
 	0,
-	2,
+	ARRAY_SIZE(test_mem_tuples),
 	1800000,
 	1900000,
+	100000,
+};
+
+static rpmi_uint32_t get_paged_d_reqdata[] = {
+	TEST_VOLT_PAGED_D,
+	0,
+};
+
+/* The first call fills the message and leaves the rest for the next one. */
+static rpmi_uint32_t get_paged_d_expdata[] = {
+	RPMI_SUCCESS,
+	0,
+	ARRAY_SIZE(test_paged_d_levels) - TEST_VOLT_LEVELS_PER_MSG,
+	TEST_VOLT_LEVELS_PER_MSG,
+	600000,
+	625000,
+	650000,
+	675000,
+	700000,
+	725000,
+	750000,
+	775000,
+	800000,
+	825000,
+};
+
+static rpmi_uint32_t get_paged_d_rest_reqdata[] = {
+	TEST_VOLT_PAGED_D,
+	TEST_VOLT_LEVELS_PER_MSG,
+};
+
+static rpmi_uint32_t get_paged_d_rest_expdata[] = {
+	RPMI_SUCCESS,
+	0,
+	0,
+	ARRAY_SIZE(test_paged_d_levels) - TEST_VOLT_LEVELS_PER_MSG,
+	850000,
+	875000,
+};
+
+static rpmi_uint32_t get_paged_l_reqdata[] = {
+	TEST_VOLT_PAGED_L,
+	0,
+};
+
+/* Three tuples of three words each are all the message has room for. */
+static rpmi_uint32_t get_paged_l_expdata[] = {
+	RPMI_SUCCESS,
+	0,
+	ARRAY_SIZE(test_paged_l_levels) - TEST_VOLT_TUPLES_PER_MSG,
+	TEST_VOLT_TUPLES_PER_MSG,
+	1000000, 1100000, 50000,
+	1200000, 1300000, 50000,
+	1400000, 1500000, 50000,
+};
+
+static rpmi_uint32_t get_paged_l_rest_reqdata[] = {
+	TEST_VOLT_PAGED_L,
+	TEST_VOLT_TUPLES_PER_MSG,
+};
+
+static rpmi_uint32_t get_paged_l_rest_expdata[] = {
+	RPMI_SUCCESS,
+	0,
+	0,
+	ARRAY_SIZE(test_paged_l_levels) - TEST_VOLT_TUPLES_PER_MSG,
+	1600000, 1700000, 50000,
 };
 
 static rpmi_uint32_t get_invalid_levels_reqdata[] = {
@@ -239,9 +397,15 @@ static rpmi_bool_t test_voltage_level_supported(rpmi_uint32_t volt_id,
 	if (volt_id == TEST_VOLT_CPU) {
 		levels = test_cpu_levels;
 		count = ARRAY_SIZE(test_cpu_levels);
-	} else {
+	} else if (volt_id == TEST_VOLT_MEM) {
 		levels = test_mem_levels;
 		count = ARRAY_SIZE(test_mem_levels);
+	} else {
+		/*
+		 * The paged domains are only there to be read over several
+		 * calls, no level is ever set on them.
+		 */
+		return false;
 	}
 
 	for (i = 0; i < count; i++) {
@@ -285,17 +449,32 @@ static enum rpmi_error test_voltage_get_supp_levels(void *priv,
 						    rpmi_int32_t *level_array)
 {
 	rpmi_int32_t *src;
-	rpmi_uint32_t count, returned, i;
+	rpmi_uint32_t count, returned, i, words;
 
 	if (volt_id >= TEST_VOLT_COUNT || !returned_levels || !level_array)
 		return RPMI_ERR_INVALID_PARAM;
 
-	if (volt_id == TEST_VOLT_CPU) {
+	switch (volt_id) {
+	case TEST_VOLT_CPU:
 		src = test_cpu_levels;
 		count = ARRAY_SIZE(test_cpu_levels);
-	} else {
-		src = test_mem_levels;
-		count = ARRAY_SIZE(test_mem_levels);
+		words = 1;
+		break;
+	case TEST_VOLT_MEM:
+		src = test_mem_tuples[0];
+		count = ARRAY_SIZE(test_mem_tuples);
+		words = ARRAY_SIZE(test_mem_tuples[0]);
+		break;
+	case TEST_VOLT_PAGED_D:
+		src = test_paged_d_levels;
+		count = ARRAY_SIZE(test_paged_d_levels);
+		words = 1;
+		break;
+	default:
+		src = test_paged_l_levels[0];
+		count = ARRAY_SIZE(test_paged_l_levels);
+		words = ARRAY_SIZE(test_paged_l_levels[0]);
+		break;
 	}
 
 	if (volt_index >= count)
@@ -305,8 +484,8 @@ static enum rpmi_error test_voltage_get_supp_levels(void *priv,
 	if (returned > max)
 		returned = max;
 
-	for (i = 0; i < returned; i++)
-		level_array[i] = src[volt_index + i];
+	for (i = 0; i < returned * words; i++)
+		level_array[i] = src[(volt_index * words) + i];
 
 	*returned_levels = returned;
 	return RPMI_SUCCESS;
@@ -361,7 +540,7 @@ static struct rpmi_test_scenario scenario_voltage_default = {
 	.init = test_voltage_scenario_init,
 	.cleanup = test_scenario_default_cleanup,
 
-	.num_tests = 16,
+	.num_tests = 22,
 	.tests = {
 		{
 			.name = "ENABLE NOTIFICATION TEST (notifications not supported)",
@@ -417,6 +596,20 @@ static struct rpmi_test_scenario scenario_voltage_default = {
 			.init_expected_data = test_init_expected_data_from_attrs,
 		},
 		{
+			.name = "GET ATTRIBUTES (linear, multiple ranges)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_VOLTAGE,
+				.service_id = RPMI_VOLT_SRV_GET_ATTRIBUTES,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = volt_paged_l_reqdata,
+				.request_data_len = sizeof(volt_paged_l_reqdata),
+				.expected_data = &get_attrs_paged_l_expdata,
+				.expected_data_len = sizeof(get_attrs_paged_l_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
 			.name = "GET ATTRIBUTES (invalid domain)",
 			.attrs = {
 				.servicegroup_id = RPMI_SRVGRP_VOLTAGE,
@@ -426,6 +619,20 @@ static struct rpmi_test_scenario scenario_voltage_default = {
 				.request_data_len = sizeof(volt_invalid_reqdata),
 				.expected_data = invalid_param_expdata,
 				.expected_data_len = sizeof(invalid_param_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "GET ATTRIBUTES (valid query after an invalid one)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_VOLTAGE,
+				.service_id = RPMI_VOLT_SRV_GET_ATTRIBUTES,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = volt_cpu_reqdata,
+				.request_data_len = sizeof(volt_cpu_reqdata),
+				.expected_data = &get_attrs_cpu_expdata,
+				.expected_data_len = sizeof(get_attrs_cpu_expdata),
 			},
 			.init_request_data = test_init_request_data_from_attrs,
 			.init_expected_data = test_init_expected_data_from_attrs,
@@ -454,6 +661,62 @@ static struct rpmi_test_scenario scenario_voltage_default = {
 				.request_data_len = sizeof(get_mem_levels_reqdata),
 				.expected_data = get_mem_levels_expdata,
 				.expected_data_len = sizeof(get_mem_levels_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "GET SUPPORTED LEVELS (discrete, first message)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_VOLTAGE,
+				.service_id = RPMI_VOLT_SRV_GET_SUPPORTED_LEVELS,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = get_paged_d_reqdata,
+				.request_data_len = sizeof(get_paged_d_reqdata),
+				.expected_data = get_paged_d_expdata,
+				.expected_data_len = sizeof(get_paged_d_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "GET SUPPORTED LEVELS (discrete, remaining)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_VOLTAGE,
+				.service_id = RPMI_VOLT_SRV_GET_SUPPORTED_LEVELS,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = get_paged_d_rest_reqdata,
+				.request_data_len = sizeof(get_paged_d_rest_reqdata),
+				.expected_data = get_paged_d_rest_expdata,
+				.expected_data_len = sizeof(get_paged_d_rest_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "GET SUPPORTED LEVELS (linear, first message)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_VOLTAGE,
+				.service_id = RPMI_VOLT_SRV_GET_SUPPORTED_LEVELS,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = get_paged_l_reqdata,
+				.request_data_len = sizeof(get_paged_l_reqdata),
+				.expected_data = get_paged_l_expdata,
+				.expected_data_len = sizeof(get_paged_l_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "GET SUPPORTED LEVELS (linear, remaining)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_VOLTAGE,
+				.service_id = RPMI_VOLT_SRV_GET_SUPPORTED_LEVELS,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = get_paged_l_rest_reqdata,
+				.request_data_len = sizeof(get_paged_l_rest_reqdata),
+				.expected_data = get_paged_l_rest_expdata,
+				.expected_data_len = sizeof(get_paged_l_rest_expdata),
 			},
 			.init_request_data = test_init_request_data_from_attrs,
 			.init_expected_data = test_init_expected_data_from_attrs,
