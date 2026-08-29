@@ -9,22 +9,20 @@
 #include "librpmi_internal_list.h"
 
 #ifdef LIBRPMI_DEBUG
-#define DPRINTF(msg...)         rpmi_env_printf(msg)
+#define DPRINTF(msg...)		rpmi_env_printf(msg)
 #else
 #define DPRINTF(msg...)
 #endif
 
 #define RPMI_VOLT_NAME_MAX_LEN  16
 
-/** Convert list node pointer to struct rpmi_voltage instance pointer */
-#define to_rpmi_voltage(__node)    \
+/* Convert list node pointer to struct rpmi_voltage instance pointer */
+#define to_rpmi_voltage(__node)		\
 	container_of((__node), struct rpmi_voltage_data, node)
 
 /* A voltage domain instance */
 struct rpmi_voltage {
-	/* Lock to invoke the platform operations to
-	 * protect this structure
-	 */
+	/* Lock to invoke the platform operations to protect this structure */
 	void *lock;
 	/* domain ID */
 	rpmi_uint32_t id;
@@ -32,22 +30,22 @@ struct rpmi_voltage {
 	const struct rpmi_voltage_data *vdata;
 };
 
-/** RPMI Voltage Service Group instance */
+/* RPMI Voltage Service Group instance */
 struct rpmi_voltage_group {
 	/* Total domains count */
 	rpmi_uint32_t volt_count;
 	/* Pointer to voltage domains tree */
 	struct rpmi_voltage *volt_tree;
-	/* Common voltage platform operations (called with holding the lock)*/
+	/* Common voltage platform operations (called with holding the lock) */
 	const struct rpmi_voltage_platform_ops *ops;
 	/* Private data of platform voltage operations */
 	void *ops_priv;
 	struct rpmi_service_group group;
 };
 
-/** Get a struct rpmi_voltage instance pointer from voltage domain id */
-static inline struct rpmi_voltage *
-rpmi_get_voltage(struct rpmi_voltage_group *volt_group, rpmi_uint32_t volt_id)
+/* Get a struct rpmi_voltage instance pointer from voltage domain id */
+static inline struct rpmi_voltage
+*rpmi_get_voltage(struct rpmi_voltage_group *volt_group, rpmi_uint32_t volt_id)
 {
 	return &volt_group->volt_tree[volt_id];
 }
@@ -127,7 +125,6 @@ static enum rpmi_error __rpmi_volt_get_config(struct rpmi_voltage_group *voltgrp
 	rpmi_env_lock(volt->lock);
 
 	ret = voltgrp->ops->get_config(voltgrp->ops_priv, volt->id, &config);
-
 	*volt_config = config;
 
 	rpmi_env_unlock(volt->lock);
@@ -175,9 +172,7 @@ static enum rpmi_error __rpmi_volt_get_level(struct rpmi_voltage_group *voltgrp,
 		return RPMI_ERR_INVALID_PARAM;
 
 	rpmi_env_lock(volt->lock);
-
 	ret = voltgrp->ops->get_level(voltgrp->ops_priv, volt->id, volt_level);
-
 	rpmi_env_unlock(volt->lock);
 
 	return ret;
@@ -190,30 +185,28 @@ static enum rpmi_error __rpmi_volt_set_level(struct rpmi_voltage_group *voltgrp,
 	enum rpmi_error ret;
 	struct rpmi_voltage *volt = rpmi_get_voltage(voltgrp, voltid);
 
-        if (!volt)
-                return RPMI_ERR_INVALID_PARAM;
+	if (!volt)
+		return RPMI_ERR_INVALID_PARAM;
 
-        rpmi_env_lock(volt->lock);
+	rpmi_env_lock(volt->lock);
+	ret = voltgrp->ops->set_level(voltgrp->ops_priv, volt->id, volt_level);
+	rpmi_env_unlock(volt->lock);
 
-        ret = voltgrp->ops->set_level(voltgrp->ops_priv, volt->id, volt_level);
-
-        rpmi_env_unlock(volt->lock);
-
-        return ret;
+	return ret;
 }
 
-/**
+/*
  * Initialize the voltage tree from provided
  * static platform voltage data.
  *
  * This function initializes the hierarchical structures
  * to represent the voltage association in the platform.
- **/
-static struct rpmi_voltage *
-rpmi_voltage_tree_init(rpmi_uint32_t volt_count,
-		       const struct rpmi_voltage_data *volt_tree_data,
-		       const struct rpmi_voltage_platform_ops *ops,
-		       void *ops_priv)
+ */
+static struct rpmi_voltage
+*rpmi_voltage_tree_init(rpmi_uint32_t volt_count,
+			const struct rpmi_voltage_data *volt_tree_data,
+			const struct rpmi_voltage_platform_ops *ops,
+			void *ops_priv)
 {
 	rpmi_uint32_t voltid;
 	struct rpmi_voltage *volt;
@@ -291,9 +284,7 @@ rpmi_volt_get_attributes(struct rpmi_service_group *group,
 	}
 
 	resp[1] = rpmi_to_xe32(trans->is_be, volt_attrs.capability);
-
 	resp[2] = rpmi_to_xe32(trans->is_be, volt_attrs.num_levels);
-
 	resp[3] = rpmi_to_xe32(trans->is_be, volt_attrs.trans_latency);
 
 	if (volt_attrs.name)
@@ -309,12 +300,12 @@ done:
 
 static enum rpmi_error
 rpmi_volt_get_config(struct rpmi_service_group *group,
-		    struct rpmi_service *service,
-		    struct rpmi_transport *trans,
-		    rpmi_uint16_t request_datalen,
-		    const rpmi_uint8_t *request_data,
-		    rpmi_uint16_t *response_datalen,
-		    rpmi_uint8_t *response_data)
+		     struct rpmi_service *service,
+		     struct rpmi_transport *trans,
+		     rpmi_uint16_t request_datalen,
+		     const rpmi_uint8_t *request_data,
+		     rpmi_uint16_t *response_datalen,
+		     rpmi_uint8_t *response_data)
 {
 	rpmi_uint16_t resp_dlen;
 	rpmi_uint32_t volt_config = 0;
@@ -341,11 +332,11 @@ rpmi_volt_get_config(struct rpmi_service_group *group,
 
 	resp[1] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)volt_config);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
-
 	resp_dlen = 2 * sizeof(*resp);
 
 done:
 	*response_datalen = resp_dlen;
+
 	return RPMI_SUCCESS;
 }
 
@@ -364,9 +355,9 @@ rpmi_volt_set_config(struct rpmi_service_group *group,
 	rpmi_uint32_t *resp = (void *)response_data;
 
 	rpmi_uint32_t voltid = rpmi_to_xe32(trans->is_be,
-					((const rpmi_uint32_t *)request_data)[0]);
+					    ((const rpmi_uint32_t *)request_data)[0]);
 	rpmi_uint32_t volt_config = rpmi_to_xe32(trans->is_be,
-					((const rpmi_uint32_t *)request_data)[1]);
+						 ((const rpmi_uint32_t *)request_data)[1]);
 
 	if (voltid >= voltgrp->volt_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
@@ -388,93 +379,93 @@ rpmi_volt_set_config(struct rpmi_service_group *group,
 
 done:
 	*response_datalen = resp_dlen;
+
 	return RPMI_SUCCESS;
 }
 
 static enum rpmi_error
 rpmi_volt_get_supp_levels(struct rpmi_service_group *group,
-                          struct rpmi_service *service,
-                          struct rpmi_transport *trans,
-                          rpmi_uint16_t request_datalen,
-                          const rpmi_uint8_t *request_data,
-                          rpmi_uint16_t *response_datalen,
-                          rpmi_uint8_t *response_data)
+			  struct rpmi_service *service,
+			  struct rpmi_transport *trans,
+			  rpmi_uint16_t request_datalen,
+			  const rpmi_uint8_t *request_data,
+			  rpmi_uint16_t *response_datalen,
+			  rpmi_uint8_t *response_data)
 {
-        enum rpmi_error ret;
-        rpmi_uint32_t i;
-        rpmi_uint32_t num_volt_level;
-        rpmi_uint32_t resp_dlen = 0, volt_level_idx = 0;
-        rpmi_uint32_t max_levels, remaining = 0, returned = 0;
+	enum rpmi_error ret;
+	rpmi_uint32_t i;
+	rpmi_uint32_t num_volt_level;
+	rpmi_uint32_t resp_dlen = 0, volt_level_idx = 0;
+	rpmi_uint32_t max_levels, remaining = 0, returned = 0;
 	rpmi_uint32_t start;
-        rpmi_int32_t *volt_level_array;
-        struct rpmi_voltage_attrs volt_attrs;
-        struct rpmi_voltage_group *voltgrp = group->priv;
-        rpmi_uint32_t *resp = (void *)response_data;
+	rpmi_int32_t *volt_level_array;
+	struct rpmi_voltage_attrs volt_attrs;
+	struct rpmi_voltage_group *voltgrp = group->priv;
+	rpmi_uint32_t *resp = (void *)response_data;
 
-        rpmi_uint32_t voltid = rpmi_to_xe32(trans->is_be,
-                                ((const rpmi_uint32_t *)request_data)[0]);
+	rpmi_uint32_t voltid = rpmi_to_xe32(trans->is_be,
+					    ((const rpmi_uint32_t *)request_data)[0]);
 
-        if (voltid >= voltgrp->volt_count) {
-                resp_dlen = sizeof(*resp);
-                resp[0] = rpmi_to_xe32(trans->is_be,
-                                       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
-                goto done;
-        }
+	if (voltid >= voltgrp->volt_count) {
+		resp_dlen = sizeof(*resp);
+		resp[0] = rpmi_to_xe32(trans->is_be,
+				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
+		goto done;
+	}
 
-        ret = __rpmi_volt_get_attributes(voltgrp, voltid, &volt_attrs);
-        if (ret) {
-                resp_dlen = sizeof(*resp);
-                resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)ret);
-                goto done;
-        }
+	ret = __rpmi_volt_get_attributes(voltgrp, voltid, &volt_attrs);
+	if (ret) {
+		resp_dlen = sizeof(*resp);
+		resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)ret);
+		goto done;
+	}
 
-        num_volt_level = volt_attrs.num_levels;
-        volt_level_array = volt_attrs.level_array;
+	num_volt_level = volt_attrs.num_levels;
+	volt_level_array = volt_attrs.level_array;
 
-        if (!num_volt_level || !volt_level_array) {
-                resp_dlen = sizeof(*resp);
-                resp[0] = rpmi_to_xe32(trans->is_be,
-                                       (rpmi_uint32_t)RPMI_ERR_NOTSUPP);
-                goto done;
-        }
+	if (!num_volt_level || !volt_level_array) {
+		resp_dlen = sizeof(*resp);
+		resp[0] = rpmi_to_xe32(trans->is_be,
+				       (rpmi_uint32_t)RPMI_ERR_NOTSUPP);
+		goto done;
+	}
 
-        volt_level_idx = rpmi_to_xe32(trans->is_be,
-                                      ((const rpmi_uint32_t *)request_data)[1]);
+	volt_level_idx = rpmi_to_xe32(trans->is_be,
+				      ((const rpmi_uint32_t *)request_data)[1]);
 
-        /* max volt levels a rpmi message can accommodate */
-        max_levels =
-                (RPMI_MSG_DATA_SIZE(trans->slot_size) - (4 * sizeof(*resp))) /
-                                        sizeof(rpmi_int32_t);
+	/* max volt levels a rpmi message can accommodate */
+	max_levels =
+		(RPMI_MSG_DATA_SIZE(trans->slot_size) - (4 * sizeof(*resp))) /
+					sizeof(rpmi_int32_t);
 
-        ret = __rpmi_volt_get_supp_levels(voltgrp, volt_level_array, max_levels,
-                                          voltid, volt_level_idx, &returned);
-        if (ret) {
-                resp_dlen = sizeof(*resp);
-                resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)ret);
-                goto done;
-        }
+	ret = __rpmi_volt_get_supp_levels(voltgrp, volt_level_array, max_levels,
+					  voltid, volt_level_idx, &returned);
+	if (ret) {
+		resp_dlen = sizeof(*resp);
+		resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)ret);
+		goto done;
+	}
 
-        for (i = 0; i < returned; i++) {
-                start = 4;
-                resp[start + i] = rpmi_to_xe32(trans->is_be,
-                                        (rpmi_uint32_t)volt_level_array[i]);
-        }
+	for (i = 0; i < returned; i++) {
+		start = 4;
+		resp[start + i] = rpmi_to_xe32(trans->is_be,
+					   (rpmi_uint32_t)volt_level_array[i]);
+	}
 
-       remaining = num_volt_level - (volt_level_idx + returned);
+	remaining = num_volt_level - (volt_level_idx + returned);
 
-        resp[3] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)returned);
-        resp[2] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)remaining);
-        /* No flags currently supported */
-        resp[1] = rpmi_to_xe32(trans->is_be, 0);
-        resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
+	resp[3] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)returned);
+	resp[2] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)remaining);
+	/* No flags currently supported */
+	resp[1] = rpmi_to_xe32(trans->is_be, 0);
+	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 
-        resp_dlen = (4 * sizeof(*resp)) +
-                        (returned * sizeof(rpmi_uint32_t));
+	resp_dlen = (4 * sizeof(*resp)) + (returned * sizeof(rpmi_uint32_t));
 
 done:
-        *response_datalen = resp_dlen;
+	*response_datalen = resp_dlen;
 
-        return RPMI_SUCCESS;
+	return RPMI_SUCCESS;
 }
 
 static enum rpmi_error
@@ -511,12 +502,11 @@ rpmi_volt_get_level(struct rpmi_service_group *group,
 
 	resp[1] = rpmi_to_xe32(trans->is_be, (rpmi_int32_t)volt_level);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
-
 	resp_dlen = 2 * sizeof(*resp);
 
 done:
-
 	*response_datalen = resp_dlen;
+
 	return RPMI_SUCCESS;
 }
 
@@ -535,9 +525,9 @@ rpmi_volt_set_level(struct rpmi_service_group *group,
 	rpmi_uint32_t *resp = (void *)response_data;
 
 	rpmi_uint32_t voltid = rpmi_to_xe32(trans->is_be,
-					((const rpmi_uint32_t *)request_data)[0]);
+					    ((const rpmi_uint32_t *)request_data)[0]);
 	rpmi_int32_t volt_level = rpmi_to_xe32(trans->is_be,
-					((const rpmi_uint32_t *)request_data)[1]);
+					       ((const rpmi_uint32_t *)request_data)[1]);
 
 	if (voltid >= voltgrp->volt_count) {
 		resp[0] = rpmi_to_xe32(trans->is_be,
@@ -554,11 +544,11 @@ rpmi_volt_set_level(struct rpmi_service_group *group,
 	}
 
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
-
 	resp_dlen = sizeof(*resp);
 
 done:
 	*response_datalen = resp_dlen;
+
 	return RPMI_SUCCESS;
 }
 
@@ -605,11 +595,11 @@ static struct rpmi_service rpmi_voltage_services[RPMI_VOLT_SRV_ID_MAX] = {
 	},
 };
 
-struct rpmi_service_group *
-rpmi_service_group_voltage_create(rpmi_uint32_t volt_count,
-				  const struct rpmi_voltage_data *volt_tree_data,
-				  const struct rpmi_voltage_platform_ops *ops,
-				  void *ops_priv)
+struct rpmi_service_group
+*rpmi_service_group_voltage_create(rpmi_uint32_t volt_count,
+				   const struct rpmi_voltage_data *volt_tree_data,
+				   const struct rpmi_voltage_platform_ops *ops,
+				   void *ops_priv)
 {
 	struct rpmi_voltage_group *voltgrp;
 	struct rpmi_service_group *group;
@@ -628,10 +618,8 @@ rpmi_service_group_voltage_create(rpmi_uint32_t volt_count,
 		return NULL;
 	}
 
-	voltgrp->volt_tree = rpmi_voltage_tree_init(volt_count,
-						    volt_tree_data,
-						    ops,
-						    ops_priv);
+	voltgrp->volt_tree = rpmi_voltage_tree_init(volt_count, volt_tree_data,
+						    ops, ops_priv);
 	if (!voltgrp->volt_tree) {
 		DPRINTF("%s: failed to initialize voltage tree\n", __func__);
 		rpmi_env_free(voltgrp);
