@@ -383,7 +383,7 @@ rpmi_volt_get_supp_levels(struct rpmi_service_group *group,
 	rpmi_uint32_t num_volt_level;
 	rpmi_uint32_t resp_dlen = 0, volt_level_idx = 0;
 	rpmi_uint32_t max_levels, remaining = 0, returned = 0;
-	rpmi_uint32_t start;
+	rpmi_uint32_t words_per_level;
 	rpmi_int32_t *volt_level_array;
 	struct rpmi_voltage_attrs volt_attrs;
 	struct rpmi_voltage_group *voltgrp = group->priv;
@@ -416,10 +416,20 @@ rpmi_volt_get_supp_levels(struct rpmi_service_group *group,
 	volt_level_idx = rpmi_to_xe32(trans->is_be,
 				      ((const rpmi_uint32_t *)request_data)[1]);
 
+	/*
+	 * A discrete level is one word while a linear range level is a
+	 * (min, max, step) tuple of three. NUM_LEVELS, RETURNED and REMAINING
+	 * all count levels, so the width of a level is needed both to size the
+	 * reply and to know how many levels fit in one message.
+	 */
+	words_per_level =
+		RPMI_VOLT_CAPABILITY_GET_FORMAT(volt_attrs.capability) ==
+		RPMI_VOLT_TYPE_LINEAR ? 3 : 1;
+
 	/* max volt levels a rpmi message can accommodate */
 	max_levels =
 		(RPMI_MSG_DATA_SIZE(trans->slot_size) - (4 * sizeof(*resp))) /
-					sizeof(rpmi_int32_t);
+		(sizeof(rpmi_int32_t) * words_per_level);
 
 	ret = __rpmi_volt_get_supp_levels(voltgrp, volt_level_array, max_levels,
 					  voltid, volt_level_idx, &returned);
@@ -428,9 +438,8 @@ rpmi_volt_get_supp_levels(struct rpmi_service_group *group,
 		goto done;
 	}
 
-	for (i = 0; i < returned; i++) {
-		start = 4;
-		resp[start + i] = rpmi_to_xe32(trans->is_be,
+	for (i = 0; i < returned * words_per_level; i++) {
+		resp[4 + i] = rpmi_to_xe32(trans->is_be,
 					   (rpmi_uint32_t)volt_level_array[i]);
 	}
 
@@ -441,7 +450,8 @@ rpmi_volt_get_supp_levels(struct rpmi_service_group *group,
 	/* No flags currently supported */
 	resp[1] = rpmi_to_xe32(trans->is_be, 0);
 
-	resp_dlen = (4 * sizeof(*resp)) + (returned * sizeof(rpmi_uint32_t));
+	resp_dlen = (4 * sizeof(*resp)) +
+		    (returned * words_per_level * sizeof(rpmi_uint32_t));
 
 done:
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)ret);
