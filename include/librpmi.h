@@ -1438,6 +1438,26 @@ enum rpmi_cppc_mode {
 /**
  * ACPI CPPC Registers
  */
+/** CPPC fastchannel flags */
+#define RPMI_CPPC_FST_CHN_DB_REG_08_BITS	(0U << 1)
+#define RPMI_CPPC_FST_CHN_DB_REG_16_BITS	(1U << 1)
+#define RPMI_CPPC_FST_CHN_DB_REG_32_BITS	(2U << 1)
+
+#define RPMI_CPPC_FST_CHN_DB_NOT_SUPP		(0U << 0)
+#define RPMI_CPPC_FST_CHN_DB_SUPP		(1U << 0)
+
+/** CPPC Perf Request fast-channel doorbell */
+struct rpmi_cppc_fastchan_doorbell {
+	/** doorbell flags */
+	rpmi_uint32_t flags;
+	/** doorbell addr low */
+	rpmi_uint32_t db_addr_low;
+	/** doorbell addr high */
+	rpmi_uint32_t db_addr_high;
+	/** doorbell write value */
+	rpmi_uint32_t db_write_value;
+};
+
 struct rpmi_cppc_regs {
 	/* highest performance (r) */
 	rpmi_uint32_t highest_perf;
@@ -1483,6 +1503,8 @@ struct rpmi_cppc_regs {
 	rpmi_uint32_t nominal_freq;
 	/* transition latency */
 	rpmi_uint32_t transition_latency;
+	/* Perf Request fast-channel doorbell (optional) */
+	struct rpmi_cppc_fastchan_doorbell doorbell;
 };
 
 /* CPPC Fastchannel size of both types as per RPMI spec */

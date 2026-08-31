@@ -637,36 +637,50 @@ rpmi_cppc_sg_get_fast_channel_region(struct rpmi_service_group *group,
 	rpmi_uint32_t resp_dlen, flags;
 	rpmi_uint64_t fastchan_region_base, fastchan_region_size;
 	struct rpmi_cppc_group *cppcgrp = group->priv;
+	struct rpmi_cppc_fastchan *fc = cppcgrp->fastchan_ctx;
+	const struct rpmi_cppc_fastchan_doorbell *db = &cppcgrp->regs->doorbell;
 	rpmi_uint32_t *resp = (void *)response_data;
 
-	if (!cppcgrp->fastchan_ctx) {
+	if (!fc) {
 		status = RPMI_ERR_NOTSUPP;
 		resp_dlen = sizeof(*resp);
 		goto done;
 	}
 
-	fastchan_region_base = rpmi_shmem_base(cppcgrp->fastchan_ctx->shmem);
-	fastchan_region_size = rpmi_shmem_size(cppcgrp->fastchan_ctx->shmem);
+	fastchan_region_base = rpmi_shmem_base(fc->shmem);
+	fastchan_region_size = rpmi_shmem_size(fc->shmem);
 
-	/* FLAGS[4:3]: 0b00 = normal/passive, 0b01 = autonomous. No doorbell. */
+	/* FLAGS[4:3]: 0b00 = normal/passive, 0b01 = autonomous. */
 	flags = (cppcgrp->cppc_mode == RPMI_CPPC_AUTO_MODE) ? (0x01U << 3) : 0;
+
+	/* FLAGS[2:1] doorbell width, FLAGS[0] doorbell support (optional) */
+	if (db->flags & RPMI_CPPC_FST_CHN_DB_SUPP) {
+		flags |= RPMI_CPPC_FST_CHN_DB_SUPP | (db->flags & (0x3U << 1));
+		/* doorbell addr low */
+		resp[6] = rpmi_to_xe32(trans->is_be, db->db_addr_low);
+		/* doorbell addr high */
+		resp[7] = rpmi_to_xe32(trans->is_be, db->db_addr_high);
+		/* doorbell write value */
+		resp[8] = rpmi_to_xe32(trans->is_be, db->db_write_value);
+	} else {
+		/* doorbell addr low */
+		resp[6] = 0;
+		/* doorbell addr high */
+		resp[7] = 0;
+		/* doorbell write value */
+		resp[8] = 0;
+	}
 
 	status = RPMI_SUCCESS;
 	resp[1] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)flags);
 	/* fast channel region address low */
 	resp[2] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)fastchan_region_base);
-	/* fast channel region address low */
+	/* fast channel region address high */
 	resp[3] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)(fastchan_region_base >> 32));
 	/* fast channel region size low */
-	resp[4] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)fastchan_region_size);;
+	resp[4] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)fastchan_region_size);
 	/* fast channel region size high */
 	resp[5] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)(fastchan_region_size >> 32));
-	/* doorbell addr low */
-	resp[6] = 0;
-	/* doorbell addr high */
-	resp[7] = 0;
-	/* doorbell write value */
-	resp[8] = 0;
 
 	resp_dlen = 9 * sizeof(*resp);
 
