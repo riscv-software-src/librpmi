@@ -27,7 +27,7 @@ This document tracks librpmi's implementation status against the RISC-V Platform
 | 0x000A | PERFORMANCE | ⏳ Partial | ⏳ Partial | Missing 3 notification events; missing S-mode tests |
 | 0x000B | MANAGEMENT_MODE | ✅ Complete | ✅ Complete | N/A |
 | 0x000C | RAS_AGENT | ✅ Complete | ✅ Complete | N/A |
-| 0x000D | REQUEST_FORWARD | ❌ N/A | ❌ N/A | Not implemented |
+| 0x000D | REQUEST_FORWARD | ✅ Complete | ✅ Complete | N/A |
 
 ### RPMI v2.0 (Draft)
 
