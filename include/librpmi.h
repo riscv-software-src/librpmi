@@ -1530,6 +1530,33 @@ struct rpmi_cppc_perf_feedback_fastchan {
 	rpmi_uint32_t cur_freq_high;
 };
 
+/** CPPC Perf Request fast-channel doorbell register widths in bits */
+#define RPMI_CPPC_FASTCHAN_DB_REG_WIDTH_08_BITS		0x08U
+#define RPMI_CPPC_FASTCHAN_DB_REG_WIDTH_16_BITS		0x10U
+#define RPMI_CPPC_FASTCHAN_DB_REG_WIDTH_32_BITS		0x20U
+
+/** CPPC fast-channel flags */
+#define RPMI_CPPC_FASTCHAN_FLAG_MODE_NORMAL		(0x0U << 3)
+#define RPMI_CPPC_FASTCHAN_FLAG_MODE_AUTONOMOUS		(0x1U << 3)
+#define RPMI_CPPC_FASTCHAN_FLAG_DB_REG_WIDTH_MASK	(0x3U << 1)
+#define RPMI_CPPC_FASTCHAN_FLAG_DB_REG_08_BITS		(0x0U << 1)
+#define RPMI_CPPC_FASTCHAN_FLAG_DB_REG_16_BITS		(0x1U << 1)
+#define RPMI_CPPC_FASTCHAN_FLAG_DB_REG_32_BITS		(0x2U << 1)
+#define RPMI_CPPC_FASTCHAN_FLAG_DB_NOT_SUPP		(0x0U << 0)
+#define RPMI_CPPC_FASTCHAN_FLAG_DB_SUPP			(0x1U << 0)
+
+/** CPPC Perf Request fast-channel doorbell */
+struct rpmi_cppc_fastchan_doorbell {
+	/** Doorbell register width in bits (RPMI_CPPC_FASTCHAN_DB_REG_WIDTH_*) */
+	rpmi_uint32_t db_reg_width;
+	/** doorbell addr low */
+	rpmi_uint32_t db_addr_low;
+	/** doorbell addr high */
+	rpmi_uint32_t db_addr_high;
+	/** doorbell write value */
+	rpmi_uint32_t db_write_value;
+};
+
 struct rpmi_cppc_platform_ops {
 	/**
 	 * cppc get register value for a hart.
@@ -1578,6 +1605,7 @@ struct rpmi_cppc_platform_ops {
  * @param[in] shmem_fastchan	pointer to fastchannel shared memory instance
  * @param[in] perf_request_shmem_offset	perf request fastchannel shmem region offset
  * @param[in] perf_feedback_shmem_offset	perf feedback fastchannel shmem region offset
+ * @param[in] doorbell		optional perf request fastchannel doorbell
  * @param[in] ops		pointer to platform specific cppc operations
  * @param[in] ops_priv		pointer to private data of platform operations
  * @return rpmi_service_group *	pointer to RPMI service group instance upon
@@ -1590,6 +1618,7 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 			       struct rpmi_shmem *shmem_fastchan,
 			       rpmi_uint64_t perf_request_shmem_offset,
 			       rpmi_uint64_t perf_feedback_shmem_offset,
+			       const struct rpmi_cppc_fastchan_doorbell *doorbell,
 			       const struct rpmi_cppc_platform_ops *ops,
 			       void *ops_priv);
 
