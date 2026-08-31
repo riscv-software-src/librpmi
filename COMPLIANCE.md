@@ -15,7 +15,7 @@ This document tracks librpmi's implementation status against the RISC-V Platform
 
 | Service Group ID | Service Group Name | Implementation | Tests | Notes |
 |-----------------|-------------------|----------------|-------|-------|
-| 0x0001 | BASE | ✅ Complete | ⏳ Partial | Missing S-mode tests |
+| 0x0001 | BASE | ✅ Complete | ✅ Complete | N/A |
 | 0x0002 | SYSTEM_MSI | ✅ Complete | ⏳ Partial | Missing S-mode tests |
 | 0x0003 | SYSTEM_RESET | ✅ Complete | ✅ Complete | N/A |
 | 0x0004 | SYSTEM_SUSPEND | ✅ Complete | ✅ Complete | N/A |

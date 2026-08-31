@@ -75,6 +75,7 @@ struct rpmi_test_scenario {
 	rpmi_uint32_t shm_size;
 	rpmi_uint32_t slot_size;
 	rpmi_uint32_t max_num_groups;
+	enum rpmi_privilege_level privilege_level;
 	struct {
 		rpmi_uint32_t plat_info_len;
 		const char *plat_info;

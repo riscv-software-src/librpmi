@@ -285,6 +285,7 @@ static struct rpmi_test_scenario scenario_base_notif_drop_while_disabled = {
 	.shm_size = RPMI_SHM_SZ,
 	.slot_size = RPMI_SLOT_SIZE,
 	.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT,
+	.privilege_level = RPMI_PRIVILEGE_M_MODE,
 	.base.plat_info_len = PLAT_INFO_LEN,
 	.base.plat_info = PLAT_INFO,
 
@@ -356,6 +357,7 @@ static struct rpmi_test_scenario scenario_base_notif_clear_on_disable = {
 	.shm_size = RPMI_SHM_SZ,
 	.slot_size = RPMI_SLOT_SIZE,
 	.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT,
+	.privilege_level = RPMI_PRIVILEGE_M_MODE,
 	.base.plat_info_len = PLAT_INFO_LEN,
 	.base.plat_info = PLAT_INFO,
 
@@ -485,6 +487,7 @@ static struct rpmi_test_scenario scenario_base_default = {
 	.shm_size = RPMI_SHM_SZ,
 	.slot_size = RPMI_SLOT_SIZE,
 	.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT,
+	.privilege_level = RPMI_PRIVILEGE_M_MODE,
 	.base.plat_info_len = PLAT_INFO_LEN,
 	.base.plat_info = PLAT_INFO,
 	.priv = NULL,
@@ -832,6 +835,42 @@ static struct rpmi_test_scenario scenario_base_no_p2a_channel = {
 	},
 };
 
+static rpmi_uint32_t attribs_expdata_s_mode[] = {
+	RPMI_SUCCESS,
+	RPMI_BASE_FLAGS_F0_EV_NOTIFY,
+	0,
+	0,
+	0,
+};
+
+static struct rpmi_test_scenario scenario_base_s_mode = {
+	.name = "Base Service Group S-mode Attributes",
+	.shm_size = RPMI_SHM_SZ,
+	.slot_size = RPMI_SLOT_SIZE,
+	.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT,
+	.privilege_level = RPMI_PRIVILEGE_S_MODE,
+	.base.plat_info_len = PLAT_INFO_LEN,
+	.base.plat_info = PLAT_INFO,
+
+	.init = test_scenario_default_init,
+	.cleanup = test_scenario_default_cleanup,
+
+	.num_tests = 1,
+	.tests = {
+		{
+			.name = "RPMI_BASE_SRV_GET_ATTRIBUTES (S-mode)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_BASE,
+				.service_id = RPMI_BASE_SRV_GET_ATTRIBUTES,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.expected_data = attribs_expdata_s_mode,
+				.expected_data_len = sizeof(attribs_expdata_s_mode),
+			},
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+	},
+};
+
 int main(int argc, char *argv[])
 {
 	int rc;
@@ -850,5 +889,9 @@ int main(int argc, char *argv[])
 	if (rc)
 		return rc;
 
-	return test_scenario_execute(&scenario_base_no_p2a_channel);
+	rc = test_scenario_execute(&scenario_base_no_p2a_channel);
+	if (rc)
+		return rc;
+
+	return test_scenario_execute(&scenario_base_s_mode);
 }

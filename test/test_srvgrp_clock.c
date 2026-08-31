@@ -342,6 +342,7 @@ static struct rpmi_test_scenario scenario_clock_default = {
 	.shm_size = RPMI_SHM_SZ,
 	.slot_size = RPMI_SLOT_SIZE,
 	.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT,
+	.privilege_level = RPMI_PRIVILEGE_M_MODE,
 	.priv = NULL,
 
 	.init = test_clock_scenario_init,
