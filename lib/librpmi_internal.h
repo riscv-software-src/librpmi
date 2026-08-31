@@ -44,6 +44,20 @@
 #define array_size(x)	(sizeof(x) / sizeof((x)[0]))
 #endif
 
+#define RPMI_BIT(nr)		(1UL << (nr))
+#define RPMI_GENMASK(h, l)	((~0UL << (l)) & \
+				 (~0UL >> ((sizeof(unsigned long) * 8) - 1 - (h))))
+
+/** CPPC fast-channel flags */
+#define RPMI_CPPC_FST_CHN_MODE_NORMAL		0U
+#define RPMI_CPPC_FST_CHN_MODE_AUTONOMOUS	RPMI_BIT(3)
+#define RPMI_CPPC_FST_CHN_DB_REG_WIDTH_MASK	RPMI_GENMASK(2, 1)
+#define RPMI_CPPC_FST_CHN_DB_REG_08_BITS	0U
+#define RPMI_CPPC_FST_CHN_DB_REG_16_BITS	RPMI_BIT(1)
+#define RPMI_CPPC_FST_CHN_DB_REG_32_BITS	RPMI_BIT(2)
+#define RPMI_CPPC_FST_CHN_DB_NOT_SUPP		0U
+#define RPMI_CPPC_FST_CHN_DB_SUPP		RPMI_BIT(0)
+
 #define RPMI_MAX(a, b)			\
 ({					\
 	__typeof__(a) _a = (a);		\

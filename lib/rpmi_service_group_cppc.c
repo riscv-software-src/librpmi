@@ -6,6 +6,7 @@
  */
 
 #include <librpmi.h>
+#include "librpmi_internal.h"
 
 #ifdef LIBRPMI_DEBUG
 #define DPRINTF(msg...)		rpmi_env_printf(msg)
@@ -41,6 +42,8 @@ _Static_assert(								\
 struct rpmi_cppc_fastchan {
 	/** shared memory backing the fast channels */
 	struct rpmi_shmem *shmem;
+	/** optional Perf Request fastchannel doorbell */
+	const struct rpmi_cppc_fastchan_doorbell *doorbell;
 
 	rpmi_uint64_t perf_request_shmem_offset;
 	rpmi_uint64_t perf_feedback_shmem_offset;
@@ -637,36 +640,60 @@ rpmi_cppc_sg_get_fast_channel_region(struct rpmi_service_group *group,
 	rpmi_uint32_t resp_dlen, flags;
 	rpmi_uint64_t fastchan_region_base, fastchan_region_size;
 	struct rpmi_cppc_group *cppcgrp = group->priv;
+	struct rpmi_cppc_fastchan *fc = cppcgrp->fastchan_ctx;
+	const struct rpmi_cppc_fastchan_doorbell *db;
 	rpmi_uint32_t *resp = (void *)response_data;
 
-	if (!cppcgrp->fastchan_ctx) {
+	if (!fc) {
 		status = RPMI_ERR_NOTSUPP;
 		resp_dlen = sizeof(*resp);
 		goto done;
 	}
 
-	fastchan_region_base = rpmi_shmem_base(cppcgrp->fastchan_ctx->shmem);
-	fastchan_region_size = rpmi_shmem_size(cppcgrp->fastchan_ctx->shmem);
+	db = fc->doorbell;
+	fastchan_region_base = rpmi_shmem_base(fc->shmem);
+	fastchan_region_size = rpmi_shmem_size(fc->shmem);
 
-	/* FLAGS[4:3]: 0b00 = normal/passive, 0b01 = autonomous. No doorbell. */
-	flags = (cppcgrp->cppc_mode == RPMI_CPPC_AUTO_MODE) ? (0x01U << 3) : 0;
+	/* FLAGS[4:3] CPPC mode */
+	flags = (cppcgrp->cppc_mode == RPMI_CPPC_AUTO_MODE) ?
+		RPMI_CPPC_FST_CHN_MODE_AUTONOMOUS : RPMI_CPPC_FST_CHN_MODE_NORMAL;
+
+	/* FLAGS[2:1] doorbell width, FLAGS[0] doorbell support (optional) */
+	if (db) {
+		flags |= RPMI_CPPC_FST_CHN_DB_SUPP;
+		switch (db->perf_req_fastchan_width) {
+		case 8:
+			flags |= RPMI_CPPC_FST_CHN_DB_REG_08_BITS;
+			break;
+		case 16:
+			flags |= RPMI_CPPC_FST_CHN_DB_REG_16_BITS;
+			break;
+		case 32:
+			flags |= RPMI_CPPC_FST_CHN_DB_REG_32_BITS;
+			break;
+		}
+		/* doorbell addr low */
+		resp[6] = rpmi_to_xe32(trans->is_be, db->db_addr_low);
+		/* doorbell addr high */
+		resp[7] = rpmi_to_xe32(trans->is_be, db->db_addr_high);
+		/* doorbell write value */
+		resp[8] = rpmi_to_xe32(trans->is_be, db->db_write_value);
+	} else {
+		resp[6] = 0;
+		resp[7] = 0;
+		resp[8] = 0;
+	}
 
 	status = RPMI_SUCCESS;
 	resp[1] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)flags);
 	/* fast channel region address low */
 	resp[2] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)fastchan_region_base);
-	/* fast channel region address low */
+	/* fast channel region address high */
 	resp[3] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)(fastchan_region_base >> 32));
 	/* fast channel region size low */
-	resp[4] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)fastchan_region_size);;
+	resp[4] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)fastchan_region_size);
 	/* fast channel region size high */
 	resp[5] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)(fastchan_region_size >> 32));
-	/* doorbell addr low */
-	resp[6] = 0;
-	/* doorbell addr high */
-	resp[7] = 0;
-	/* doorbell write value */
-	resp[8] = 0;
 
 	resp_dlen = 9 * sizeof(*resp);
 
@@ -869,7 +896,8 @@ static struct rpmi_cppc_fastchan *
 rpmi_cppc_fastchan_create(rpmi_uint32_t hart_count,
 			  struct rpmi_shmem *shmem_fastchan,
 			  rpmi_uint64_t perf_request_shmem_offset,
-			  rpmi_uint64_t perf_feedback_shmem_offset)
+			  rpmi_uint64_t perf_feedback_shmem_offset,
+			  const struct rpmi_cppc_fastchan_doorbell *doorbell)
 {
 	struct rpmi_cppc_fastchan *cppc_fastchan_ctx;
 	rpmi_size_t fc_perf_request_region_size, fc_perf_feedback_region_size;
@@ -996,6 +1024,7 @@ rpmi_cppc_fastchan_create(rpmi_uint32_t hart_count,
 
 	cppc_fastchan_ctx->hart_perf_request = fc_hart_perf_request_array;
 	cppc_fastchan_ctx->shmem = shmem_fastchan;
+	cppc_fastchan_ctx->doorbell = doorbell;
 	cppc_fastchan_ctx->perf_request_shmem_offset = perf_request_shmem_offset;
 	cppc_fastchan_ctx->perf_feedback_shmem_offset = perf_feedback_shmem_offset;
 
@@ -1009,6 +1038,7 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 			       struct rpmi_shmem *shmem_fastchan,
 			       rpmi_uint64_t perf_request_shmem_offset,
 			       rpmi_uint64_t perf_feedback_shmem_offset,
+			       const struct rpmi_cppc_fastchan_doorbell *doorbell,
 			       const struct rpmi_cppc_platform_ops *ops,
 			       void *ops_priv)
 {
@@ -1024,6 +1054,18 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 
 	if (mode != RPMI_CPPC_PASSIVE_MODE && mode != RPMI_CPPC_AUTO_MODE) {
 		DPRINTF("%s: unknown cppc mode\n", __func__);
+		return NULL;
+	}
+
+	if (doorbell && !doorbell->db_supported) {
+		DPRINTF("%s: cppc fastchannel doorbell support not set\n", __func__);
+		return NULL;
+	}
+
+	if (doorbell && doorbell->perf_req_fastchan_width != 8 &&
+	    doorbell->perf_req_fastchan_width != 16 &&
+	    doorbell->perf_req_fastchan_width != 32) {
+		DPRINTF("%s: invalid cppc fastchannel doorbell width\n", __func__);
 		return NULL;
 	}
 
@@ -1046,7 +1088,8 @@ rpmi_service_group_cppc_create(struct rpmi_hsm *hsm,
 	cppc_fastchan_ctx = rpmi_cppc_fastchan_create(hart_count,
 						      shmem_fastchan,
 						      perf_request_shmem_offset,
-						      perf_feedback_shmem_offset);
+						      perf_feedback_shmem_offset,
+						      doorbell);
 	if (!cppc_fastchan_ctx) {
 		DPRINTF("%s: failed to create cppc fastchannel\n", __func__);
 		rpmi_env_free(cppcgrp);
