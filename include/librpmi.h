@@ -1958,6 +1958,10 @@ enum rpmi_voltage_type {
 	(((__format) & RPMI_VOLT_CAPABILITY_FORMAT_MASK) <<		\
 	 RPMI_VOLT_CAPABILITY_FORMAT_POS)
 
+#define RPMI_VOLT_CAPABILITY_GET_FORMAT(__capability)			\
+	(((__capability) >> RPMI_VOLT_CAPABILITY_FORMAT_POS) &		\
+	 RPMI_VOLT_CAPABILITY_FORMAT_MASK)
+
 /** voltage domain capabilities */
 enum rpmi_voltage_capability {
 	RPMI_VOLT_CAPABILITY_INVALID		= -1,
@@ -1990,6 +1994,18 @@ struct rpmi_voltage_linear_range {
  * This structure represents the static
  * voltage domain data which platform has to maintain
  * and pass to create the voltage service group.
+ *
+ * The layout of the voltage level array depends on voltage_type. The
+ * num_levels field below, the MAX_NUM_LEVELS returned by VOLT_GET_ATTRIBUTES
+ * and the RETURNED and REMAINING counts of VOLT_GET_SUPPORTED_LEVELS all
+ * count voltage levels, never words:
+ *
+ * RPMI_VOLT_TYPE_DISCRETE: discrete_levels is one word per level and holds
+ * num_levels words.
+ *
+ * RPMI_VOLT_TYPE_LINEAR: linear_levels is a flattened array of
+ * (uvolt_min, uvolt_max, uvolt_step) tuples, three words per level, and
+ * holds num_levels * 3 words.
  */
 struct rpmi_voltage_data {
 	/* voltage domain name */
@@ -2000,7 +2016,7 @@ struct rpmi_voltage_data {
 	rpmi_uint32_t				control;
 	/* regulator config */
 	rpmi_uint32_t				config;
-	/** number of supported voltage levels */
+	/** number of supported voltage levels (discrete levels or linear ranges) */
 	rpmi_uint32_t				num_levels;
 	/** transition latency */
 	rpmi_uint32_t				trans_latency;
@@ -2008,9 +2024,13 @@ struct rpmi_voltage_data {
         struct rpmi_voltage_discrete_range	*discrete_range;
         /** linear voltage range */
         struct rpmi_voltage_linear_range	*linear_range;
-	/** discrete voltage levels */
+	/** discrete voltage levels, one word per level, num_levels words */
 	rpmi_int32_t				*discrete_levels;
-	/** linear voltage levels */
+	/**
+	 * linear voltage levels, a flattened array of
+	 * (uvolt_min, uvolt_max, uvolt_step) tuples, three words per
+	 * level, num_levels * 3 words
+	 */
 	rpmi_int32_t				*linear_levels;
 	/** voltage level */
 	rpmi_int32_t				level_uv;
@@ -2028,7 +2048,12 @@ struct rpmi_voltage_attrs {
 	rpmi_uint32_t	num_levels;
 	/* transition latency */
 	rpmi_uint32_t	trans_latency;
-	/** array of supported levels */
+	/**
+	 * array of supported levels, either the discrete_levels or the
+	 * linear_levels array of struct rpmi_voltage_data selected by the
+	 * voltage format in capability, with the word-per-level layout
+	 * documented there
+	 */
 	rpmi_int32_t	*level_array;
 	/* voltage domain name */
 	const char	*name;
@@ -2065,7 +2090,14 @@ struct rpmi_voltage_platform_ops {
 				     rpmi_int32_t *volt_level);
 
 	/**
-	 * Get perf supported levels
+	 * Get voltage supported levels
+	 *
+	 * The max, volt_index and returned_levels parameters count voltage
+	 * levels, not words. The callback writes returned_levels levels into
+	 * level_array starting at level volt_index, which is
+	 * returned_levels words for a discrete domain and
+	 * returned_levels * 3 words for a linear domain, and never more
+	 * than max levels.
 	 **/
 	enum rpmi_error (*get_supp_levels)(void *priv,
 					   rpmi_uint32_t volt_id,
