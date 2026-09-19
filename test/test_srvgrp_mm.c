@@ -297,6 +297,7 @@ static struct rpmi_test_scenario scenario_mm_default = {
 				.expected_data = notsupp_expdata,
 				.expected_data_len = sizeof(notsupp_expdata),
 			},
+			.init_request_data = test_init_request_data_from_attrs,
 			.init_expected_data = test_init_expected_data_from_attrs,
 		},
 	},

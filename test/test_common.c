@@ -171,22 +171,16 @@ static int execute_scenario(struct rpmi_test_scenario *scene)
 	void *exp_data;
 	int i, rc, failed, nfail = 0;
 
-	req_msg = rpmi_env_zalloc(scene->slot_size);
-	if (!req_msg) {
-		printf("Failed to allocate request message\n");
-		return 1;
-	}
 	exp_data = rpmi_env_zalloc(RPMI_MSG_DATA_SIZE(scene->slot_size));
 	if (!exp_data) {
 		printf("Failed to allocate expected message\n");
-		rpmi_env_free(req_msg);
 		return 1;
 	}
-	resp_msg = rpmi_env_zalloc(scene->slot_size);
+
+	resp_msg = rpmi_alloc_message(scene->slot_size);
 	if (!resp_msg) {
 		printf("Failed to allocate response message\n");
 		rpmi_env_free(exp_data);
-		rpmi_env_free(req_msg);
 		return 1;
 	}
 
@@ -206,12 +200,21 @@ static int execute_scenario(struct rpmi_test_scenario *scene)
 			continue;
 		}
 
-		/* Initialize request message header */
-		req_msg->header.servicegroup_id = test->attrs.servicegroup_id;
-		req_msg->header.service_id = test->attrs.service_id;
-		req_msg->header.flags = test->attrs.flags;
+		/* Create request message */
+		req_msg = rpmi_alloc_and_populate_message(test->attrs.servicegroup_id,
+							  test->attrs.service_id,
+							  test->attrs.flags,
+							  scene->token_sequence++,
+							  NULL,
+							  scene->slot_size - RPMI_MSG_HDR_SIZE);
+		if (!req_msg) {
+			printf("Failed to create request message for test %s\n", test->name);
+			nfail++;
+			continue;
+		}
+
+		/* By default assume request without data payload */
 		req_msg->header.datalen = 0;
-		req_msg->header.token = scene->token_sequence++;
 
 		/* Initialize request message data */
 		if (test->init_request_data)
@@ -269,14 +272,14 @@ static int execute_scenario(struct rpmi_test_scenario *scene)
 		       failed ? "Failed" : "Succeeded");
 
 skip:
+		rpmi_free_message(req_msg);
 		/* Cleanup if needed */
 		if (test->cleanup)
 			test->cleanup(scene, test);
 	}
 
-	rpmi_env_free(resp_msg);
+	rpmi_free_message(resp_msg);
 	rpmi_env_free(exp_data);
-	rpmi_env_free(req_msg);
 
 	return nfail;
 }
