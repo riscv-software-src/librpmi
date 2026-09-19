@@ -433,6 +433,47 @@ enum rpmi_logging_service_id {
 #define LIBRPMI_TRANSPORT_SHMEM_QUEUE_MIN_SIZE(__slot_size)	\
 	((__slot_size) * LIBRPMI_TRANSPORT_SHMEM_QUEUE_MIN_SLOTS)
 
+/**
+ * @brief Allocate a RPMI message instance
+ *
+ * @param[in] msg_size		message size
+ * @return pointer to RPMI message upon success and NULL upon failure
+ */
+struct rpmi_message *rpmi_alloc_message(rpmi_size_t msg_size);
+
+/**
+ * @brief Allocate and populate a RPMI message instance
+ *
+ * @param[in] servicegroup_id	ServiceGroup ID of the message
+ * @param[in] service_id	Service ID of the message
+ * @param[in] flags		Flags of the message
+ * @param[in] token		Token of the message
+ * @param[in] data		Pointer to message data
+ * @param[in] datalen		Length of message data
+ * @return pointer to RPMI message upon success and NULL upon failure
+ */
+struct rpmi_message *rpmi_alloc_and_populate_message(rpmi_uint16_t servicegroup_id,
+						     rpmi_uint8_t service_id,
+						     rpmi_uint8_t flags,
+						     rpmi_uint16_t token,
+						     const void *data,
+						     rpmi_uint16_t datalen);
+
+/**
+ * @brief Clone a RPMI message instance from another RPMI message
+ *
+ * @param[in] src		Source RPMI message pointer
+ * @return pointer to RPMI message upon success and NULL upon failure
+ */
+struct rpmi_message *rpmi_clone_message(const struct rpmi_message *src);
+
+/**
+ * @brief Free a RPMI message instance
+ *
+ * @param[in] msg		pointer to RPMI message
+ */
+void rpmi_free_message(struct rpmi_message *msg);
+
 /** RPMI shared memory structure to access a platform shared memory */
 struct rpmi_shmem;
 
