@@ -87,7 +87,8 @@ static rpmi_bool_t shmem_is_full(struct rpmi_transport *trans,
 
 static enum rpmi_error shmem_enqueue(struct rpmi_transport *trans,
 				     enum rpmi_queue_type qtype,
-				     const struct rpmi_message *msg)
+				     const struct rpmi_message *msg,
+				     rpmi_size_t msg_size)
 {
 	struct rpmi_transport_shmem *shtrans = trans->priv;
 	rpmi_uint32_t queue_base = shtrans->queues[qtype].queue_base;
@@ -106,7 +107,7 @@ static enum rpmi_error shmem_enqueue(struct rpmi_transport *trans,
 	tailidx = rpmi_to_le32(tailidx);
 
 	rc = rpmi_shmem_write(shmem, queue_base + ((tailidx + 2) * trans->slot_size),
-			      msg, trans->slot_size);
+			      msg, msg_size);
 	if (rc) {
 		DPRINTF("%s: %s: failed to write message at tailidx %d for qtype %d\n",
 			__func__, trans->name, tailidx, qtype);

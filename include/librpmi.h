@@ -638,7 +638,8 @@ struct rpmi_transport {
 	 */
 	enum rpmi_error	(*enqueue)(struct rpmi_transport *trans,
 				   enum rpmi_queue_type qtype,
-				   const struct rpmi_message *msg);
+				   const struct rpmi_message *msg,
+				   rpmi_size_t msg_size);
 
 	/**
 	 * Callback to dequeue a RPMI message from a specified RPMI queue type

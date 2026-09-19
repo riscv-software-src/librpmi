@@ -118,7 +118,7 @@ enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
 		rpmi_env_unlock(trans->lock);
 		return RPMI_ERR_IO;
 	}
-	rc = trans->enqueue(trans, qtype, msg);
+	rc = trans->enqueue(trans, qtype, msg, msize);
 	rpmi_env_unlock(trans->lock);
 
 	/* Reverse the endian conversion of header fields */
