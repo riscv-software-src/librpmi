@@ -74,9 +74,17 @@ enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
 {
 	struct rpmi_message_header *mhdr;
 	enum rpmi_error rc;
+	rpmi_size_t msize;
 
 	if (!trans || !msg) {
 		DPRINTF("%s: NULL transport or message pointer\n", __func__);
+		return RPMI_ERR_INVALID_PARAM;
+	}
+
+	msize = msg->header.datalen + RPMI_MSG_HDR_SIZE;
+	if (trans->slot_size < msize) {
+		DPRINTF("%s: can't enqueue message size %d into slot size %d\n", __func__,
+			(rpmi_uint32_t)msize, (rpmi_uint32_t)trans->slot_size);
 		return RPMI_ERR_INVALID_PARAM;
 	}
 
