@@ -650,6 +650,17 @@ struct rpmi_transport {
 				   enum rpmi_queue_type qtype,
 				   struct rpmi_message *out_msg);
 
+	/**
+	 * Callback to dequeue a RPMI message having a specific token value
+	 * from a specified RPMI queue type
+	 *
+	 * Note: This function must be called with transport lock held.
+	 */
+	enum rpmi_error (*dequeue_token)(struct rpmi_transport *trans,
+					 enum rpmi_queue_type qtype,
+					 rpmi_uint16_t token,
+					 struct rpmi_message *out_msg);
+
 	/** Lock to synchronize transport access (optional) */
 	void		*lock;
 
@@ -700,6 +711,21 @@ enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
 enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
 				       enum rpmi_queue_type qtype,
 				       struct rpmi_message *out_msg);
+
+/**
+ * @brief Dequeue a RPMI message having a specific token value from a specified
+ * RPMI queue type of a RPMI transport
+ *
+ * @param[in] trans		pointer to RPMI transport instance
+ * @param[in] qtype		type of the RPMI queue
+ * @param[in] token		expected token of the dequeued RPMI message
+ * @param[out] out_msg		pointer to the dequeued RPMI message
+ * @return enum rpmi_error
+ */
+enum rpmi_error rpmi_transport_dequeue_token(struct rpmi_transport *trans,
+					     enum rpmi_queue_type qtype,
+					     rpmi_uint16_t token,
+					     struct rpmi_message *out_msg);
 
 /**
  * @brief Create a shared memory transport instance
