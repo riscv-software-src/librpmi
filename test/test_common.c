@@ -300,9 +300,9 @@ rpmi_uint16_t test_init_expected_data_from_attrs(struct rpmi_test_scenario *scen
 	return test->attrs.expected_data_len;
 }
 
-int test_scenario_default_init(struct rpmi_test_scenario *scene)
+static int test_scenario_default_init_shmem(struct rpmi_test_scenario *scene)
 {
-	if (!scene || scene->shm || scene->shmem || scene->xport || scene->cntx)
+	if (scene->shm || scene->shmem)
 		return RPMI_ERR_ALREADY;
 
 	scene->shm = rpmi_env_zalloc(scene->shm_size);
@@ -332,32 +332,11 @@ int test_scenario_default_init(struct rpmi_test_scenario *scene)
 		return RPMI_ERR_FAILED;
 	}
 
-	scene->cntx = rpmi_context_create("test_context", scene->xport,
-					  scene->max_num_groups,
-					  scene->privilege_level,
-					  scene->base.plat_info_len, scene->base.plat_info);
-	if (!scene->cntx) {
-		printf("%s: failed to create test rpmi_context\n ", __func__);
-		rpmi_transport_shmem_destroy(scene->xport);
-		scene->xport = NULL;
-		rpmi_shmem_destroy(scene->shmem);
-		scene->shmem = NULL;
-		rpmi_env_free(scene->shm);
-		scene->shm = NULL;
-		return RPMI_ERR_FAILED;
-	}
-
-	scene->token_sequence = 0;
 	return 0;
 }
 
-int test_scenario_default_cleanup(struct rpmi_test_scenario *scene)
+static int test_scenario_default_cleanup_shmem(struct rpmi_test_scenario *scene)
 {
-	if (!scene) {
-		printf("Invalid test scenario\n");
-		return RPMI_ERR_INVALID_PARAM;
-	}
-
 	if (scene->xport) {
 		rpmi_transport_shmem_destroy(scene->xport);
 		scene->xport = NULL;
@@ -374,6 +353,75 @@ int test_scenario_default_cleanup(struct rpmi_test_scenario *scene)
 	}
 
 	return 0;
+}
+
+static int test_scenario_default_init_ll(struct rpmi_test_scenario *scene)
+{
+	scene->xport = rpmi_transport_ll_create("test_transport", scene->slot_size);
+	if (!scene->xport) {
+		printf("%s: failed to create test rpmi_transport\n ", __func__);
+		return RPMI_ERR_FAILED;
+	}
+
+	return 0;
+}
+
+static int test_scenario_default_cleanup_ll(struct rpmi_test_scenario *scene)
+{
+	if (scene->xport) {
+		rpmi_transport_ll_destroy(scene->xport);
+		scene->xport = NULL;
+	}
+
+	return 0;
+}
+
+int test_scenario_default_init(struct rpmi_test_scenario *scene)
+{
+	int rc;
+
+	if (!scene || scene->xport || scene->cntx)
+		return RPMI_ERR_ALREADY;
+
+	if (scene->shm_size)
+		rc = test_scenario_default_init_shmem(scene);
+	else
+		rc = test_scenario_default_init_ll(scene);
+	if (rc)
+		return rc;
+
+	scene->cntx = rpmi_context_create("test_context", scene->xport,
+					  scene->max_num_groups,
+					  scene->privilege_level,
+					  scene->base.plat_info_len, scene->base.plat_info);
+	if (!scene->cntx) {
+		printf("%s: failed to create test rpmi_context\n ", __func__);
+		if (scene->shm_size)
+			test_scenario_default_cleanup_shmem(scene);
+		else
+			test_scenario_default_cleanup_ll(scene);
+		return RPMI_ERR_FAILED;
+	}
+
+	scene->token_sequence = 0;
+	return 0;
+}
+
+int test_scenario_default_cleanup(struct rpmi_test_scenario *scene)
+{
+	int rc;
+
+	if (!scene) {
+		printf("%s: Invalid test scenario\n", __func__);
+		return RPMI_ERR_INVALID_PARAM;
+	}
+
+	if (scene->shm_size)
+		rc = test_scenario_default_cleanup_shmem(scene);
+	else
+		rc = test_scenario_default_cleanup_ll(scene);
+
+	return rc;
 }
 
 int test_scenario_execute(struct rpmi_test_scenario *scene)
