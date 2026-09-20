@@ -129,9 +129,11 @@ enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
 	return rc;
 }
 
-enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
-				       enum rpmi_queue_type qtype,
-				       struct rpmi_message *out_msg)
+static enum rpmi_error __rpmi_transport_dequeue(struct rpmi_transport *trans,
+						enum rpmi_queue_type qtype,
+						rpmi_bool_t match_token,
+						rpmi_uint16_t token,
+						struct rpmi_message *out_msg)
 {
 	struct rpmi_message_header *mhdr;
 	enum rpmi_error rc;
@@ -152,10 +154,18 @@ enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
 		return RPMI_ERR_INVALID_PARAM;
 	}
 
-	if (!trans->dequeue) {
-		DPRINTF("%s: %s: dequeue operation not supported for qtype %d\n",
-			__func__, trans->name, qtype);
-		return RPMI_ERR_NOTSUPP;
+	if (match_token) {
+		if (!trans->dequeue_token) {
+			DPRINTF("%s: %s: dequeue_token operation not supported for qtype %d\n",
+				__func__, trans->name, qtype);
+			return RPMI_ERR_NOTSUPP;
+		}
+	} else {
+		if (!trans->dequeue) {
+			DPRINTF("%s: %s: dequeue operation not supported for qtype %d\n",
+				__func__, trans->name, qtype);
+			return RPMI_ERR_NOTSUPP;
+		}
 	}
 
 	rpmi_env_lock(trans->lock);
@@ -166,7 +176,12 @@ enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
 		rpmi_env_unlock(trans->lock);
 		return RPMI_ERR_IO;
 	}
-	rc = trans->dequeue(trans, qtype, out_msg);
+
+	if (match_token)
+		rc = trans->dequeue_token(trans, qtype, rpmi_to_xe16(trans->is_be, token), out_msg);
+	else
+		rc = trans->dequeue(trans, qtype, out_msg);
+
 	rpmi_env_unlock(trans->lock);
 
 	/* Convert header fields to native endianness */
@@ -178,4 +193,19 @@ enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
 	}
 
 	return rc;
+}
+
+enum rpmi_error rpmi_transport_dequeue(struct rpmi_transport *trans,
+				       enum rpmi_queue_type qtype,
+				       struct rpmi_message *out_msg)
+{
+	return __rpmi_transport_dequeue(trans, qtype, false, 0, out_msg);
+}
+
+enum rpmi_error rpmi_transport_dequeue_token(struct rpmi_transport *trans,
+					     enum rpmi_queue_type qtype,
+					     rpmi_uint16_t token,
+					     struct rpmi_message *out_msg)
+{
+	return __rpmi_transport_dequeue(trans, qtype, true, token, out_msg);
 }
