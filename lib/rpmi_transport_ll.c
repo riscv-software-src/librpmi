@@ -71,24 +71,50 @@ static enum rpmi_error ll_enqueue(struct rpmi_transport *trans,
 	return RPMI_SUCCESS;
 }
 
+static enum rpmi_error __ll_dequeue(struct rpmi_transport *trans,
+				    enum rpmi_queue_type qtype,
+				    rpmi_bool_t match_token,
+				    rpmi_uint16_t token,
+				    struct rpmi_message *out_msg)
+{
+	struct rpmi_transport_ll *lltrans = trans->priv;
+	struct rpmi_transport_ll_message *llmsg;
+	struct rpmi_message *msg;
+
+	rpmi_list_for_each_entry(llmsg, &lltrans->queues[qtype], head) {
+		msg = llmsg->msg;
+
+		/* Match the token */
+		if (match_token && msg->header.token != token)
+			continue;
+
+		/* Copy the linked-list message to output message */
+		rpmi_env_memcpy(out_msg, llmsg->msg, llmsg->msg_size);
+
+		/* Remove the linked-list message */
+		rpmi_free_message(llmsg->msg);
+		rpmi_list_del(&llmsg->head);
+		rpmi_env_free(llmsg);
+
+		return RPMI_SUCCESS;
+	}
+
+	return RPMI_ERR_NO_DATA;
+}
+
 static enum rpmi_error ll_dequeue(struct rpmi_transport *trans,
 				  enum rpmi_queue_type qtype,
 				  struct rpmi_message *out_msg)
 {
-	struct rpmi_transport_ll *lltrans = trans->priv;
-	struct rpmi_transport_ll_message *llmsg;
+	return __ll_dequeue(trans, qtype, false, 0, out_msg);
+}
 
-	/* Copy the first linked-list message to output message */
-	llmsg = rpmi_list_first_entry(&lltrans->queues[qtype],
-				      struct rpmi_transport_ll_message, head);
-	rpmi_env_memcpy(out_msg, llmsg->msg, llmsg->msg_size);
-
-	/* Remove the first linked-list message */
-	rpmi_free_message(llmsg->msg);
-	rpmi_list_del(&llmsg->head);
-	rpmi_env_free(llmsg);
-
-	return RPMI_SUCCESS;
+static enum rpmi_error ll_dequeue_token(struct rpmi_transport *trans,
+					enum rpmi_queue_type qtype,
+					rpmi_uint16_t token,
+					struct rpmi_message *out_msg)
+{
+	return __ll_dequeue(trans, qtype, true, token, out_msg);
 }
 
 struct rpmi_transport *rpmi_transport_ll_create(const char *name,
@@ -124,6 +150,7 @@ struct rpmi_transport *rpmi_transport_ll_create(const char *name,
 	trans->is_full = ll_is_full;
 	trans->enqueue = ll_enqueue;
 	trans->dequeue = ll_dequeue;
+	trans->dequeue_token = ll_dequeue_token;
 	trans->lock = rpmi_env_alloc_lock();
 	trans->priv = lltrans;
 
