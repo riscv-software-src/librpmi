@@ -761,6 +761,19 @@ void rpmi_transport_ll_destroy(struct rpmi_transport *trans);
 struct rpmi_context;
 
 /**
+ * @brief Process single request from application processors for a RPMI context
+ *
+ * @param[in] cntx		pointer to the RPMI context
+ * @param[in] req_msg		pointer to the RPMI request message
+ * @param[in] ack_enqueue	whether to enqueue RPMI acknowledgment message to P2A_ACK queue
+ * @param[out] ack_msg		pointer to the output RPMI acknowledgment message
+ */
+void rpmi_context_process_a2p_single(struct rpmi_context *cntx,
+				     const struct rpmi_message *req_msg,
+				     rpmi_bool_t ack_enqueue,
+				     struct rpmi_message *ack_msg);
+
+/**
  * @brief Process requests from application processors for a RPMI context
  *
  * @param[in] cntx		pointer to the RPMI context
