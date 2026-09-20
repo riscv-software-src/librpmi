@@ -430,106 +430,112 @@ static enum rpmi_error rpmi_service_notsupp_a2p_request(struct rpmi_service_grou
 	return RPMI_SUCCESS;
 }
 
-void rpmi_context_process_a2p_request(struct rpmi_context *cntx)
+void rpmi_context_process_a2p_single(struct rpmi_context *cntx,
+				     const struct rpmi_message *req_msg,
+				     rpmi_bool_t ack_enqueue,
+				     struct rpmi_message *ack_msg)
 {
 	rpmi_bool_t do_process, do_acknowledge;
-	struct rpmi_message *rmsg, *amsg;
 	struct rpmi_service_group *group;
 	struct rpmi_service *service;
-	struct rpmi_transport *trans;
 	enum rpmi_error rc;
 
+	if (!cntx || !req_msg || !ack_msg) {
+		DPRINTF("%s: invalid parameters\n", __func__);
+		return;
+	}
+
+	group = rpmi_context_find_group(cntx, req_msg->header.servicegroup_id);
+	if (!group) {
+		DPRINTF("%s: %s: service group ID 0x%x not found\n",
+			__func__, cntx->name, req_msg->header.servicegroup_id);
+		return;
+	}
+
+	service = NULL;
+	if (req_msg->header.service_id < group->max_service_id)
+		service = &group->services[req_msg->header.service_id];
+
+	ack_msg->header.flags = RPMI_MSG_ACKNOWLEDGEMENT;
+	ack_msg->header.service_id = req_msg->header.service_id;
+	ack_msg->header.servicegroup_id = req_msg->header.servicegroup_id;
+	ack_msg->header.datalen = 0;
+	ack_msg->header.token = req_msg->header.token;
+
+	do_process = false;
+	do_acknowledge = false;
+	switch (req_msg->header.flags & RPMI_MSG_FLAGS_TYPE) {
+	case RPMI_MSG_NORMAL_REQUEST:
+		do_process = true;
+		do_acknowledge = true;
+		break;
+	case RPMI_MSG_POSTED_REQUEST:
+		do_process = true;
+		break;
+	case RPMI_MSG_ACKNOWLEDGEMENT:
+		DPRINTF("%s: %s: group %s ignoring acknowledgement from a2p queue\n",
+			__func__, cntx->name, group->name);
+		break;
+	case RPMI_MSG_NOTIFICATION:
+		DPRINTF("%s: %s: group %s can't handle notification from a2p queue\n",
+			__func__, cntx->name, group->name);
+		break;
+	default:
+		break;
+	}
+
+	if (!do_process)
+		return;
+
+	rpmi_env_lock(group->lock);
+	if (service && service->process_a2p_request &&
+	    req_msg->header.datalen >= service->min_a2p_request_datalen)
+		rc = service->process_a2p_request(group, service, cntx->trans,
+						  req_msg->header.datalen, req_msg->data,
+						  &ack_msg->header.datalen, ack_msg->data);
+	else
+		rc = rpmi_service_notsupp_a2p_request(group, service, cntx->trans,
+						      req_msg->header.datalen, req_msg->data,
+						      &ack_msg->header.datalen, ack_msg->data);
+	rpmi_env_unlock(group->lock);
+
+	if (rc) {
+		DPRINTF("%s: %s: group %s a2p request failed (error %d)\n",
+			__func__, cntx->name, group->name, rc);
+		DPRINTF("%s: %s: flags 0x%x service_id 0x%x servicegroup_id 0x%x\n",
+			__func__, cntx->name,
+			req_msg->header.flags, req_msg->header.service_id,
+			req_msg->header.servicegroup_id);
+		DPRINTF("%s: %s: datalen 0x%x token 0x%x\n",
+			__func__, cntx->name,
+			req_msg->header.datalen, req_msg->header.token);
+		return;
+	}
+
+	if (!do_acknowledge || !ack_enqueue)
+		return;
+
+	rc = rpmi_transport_enqueue(cntx->trans, RPMI_QUEUE_P2A_ACK, ack_msg);
+	if (rc) {
+		DPRINTF("%s: %s: group %s p2a acknowledgement failed (error %d)\n",
+			__func__, cntx->name, group->name, rc);
+		/* Trigger REQUEST_HANDLE_ERROR event on ACK failure */
+		rpmi_context_base_request_handle_error(cntx);
+	}
+
+	if ((req_msg->header.flags & RPMI_MSG_FLAGS_DOORBELL) && cntx->sysmsi_group)
+		rpmi_service_group_sysmsi_inject_p2a(cntx->sysmsi_group);
+}
+
+void rpmi_context_process_a2p_request(struct rpmi_context *cntx)
+{
 	if (!cntx) {
 		DPRINTF("%s: invalid parameters\n", __func__);
 		return;
 	}
 
-	trans = cntx->trans;
-	rmsg = cntx->req_msg;
-	amsg = cntx->ack_msg;
-	while (!rpmi_transport_dequeue(trans, RPMI_QUEUE_A2P_REQ, rmsg)) {
-		group = rpmi_context_find_group(cntx, rmsg->header.servicegroup_id);
-		if (!group) {
-			DPRINTF("%s: %s: service group ID 0x%x not found\n",
-				__func__, cntx->name, rmsg->header.servicegroup_id);
-			continue;
-		}
-
-		service = NULL;
-		if (rmsg->header.service_id < group->max_service_id)
-			service = &group->services[rmsg->header.service_id];
-
-		amsg->header.flags = RPMI_MSG_ACKNOWLEDGEMENT;
-		amsg->header.service_id = rmsg->header.service_id;
-		amsg->header.servicegroup_id = rmsg->header.servicegroup_id;
-		amsg->header.datalen = 0;
-		amsg->header.token = rmsg->header.token;
-
-		do_process = false;
-		do_acknowledge = false;
-		switch (rmsg->header.flags & RPMI_MSG_FLAGS_TYPE) {
-		case RPMI_MSG_NORMAL_REQUEST:
-			do_process = true;
-			do_acknowledge = true;
-			break;
-		case RPMI_MSG_POSTED_REQUEST:
-			do_process = true;
-			break;
-		case RPMI_MSG_ACKNOWLEDGEMENT:
-			DPRINTF("%s: %s: group %s ignoring acknowledgement from a2p queue\n",
-				__func__, cntx->name, group->name);
-			break;
-		case RPMI_MSG_NOTIFICATION:
-			DPRINTF("%s: %s: group %s can't handle notification from a2p queue\n",
-				__func__, cntx->name, group->name);
-			break;
-		default:
-			break;
-		}
-
-		if (!do_process)
-			continue;
-
-		rpmi_env_lock(group->lock);
-		if (service && service->process_a2p_request &&
-		    rmsg->header.datalen >= service->min_a2p_request_datalen)
-			rc = service->process_a2p_request(group, service, trans,
-							rmsg->header.datalen, rmsg->data,
-							&amsg->header.datalen, amsg->data);
-		else
-			rc = rpmi_service_notsupp_a2p_request(group, service, trans,
-							rmsg->header.datalen, rmsg->data,
-							&amsg->header.datalen, amsg->data);
-		rpmi_env_unlock(group->lock);
-
-		if (rc) {
-			DPRINTF("%s: %s: group %s a2p request failed (error %d)\n",
-				__func__, cntx->name, group->name, rc);
-			DPRINTF("%s: %s: flags 0x%x service_id 0x%x servicegroup_id 0x%x\n",
-				__func__, cntx->name,
-				rmsg->header.flags, rmsg->header.service_id,
-				rmsg->header.servicegroup_id);
-			DPRINTF("%s: %s: datalen 0x%x token 0x%x\n",
-				__func__, cntx->name,
-				rmsg->header.datalen, rmsg->header.token);
-			continue;
-		}
-
-		if (!do_acknowledge)
-			continue;
-
-		rc = rpmi_transport_enqueue(trans, RPMI_QUEUE_P2A_ACK, amsg);
-		if (rc) {
-			DPRINTF("%s: %s: group %s p2a acknowledgement failed (error %d)\n",
-				__func__, cntx->name, group->name, rc);
-			/* Trigger REQUEST_HANDLE_ERROR event on ACK failure */
-			rpmi_context_base_request_handle_error(cntx);
-		}
-
-		if ((rmsg->header.flags & RPMI_MSG_FLAGS_DOORBELL) &&
-		    cntx->sysmsi_group)
-			rpmi_service_group_sysmsi_inject_p2a(cntx->sysmsi_group);
-	}
+	while (!rpmi_transport_dequeue(cntx->trans, RPMI_QUEUE_A2P_REQ, cntx->req_msg))
+		rpmi_context_process_a2p_single(cntx, cntx->req_msg, true, cntx->ack_msg);
 }
 
 void rpmi_context_process_group_events(struct rpmi_context *cntx,
