@@ -23,4 +23,5 @@ lib-objs-y += rpmi_service_group_ras.o
 lib-objs-y += rpmi_service_group_reqfwd.o
 lib-objs-y += rpmi_shmem.o
 lib-objs-y += rpmi_transport.o
+lib-objs-y += rpmi_transport_ll.o
 lib-objs-y += rpmi_transport_shmem.o

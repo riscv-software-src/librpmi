@@ -724,6 +724,24 @@ struct rpmi_transport *rpmi_transport_shmem_create(const char *name,
  */
 void rpmi_transport_shmem_destroy(struct rpmi_transport *trans);
 
+/**
+ * @brief Create a linked-list transport instance where messages
+ * explicitly enqueued before processing
+ *
+ * @param[in] name		name of the shared memory transport instance
+ * @param[in] slot_size		size of message slot for queues in shared memory
+ * @return pointer to RPMI transport upon success and NULL upon failure
+ */
+struct rpmi_transport *rpmi_transport_ll_create(const char *name,
+						rpmi_uint32_t slot_size);
+
+/**
+ * @brief Destroy (or free) a linked-list transport instance
+ *
+ * @param[in] trans		pointer to RPMI transport instance
+ */
+void rpmi_transport_ll_destroy(struct rpmi_transport *trans);
+
 /** @} */
 
 /*****************************************************************************/
