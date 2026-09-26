@@ -1,0 +1,30 @@
+name: checkpatch
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  UPSTREAM_URL: https://github.com/riscv-software-src/librpmi.git
+
+jobs:
+  checkpatch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Fetch upstream main
+        run: git fetch --no-tags "$UPSTREAM_URL" main:refs/remotes/upstream/main
+
+      - name: Run checkpatch on commits new in this PR
+        run: |
+          scripts/checkpatch.sh \
+            "${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}" \
+            upstream/main
