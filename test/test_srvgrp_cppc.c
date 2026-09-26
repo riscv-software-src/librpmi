@@ -4,6 +4,7 @@
  */
 
 #include <librpmi.h>
+#include "librpmi_internal.h"
 #include <stdio.h>
 #include "librpmi_internal.h"
 #include "test_common.h"
@@ -28,6 +29,14 @@
 #define TEST_CPPC_AUTO_FLAGS			(0x01U << 3)
 #define TEST_CPPC_AUTO_MIN_PERF			0x20
 #define TEST_CPPC_AUTO_MAX_PERF			0x40
+
+/* Doorbell scenario: passive mode + 32-bit doorbell */
+#define TEST_CPPC_DB_ADDR_LOW			0x30000000
+#define TEST_CPPC_DB_ADDR_HIGH			0x0
+#define TEST_CPPC_DB_WRITE_VALUE		0x7
+/* FLAGS[2:1]=0b10 (32-bit) | FLAGS[0]=1 (doorbell supported) */
+#define TEST_CPPC_DB_FLAGS			(RPMI_CPPC_FST_CHN_DB_REG_32_BITS | \
+						 RPMI_CPPC_FST_CHN_DB_SUPP)
 
 static rpmi_uint32_t test_auto_captured_min_perf;
 static rpmi_uint32_t test_auto_captured_max_perf;
@@ -341,7 +350,7 @@ static int test_cppc_scenario_init(struct rpmi_test_scenario *scene)
 					       fastchan_shmem,
 					       TEST_CPPC_FASTCHAN_REQ_OFFSET,
 					       TEST_CPPC_FASTCHAN_FB_OFFSET,
-					       &test_cppc_ops, NULL);
+					       NULL, &test_cppc_ops, NULL);
 	if (!grp) {
 		printf("failed to create rpmi cppc service group");
 		return RPMI_ERR_FAILED;
@@ -695,7 +704,7 @@ static int test_cppc_auto_scenario_init(struct rpmi_test_scenario *scene)
 					     fastchan_shmem,
 					     TEST_CPPC_FASTCHAN_REQ_OFFSET,
 					     TEST_CPPC_FASTCHAN_FB_OFFSET,
-					     &test_cppc_ops, NULL);
+					     NULL, &test_cppc_ops, NULL);
 	if (!grp) {
 		printf("failed to create rpmi cppc auto service group");
 		return RPMI_ERR_FAILED;
@@ -880,7 +889,7 @@ static struct rpmi_test_scenario scenario_cppc_s_mode = {
 	.init = test_cppc_auto_scenario_init,
 	.cleanup = test_scenario_default_cleanup,
 
-	.num_tests = 4,
+	.num_tests = 5,
 	.tests = {
 		{
 			.name = "PROBE HIGHEST_PERF (S-mode access)",
@@ -938,6 +947,290 @@ static struct rpmi_test_scenario scenario_cppc_s_mode = {
 			.init_request_data = test_init_request_data_from_attrs,
 			.init_expected_data = test_init_expected_data_from_attrs,
 		},
+		{
+			.name = "GET FAST CHANNEL REGION (S-mode access)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CPPC,
+				.service_id = RPMI_CPPC_SRV_GET_FAST_CHANNEL_REGION,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.init_expected_data = init_auto_fastchan_region_expected,
+		},
+	},
+};
+
+/* ---- Doorbell scenario (passive mode + fast-channel doorbell) ------------ */
+
+static rpmi_uint8_t test_db_fastchan_mem[TEST_CPPC_FASTCHAN_SIZE]
+	__aligned(RPMI_CPPC_FASTCHAN_SIZE);
+
+struct test_cppc_db_width_case {
+	rpmi_uint32_t width;
+	rpmi_uint32_t expected_flags;
+};
+
+static const struct test_cppc_db_width_case test_cppc_db_width_cases[] = {
+	{ 8, RPMI_CPPC_FST_CHN_DB_SUPP | RPMI_CPPC_FST_CHN_DB_REG_08_BITS },
+	{ 16, RPMI_CPPC_FST_CHN_DB_SUPP | RPMI_CPPC_FST_CHN_DB_REG_16_BITS },
+	{ 32, RPMI_CPPC_FST_CHN_DB_SUPP | RPMI_CPPC_FST_CHN_DB_REG_32_BITS },
+};
+
+static struct rpmi_cppc_fastchan_doorbell test_cppc_db_doorbell = {
+	.db_supported = true,
+	.perf_req_fastchan_width = 32,
+	.db_addr_low = TEST_CPPC_DB_ADDR_LOW,
+	.db_addr_high = TEST_CPPC_DB_ADDR_HIGH,
+	.db_write_value = TEST_CPPC_DB_WRITE_VALUE,
+};
+
+static int init_db_width_test(struct rpmi_test_scenario *scene,
+			      struct rpmi_test *test)
+{
+	const struct test_cppc_db_width_case *db_case = test->priv;
+
+	test_cppc_db_doorbell.perf_req_fastchan_width = db_case->width;
+	return 0;
+}
+
+static rpmi_uint16_t
+init_db_fastchan_region_expected(struct rpmi_test_scenario *scene,
+				 struct rpmi_test *test, void *data,
+				 rpmi_uint16_t max_data_len)
+{
+	const struct test_cppc_db_width_case *db_case = test->priv;
+	rpmi_uint32_t *exp = data;
+	rpmi_uint64_t base = (rpmi_uint64_t)(rpmi_uintptr_t)test_db_fastchan_mem;
+
+	exp[0] = RPMI_SUCCESS;
+	exp[1] = db_case->expected_flags;
+	exp[2] = (rpmi_uint32_t)base;
+	exp[3] = (rpmi_uint32_t)(base >> 32);
+	exp[4] = TEST_CPPC_FASTCHAN_SIZE;
+	exp[5] = 0;
+	exp[6] = TEST_CPPC_DB_ADDR_LOW;
+	exp[7] = TEST_CPPC_DB_ADDR_HIGH;
+	exp[8] = TEST_CPPC_DB_WRITE_VALUE;
+
+	return 9 * sizeof(*exp);
+}
+
+static int test_cppc_db_scenario_init(struct rpmi_test_scenario *scene)
+{
+	struct rpmi_cppc_fastchan_doorbell invalid_doorbell;
+	struct rpmi_service_group *grp;
+	struct rpmi_shmem *fastchan_shmem;
+	struct rpmi_hsm *hsm;
+	int ret;
+
+	ret = test_cppc_scene_base_init(scene);
+	if (ret)
+		return RPMI_ERR_FAILED;
+
+	hsm = rpmi_hsm_create(ARRAY_SIZE(test_hartid_array),
+			      test_hartid_array, 0, NULL, &test_hsm_ops, NULL);
+	if (!hsm) {
+		printf("failed to create rpmi hsm");
+		return RPMI_ERR_FAILED;
+	}
+
+	fastchan_shmem = rpmi_shmem_create("test_cppc_db_fastchan",
+					   (rpmi_uint64_t)(rpmi_uintptr_t)test_db_fastchan_mem,
+					   sizeof(test_db_fastchan_mem),
+					   &rpmi_shmem_simple_ops, NULL);
+	if (!fastchan_shmem) {
+		printf("failed to create cppc doorbell fastchannel shmem");
+		return RPMI_ERR_FAILED;
+	}
+
+	invalid_doorbell = test_cppc_db_doorbell;
+	invalid_doorbell.perf_req_fastchan_width = 64;
+	grp = rpmi_service_group_cppc_create(hsm, &test_cppc_regs,
+					     RPMI_CPPC_PASSIVE_MODE,
+					     fastchan_shmem,
+					     TEST_CPPC_FASTCHAN_REQ_OFFSET,
+					     TEST_CPPC_FASTCHAN_FB_OFFSET,
+					     &invalid_doorbell, &test_cppc_ops, NULL);
+	if (grp) {
+		printf("accepted invalid cppc doorbell width");
+		return RPMI_ERR_FAILED;
+	}
+
+	invalid_doorbell = test_cppc_db_doorbell;
+	invalid_doorbell.db_supported = false;
+	grp = rpmi_service_group_cppc_create(hsm, &test_cppc_regs,
+					     RPMI_CPPC_PASSIVE_MODE,
+					     fastchan_shmem,
+					     TEST_CPPC_FASTCHAN_REQ_OFFSET,
+					     TEST_CPPC_FASTCHAN_FB_OFFSET,
+					     &invalid_doorbell, &test_cppc_ops, NULL);
+	if (grp) {
+		printf("accepted cppc doorbell width without support");
+		return RPMI_ERR_FAILED;
+	}
+
+	grp = rpmi_service_group_cppc_create(hsm, &test_cppc_regs,
+					     RPMI_CPPC_PASSIVE_MODE,
+					     fastchan_shmem,
+					     TEST_CPPC_FASTCHAN_REQ_OFFSET,
+					     TEST_CPPC_FASTCHAN_FB_OFFSET,
+					     &test_cppc_db_doorbell,
+					     &test_cppc_ops, NULL);
+	if (!grp) {
+		printf("failed to create rpmi cppc doorbell service group");
+		return RPMI_ERR_FAILED;
+	}
+
+	rpmi_context_add_group(scene->cntx, grp);
+	return 0;
+}
+
+static struct rpmi_test_scenario scenario_cppc_doorbell = {
+	.name = "CPPC Service Group (Fast-channel Doorbell)",
+	.shm_size = RPMI_SHM_SZ,
+	.slot_size = RPMI_SLOT_SIZE,
+	.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT,
+	.priv = &cppc_m_mode_config,
+
+	.init = test_cppc_db_scenario_init,
+	.cleanup = test_scenario_default_cleanup,
+
+	.num_tests = ARRAY_SIZE(test_cppc_db_width_cases),
+	.tests = {
+		{
+			.name = "GET FAST CHANNEL REGION (8-bit doorbell)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CPPC,
+				.service_id = RPMI_CPPC_SRV_GET_FAST_CHANNEL_REGION,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.priv = (void *)&test_cppc_db_width_cases[0],
+			.init = init_db_width_test,
+			.init_expected_data = init_db_fastchan_region_expected,
+		},
+		{
+			.name = "GET FAST CHANNEL REGION (16-bit doorbell)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CPPC,
+				.service_id = RPMI_CPPC_SRV_GET_FAST_CHANNEL_REGION,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.priv = (void *)&test_cppc_db_width_cases[1],
+			.init = init_db_width_test,
+			.init_expected_data = init_db_fastchan_region_expected,
+		},
+		{
+			.name = "GET FAST CHANNEL REGION (32-bit doorbell)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CPPC,
+				.service_id = RPMI_CPPC_SRV_GET_FAST_CHANNEL_REGION,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.priv = (void *)&test_cppc_db_width_cases[2],
+			.init = init_db_width_test,
+			.init_expected_data = init_db_fastchan_region_expected,
+		},
+	},
+};
+
+/* ---- Autonomous mode + doorbell scenario (combined FLAGS) ---------------- */
+
+static rpmi_uint8_t test_auto_db_fastchan_mem[TEST_CPPC_FASTCHAN_SIZE]
+	__aligned(RPMI_CPPC_FASTCHAN_SIZE);
+
+static const struct rpmi_cppc_fastchan_doorbell test_cppc_auto_db_doorbell = {
+	.db_supported = true,
+	.perf_req_fastchan_width = 32,
+	.db_addr_low = TEST_CPPC_DB_ADDR_LOW,
+	.db_addr_high = TEST_CPPC_DB_ADDR_HIGH,
+	.db_write_value = TEST_CPPC_DB_WRITE_VALUE,
+};
+
+static rpmi_uint16_t
+init_auto_db_fastchan_region_expected(struct rpmi_test_scenario *scene,
+				      struct rpmi_test *test, void *data,
+				      rpmi_uint16_t max_data_len)
+{
+	rpmi_uint32_t *exp = data;
+	rpmi_uint64_t base = (rpmi_uint64_t)(rpmi_uintptr_t)test_auto_db_fastchan_mem;
+
+	exp[0] = RPMI_SUCCESS;
+	/* autonomous mode (FLAGS[4:3]) combined with 32-bit doorbell support */
+	exp[1] = TEST_CPPC_AUTO_FLAGS | TEST_CPPC_DB_FLAGS;
+	exp[2] = (rpmi_uint32_t)base;
+	exp[3] = (rpmi_uint32_t)(base >> 32);
+	exp[4] = TEST_CPPC_FASTCHAN_SIZE;
+	exp[5] = 0;
+	exp[6] = TEST_CPPC_DB_ADDR_LOW;
+	exp[7] = TEST_CPPC_DB_ADDR_HIGH;
+	exp[8] = TEST_CPPC_DB_WRITE_VALUE;
+
+	return 9 * sizeof(*exp);
+}
+
+static int test_cppc_auto_db_scenario_init(struct rpmi_test_scenario *scene)
+{
+	struct rpmi_service_group *grp;
+	struct rpmi_shmem *fastchan_shmem;
+	struct rpmi_hsm *hsm;
+	int ret;
+
+	ret = test_cppc_scene_base_init(scene);
+	if (ret)
+		return RPMI_ERR_FAILED;
+
+	hsm = rpmi_hsm_create(ARRAY_SIZE(test_hartid_array),
+			      test_hartid_array, 0, NULL, &test_hsm_ops, NULL);
+	if (!hsm) {
+		printf("failed to create rpmi hsm");
+		return RPMI_ERR_FAILED;
+	}
+
+	fastchan_shmem = rpmi_shmem_create("test_cppc_auto_db_fastchan",
+					   (rpmi_uint64_t)(rpmi_uintptr_t)test_auto_db_fastchan_mem,
+					   sizeof(test_auto_db_fastchan_mem),
+					   &rpmi_shmem_simple_ops, NULL);
+	if (!fastchan_shmem) {
+		printf("failed to create cppc auto doorbell fastchannel shmem");
+		return RPMI_ERR_FAILED;
+	}
+
+	grp = rpmi_service_group_cppc_create(hsm, &test_cppc_auto_regs,
+					     RPMI_CPPC_AUTO_MODE,
+					     fastchan_shmem,
+					     TEST_CPPC_FASTCHAN_REQ_OFFSET,
+					     TEST_CPPC_FASTCHAN_FB_OFFSET,
+					     &test_cppc_auto_db_doorbell,
+					     &test_cppc_ops, NULL);
+	if (!grp) {
+		printf("failed to create rpmi cppc auto doorbell service group");
+		return RPMI_ERR_FAILED;
+	}
+
+	rpmi_context_add_group(scene->cntx, grp);
+	return 0;
+}
+
+static struct rpmi_test_scenario scenario_cppc_auto_doorbell = {
+	.name = "CPPC Service Group (Autonomous Mode + Doorbell)",
+	.shm_size = RPMI_SHM_SZ,
+	.slot_size = RPMI_SLOT_SIZE,
+	.max_num_groups = RPMI_SRVGRP_ID_MAX_COUNT,
+	.priv = &cppc_m_mode_config,
+
+	.init = test_cppc_auto_db_scenario_init,
+	.cleanup = test_scenario_default_cleanup,
+
+	.num_tests = 1,
+	.tests = {
+		{
+			.name = "GET FAST CHANNEL REGION (auto mode + doorbell)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CPPC,
+				.service_id = RPMI_CPPC_SRV_GET_FAST_CHANNEL_REGION,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+			},
+			.init_expected_data = init_auto_db_fastchan_region_expected,
+		},
 	},
 };
 
@@ -949,5 +1242,7 @@ int main(int argc, char *argv[])
 	ret |= test_scenario_execute(&scenario_cppc_default);
 	ret |= test_scenario_execute(&scenario_cppc_auto);
 	ret |= test_scenario_execute(&scenario_cppc_s_mode);
+	ret |= test_scenario_execute(&scenario_cppc_doorbell);
+	ret |= test_scenario_execute(&scenario_cppc_auto_doorbell);
 	return ret;
 }
