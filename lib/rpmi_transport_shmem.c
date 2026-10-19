@@ -141,7 +141,7 @@ static enum rpmi_error shmem_dequeue(struct rpmi_transport *trans,
 	if (rc) {
 		DPRINTF("%s: %s: failed to read head index of qtype %d\n",
 			__func__, trans->name, qtype);
-		return false;
+		return RPMI_ERR_FAILED;
 	}
 	headidx = rpmi_to_le32(headidx);
 
