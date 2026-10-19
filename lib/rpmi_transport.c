@@ -115,10 +115,10 @@ enum rpmi_error rpmi_transport_enqueue(struct rpmi_transport *trans,
 	rpmi_env_lock(trans->lock);
 	if (__rpmi_transport_is_full(trans, qtype)) {
 		DPRINTF("%s: %s: qtype %d is full\n", __func__, trans->name, qtype);
-		rpmi_env_unlock(trans->lock);
-		return RPMI_ERR_IO;
+		rc = RPMI_ERR_IO;
+	} else {
+		rc = trans->enqueue(trans, qtype, msg, msize);
 	}
-	rc = trans->enqueue(trans, qtype, msg, msize);
 	rpmi_env_unlock(trans->lock);
 
 	/* Reverse the endian conversion of header fields */
