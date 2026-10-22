@@ -1346,11 +1346,11 @@ void rpmi_service_group_hsm_destroy(struct rpmi_service_group *group);
  * @{
  */
 
-/** Clock rate match mode */
+/** Clock rate rounding mode */
 enum rpmi_clock_rate_match {
-	RPMI_CLK_RATE_MATCH_PLATFORM	= 0,
-	RPMI_CLK_RATE_MATCH_ROUND_DOWN	= 1,
-	RPMI_CLK_RATE_MATCH_ROUND_UP	= 2,
+	RPMI_CLK_RATE_MATCH_ROUND_DOWN	= 0,
+	RPMI_CLK_RATE_MATCH_ROUND_UP	= 1,
+	RPMI_CLK_RATE_MATCH_PLATFORM	= 2,
 	RPMI_CLK_RATE_MATCH_MAX
 };
 
