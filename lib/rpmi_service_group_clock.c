@@ -99,6 +99,21 @@ static enum rpmi_error rpmi_clock_get_attrs(struct rpmi_clock_group *clkgrp,
 	return RPMI_SUCCESS;
 }
 
+/* Number of rate_array values describing one discrete rate or linear range */
+static rpmi_uint32_t rpmi_clock_rate_entry_size(enum rpmi_clock_type type)
+{
+	return (type == RPMI_CLK_TYPE_LINEAR) ? 3 : 1;
+}
+
+/*
+ * Number of discrete rates or linear ranges of a clock, as reported in
+ * NUM_RATES of clock attributes message.
+ */
+static rpmi_uint32_t rpmi_clock_num_rates(const struct rpmi_clock_attrs *attrs)
+{
+	return attrs->rate_count / rpmi_clock_rate_entry_size(attrs->type);
+}
+
 /**
  * Take the parent node of a clock subtree and update the
  * rates of all available child clocks based on the
@@ -321,6 +336,14 @@ rpmi_clock_tree_init(rpmi_uint32_t clock_count,
 		clock->id = clkid;
 		clock->cdata = &clock_tree_data[clkid];
 
+		if (clock->cdata->clock_type == RPMI_CLK_TYPE_LINEAR &&
+		    (!clock->cdata->rate_count || !clock->cdata->clock_rate_array || clock->cdata->rate_count % 3)) {
+			DPRINTF("%s: clk-%u: linear clock needs (min, max, step) triples\n",
+				__func__, clkid);
+			rpmi_env_free(clock_tree);
+			return NULL;
+		}
+
 		RPMI_INIT_LIST_HEAD(&clock->node);
 		RPMI_INIT_LIST_HEAD(&clock->child_clock);
 
@@ -427,7 +450,7 @@ rpmi_clock_sg_get_attributes(struct rpmi_service_group *group,
 		flags |= 1;
 
 	resp[3] = rpmi_to_xe32(trans->is_be, clk_attrs.transition_latency);
-	resp[2] = rpmi_to_xe32(trans->is_be, clk_attrs.rate_count);
+	resp[2] = rpmi_to_xe32(trans->is_be, rpmi_clock_num_rates(&clk_attrs));
 	resp[1] = rpmi_to_xe32(trans->is_be, flags);
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 
@@ -453,9 +476,9 @@ rpmi_clock_sg_get_supp_rates(struct rpmi_service_group *group,
 {
 	enum rpmi_error ret;
 	rpmi_uint32_t i = 0, j = 0;
-	rpmi_uint32_t rate_count;
+	rpmi_uint32_t rate_count, entry_size, num_entries;
 	rpmi_uint32_t resp_dlen = 0, clk_rate_idx = 0;
-	rpmi_uint32_t max_rates, remaining = 0, returned = 0;
+	rpmi_uint32_t max_entries, remaining = 0, returned = 0;
 	const rpmi_uint64_t *rate_array;
 	struct rpmi_clock_attrs clk_attrs;
 	struct rpmi_clock_group *clkgrp = group->priv;
@@ -490,48 +513,42 @@ rpmi_clock_sg_get_supp_rates(struct rpmi_service_group *group,
 	clk_rate_idx = rpmi_to_xe32(trans->is_be,
 				    ((const rpmi_uint32_t *)request_data)[1]);
 
-	if (clk_attrs.type == RPMI_CLK_TYPE_LINEAR) {
-		/* max, min and step */
-		for (i = 0; i < 3; i++) {
-			resp[4 + 2*i] = rpmi_to_xe32(trans->is_be,
-				(rpmi_uint32_t)RATE_U64TOLO(rate_array[i]));
-			resp[5 + 2*i] = rpmi_to_xe32(trans->is_be,
-				(rpmi_uint32_t)RATE_U64TOHI(rate_array[i]));
-		}
-		remaining = 0;
-		returned = 3;
-	}
-	else if (clk_attrs.type == RPMI_CLK_TYPE_DISCRETE) {
-		if (clk_rate_idx > rate_count) {
-			resp[0] = rpmi_to_xe32(trans->is_be,
-					       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
-			resp_dlen = sizeof(*resp);
-			goto done;
-		}
-
-		/* max rates a rpmi message can accommodate */
-		max_rates =
-		(RPMI_MSG_DATA_SIZE(trans->slot_size) - (4 * sizeof(*resp))) /
-					sizeof(struct rpmi_clock_rate);
-		remaining = rate_count - clk_rate_idx;
-		if (remaining > max_rates)
-			returned = max_rates;
-		else
-			returned = remaining;
-
-		for (i = clk_rate_idx, j = 0; i <= (clk_rate_idx + returned - 1); i++, j++) {
-			resp[4 + 2*j] = rpmi_to_xe32(trans->is_be,
-				(rpmi_uint32_t)RATE_U64TOLO(rate_array[i]));
-			resp[5 + 2*j] = rpmi_to_xe32(trans->is_be,
-				(rpmi_uint32_t)RATE_U64TOHI(rate_array[i]));
-		}
-
-		remaining = rate_count - (clk_rate_idx + returned);
-	}
-	else {
+	if (clk_attrs.type != RPMI_CLK_TYPE_DISCRETE &&
+	    clk_attrs.type != RPMI_CLK_TYPE_LINEAR) {
 		DPRINTF("%s: invalid rate format for clk-%u\n", __func__, clkid);
 		return RPMI_ERR_FAILED;
 	}
+
+	/*
+	 * For discrete type an entry means one rate, and for linear type an
+	 * entry means one linear range consisting of tuple.
+	 */
+	entry_size = rpmi_clock_rate_entry_size(clk_attrs.type);
+	num_entries = rpmi_clock_num_rates(&clk_attrs);
+
+	if (clk_rate_idx > num_entries) {
+		resp[0] = rpmi_to_xe32(trans->is_be,
+				       (rpmi_uint32_t)RPMI_ERR_INVALID_PARAM);
+		resp_dlen = sizeof(*resp);
+		goto done;
+	}
+
+	/* max entries a rpmi message can accommodate */
+	max_entries =
+		(RPMI_MSG_DATA_SIZE(trans->slot_size) - (4 * sizeof(*resp))) /
+		(entry_size * sizeof(struct rpmi_clock_rate));
+	remaining = num_entries - clk_rate_idx;
+	returned = (remaining > max_entries) ? max_entries : remaining;
+
+	for (i = clk_rate_idx * entry_size, j = 0;
+	     j < returned * entry_size; i++, j++) {
+		resp[4 + 2*j] = rpmi_to_xe32(trans->is_be,
+			(rpmi_uint32_t)RATE_U64TOLO(rate_array[i]));
+		resp[5 + 2*j] = rpmi_to_xe32(trans->is_be,
+			(rpmi_uint32_t)RATE_U64TOHI(rate_array[i]));
+	}
+
+	remaining -= returned;
 
 	resp[3] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)returned);
 	resp[2] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)remaining);
@@ -540,7 +557,7 @@ rpmi_clock_sg_get_supp_rates(struct rpmi_service_group *group,
 	resp[0] = rpmi_to_xe32(trans->is_be, (rpmi_uint32_t)RPMI_SUCCESS);
 
 	resp_dlen = (4 * sizeof(*resp)) +
-				(returned * sizeof(struct rpmi_clock_rate));
+		    (returned * entry_size * sizeof(struct rpmi_clock_rate));
 
 done:
 	*response_datalen = resp_dlen;

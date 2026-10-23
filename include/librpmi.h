@@ -1346,11 +1346,11 @@ void rpmi_service_group_hsm_destroy(struct rpmi_service_group *group);
  * @{
  */
 
-/** Clock rate match mode */
+/** Clock rate rounding mode */
 enum rpmi_clock_rate_match {
-	RPMI_CLK_RATE_MATCH_PLATFORM	= 0,
-	RPMI_CLK_RATE_MATCH_ROUND_DOWN	= 1,
-	RPMI_CLK_RATE_MATCH_ROUND_UP	= 2,
+	RPMI_CLK_RATE_MATCH_ROUND_DOWN	= 0,
+	RPMI_CLK_RATE_MATCH_ROUND_UP	= 1,
+	RPMI_CLK_RATE_MATCH_PLATFORM	= 2,
 	RPMI_CLK_RATE_MATCH_MAX
 };
 
@@ -1386,7 +1386,13 @@ struct rpmi_clock_data {
 	rpmi_uint32_t		parent_id;
 	/* Clock transition latency(milli-seconds) */
 	rpmi_uint32_t		transition_latency_ms;
-	/* Number of rates supported as per the clock format type */
+	/*
+	 * Number of entries in clock_rate_array.
+	 * For discrete type the rate count is total number of
+	 * rates supported. For linear format every three entries
+	 * describe one linear range as (min, max, step), so rate_count
+	 * must be a non-zero multiple of 3.
+	 */
 	rpmi_uint32_t		rate_count;
 	/* Clock rate format type */
 	enum rpmi_clock_type	clock_type;

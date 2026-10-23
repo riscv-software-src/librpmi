@@ -24,6 +24,14 @@
 #define TEST_CLK_BUS_MAX_RATE	1000000000ULL
 #define TEST_CLK_BUS_STEP_RATE	100000000ULL
 
+/*
+ * Clock rate rounding mode values.
+ */
+#define TEST_CLK_FLAGS_ROUND_DOWN	0x0
+#define TEST_CLK_FLAGS_ROUND_UP		0x1
+#define TEST_CLK_FLAGS_ROUND_AUTO	0x2
+#define TEST_CLK_FLAGS_ROUND_RSVD	0x3
+
 #define RATE_LO(_rate)	((rpmi_uint32_t)((rpmi_uint64_t)(_rate)))
 #define RATE_HI(_rate)	((rpmi_uint32_t)(((rpmi_uint64_t)(_rate)) >> 32))
 
@@ -76,6 +84,10 @@ static rpmi_uint64_t test_clock_rate[TEST_CLK_COUNT] = {
 	TEST_CLK_BUS_MIN_RATE,
 };
 
+/* Rate match mode librpmi passed to the last set_rate platform call */
+static enum rpmi_clock_rate_match test_clock_last_match =
+	RPMI_CLK_RATE_MATCH_MAX;
+
 static rpmi_uint32_t enable_notif_reqdata[] = {
 	TEST_EVENT_ID,
 	TEST_REQUEST_STATE_ENABLE,
@@ -106,6 +118,23 @@ static struct test_clk_attrs_expdata get_attrs_cpu_expdata = {
 	.name = "clk_cpu",
 };
 
+static rpmi_uint32_t clk_bus_reqdata[] = {
+	TEST_CLK_BUS,
+};
+
+static struct test_clk_attrs_expdata get_attrs_bus_expdata = {
+	.status = RPMI_SUCCESS,
+	.flags = 1,		/* linear range format */
+	.rate_count = 1,	/* one linear range */
+	.transition_latency = TEST_CLK_BUS_LATENCY,
+	.name = "clk_bus",
+};
+
+static rpmi_uint32_t get_bus_rates_bad_index_reqdata[] = {
+	TEST_CLK_BUS,
+	2,
+};
+
 static rpmi_uint32_t invalid_param_expdata[] = {
 	RPMI_ERR_INVALID_PARAM,
 };
@@ -133,9 +162,9 @@ static rpmi_uint32_t get_bus_rates_reqdata[] = {
 
 static rpmi_uint32_t get_bus_rates_expdata[] = {
 	RPMI_SUCCESS,
-	0,
-	0,
-	3,
+	0,	/* FLAGS */
+	0,	/* REMAINING */
+	1,	/* RETURNED: one linear range */
 	RATE_LO(TEST_CLK_BUS_MIN_RATE),
 	RATE_HI(TEST_CLK_BUS_MIN_RATE),
 	RATE_LO(TEST_CLK_BUS_MAX_RATE),
@@ -169,10 +198,31 @@ static rpmi_uint8_t get_config_short_reqdata[] = {
 
 static rpmi_uint32_t set_rate_cpu_reqdata[] = {
 	TEST_CLK_CPU,
-	RPMI_CLK_RATE_MATCH_ROUND_UP,
+	TEST_CLK_FLAGS_ROUND_UP,
 	RATE_LO(TEST_CLK_CPU_TARGET_RATE),
 	RATE_HI(TEST_CLK_CPU_TARGET_RATE),
 };
+
+static rpmi_uint32_t set_rate_round_down_reqdata[] = {
+	TEST_CLK_CPU,
+	TEST_CLK_FLAGS_ROUND_DOWN,
+	RATE_LO(TEST_CLK_CPU_MAX_RATE),
+	RATE_HI(TEST_CLK_CPU_MAX_RATE),
+};
+
+static rpmi_uint32_t set_rate_auto_reqdata[] = {
+	TEST_CLK_CPU,
+	TEST_CLK_FLAGS_ROUND_AUTO,
+	RATE_LO(TEST_CLK_CPU_INITIAL_RATE),
+	RATE_HI(TEST_CLK_CPU_INITIAL_RATE),
+};
+
+static const enum rpmi_clock_rate_match expect_match_round_up =
+	RPMI_CLK_RATE_MATCH_ROUND_UP;
+static const enum rpmi_clock_rate_match expect_match_round_down =
+	RPMI_CLK_RATE_MATCH_ROUND_DOWN;
+static const enum rpmi_clock_rate_match expect_match_platform =
+	RPMI_CLK_RATE_MATCH_PLATFORM;
 
 static rpmi_uint32_t get_rate_cpu_expdata[] = {
 	RPMI_SUCCESS,
@@ -182,21 +232,21 @@ static rpmi_uint32_t get_rate_cpu_expdata[] = {
 
 static rpmi_uint32_t set_rate_bad_match_reqdata[] = {
 	TEST_CLK_CPU,
-	RPMI_CLK_RATE_MATCH_MAX,
+	TEST_CLK_FLAGS_ROUND_RSVD,
 	RATE_LO(TEST_CLK_CPU_TARGET_RATE),
 	RATE_HI(TEST_CLK_CPU_TARGET_RATE),
 };
 
 static rpmi_uint32_t set_rate_zero_reqdata[] = {
 	TEST_CLK_CPU,
-	RPMI_CLK_RATE_MATCH_PLATFORM,
+	TEST_CLK_FLAGS_ROUND_AUTO,
 	0,
 	0,
 };
 
 static rpmi_uint32_t set_rate_unsupported_reqdata[] = {
 	TEST_CLK_CPU,
-	RPMI_CLK_RATE_MATCH_PLATFORM,
+	TEST_CLK_FLAGS_ROUND_AUTO,
 	RATE_LO(TEST_CLK_CPU_UNSUPP_RATE),
 	RATE_HI(TEST_CLK_CPU_UNSUPP_RATE),
 };
@@ -272,6 +322,8 @@ static enum rpmi_error test_clock_set_rate(void *priv,
 	if (clock_id >= TEST_CLK_COUNT || !new_rate)
 		return RPMI_ERR_INVALID_PARAM;
 
+	test_clock_last_match = match;
+
 	if (!test_clock_rate_supported(clock_id, rate))
 		return RPMI_ERR_INVALID_PARAM;
 
@@ -311,6 +363,27 @@ static int test_clock_state_init(struct rpmi_test_scenario *scene,
 	return 0;
 }
 
+static int test_clock_set_rate_init(struct rpmi_test_scenario *scene,
+				    struct rpmi_test *test)
+{
+	test_clock_last_match = RPMI_CLK_RATE_MATCH_MAX;
+	return 0;
+}
+
+static int test_clock_set_rate_verify(struct rpmi_test_scenario *scene,
+				      struct rpmi_test *test,
+				      struct rpmi_message *msg)
+{
+	const enum rpmi_clock_rate_match *expect = test->priv;
+
+	if (test_clock_last_match == *expect)
+		return 0;
+
+	printf("%s: platform rate match mismatch: expected: %d, got: %d\n",
+	       test->name, *expect, test_clock_last_match);
+	return 1;
+}
+
 static int test_clock_scenario_init(struct rpmi_test_scenario *scene)
 {
 	struct rpmi_service_group *grp;
@@ -348,7 +421,7 @@ static struct rpmi_test_scenario scenario_clock_default = {
 	.init = test_clock_scenario_init,
 	.cleanup = test_scenario_default_cleanup,
 
-	.num_tests = 16,
+	.num_tests = 20,
 	.tests = {
 		{
 			.name = "ENABLE NOTIFICATION TEST (notifications not supported)",
@@ -404,6 +477,20 @@ static struct rpmi_test_scenario scenario_clock_default = {
 			.init_expected_data = test_init_expected_data_from_attrs,
 		},
 		{
+			.name = "GET ATTRIBUTES (linear)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_GET_ATTRIBUTES,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = clk_bus_reqdata,
+				.request_data_len = sizeof(clk_bus_reqdata),
+				.expected_data = &get_attrs_bus_expdata,
+				.expected_data_len = sizeof(get_attrs_bus_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
 			.name = "GET SUPPORTED RATES (discrete)",
 			.attrs = {
 				.servicegroup_id = RPMI_SRVGRP_CLOCK,
@@ -427,6 +514,20 @@ static struct rpmi_test_scenario scenario_clock_default = {
 				.request_data_len = sizeof(get_bus_rates_reqdata),
 				.expected_data = get_bus_rates_expdata,
 				.expected_data_len = sizeof(get_bus_rates_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "GET SUPPORTED RATES (linear, bad index)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_GET_SUPPORTED_RATES,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = get_bus_rates_bad_index_reqdata,
+				.request_data_len = sizeof(get_bus_rates_bad_index_reqdata),
+				.expected_data = invalid_param_expdata,
+				.expected_data_len = sizeof(invalid_param_expdata),
 			},
 			.init_request_data = test_init_request_data_from_attrs,
 			.init_expected_data = test_init_expected_data_from_attrs,
@@ -499,8 +600,11 @@ static struct rpmi_test_scenario scenario_clock_default = {
 				.expected_data = success_expdata,
 				.expected_data_len = sizeof(success_expdata),
 			},
+			.priv = (void *)&expect_match_round_up,
+			.init = test_clock_set_rate_init,
 			.init_request_data = test_init_request_data_from_attrs,
 			.init_expected_data = test_init_expected_data_from_attrs,
+			.verify = test_clock_set_rate_verify,
 		},
 		{
 			.name = "GET RATE",
@@ -515,6 +619,40 @@ static struct rpmi_test_scenario scenario_clock_default = {
 			},
 			.init_request_data = test_init_request_data_from_attrs,
 			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "SET RATE (round down)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_SET_RATE,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = set_rate_round_down_reqdata,
+				.request_data_len = sizeof(set_rate_round_down_reqdata),
+				.expected_data = success_expdata,
+				.expected_data_len = sizeof(success_expdata),
+			},
+			.priv = (void *)&expect_match_round_down,
+			.init = test_clock_set_rate_init,
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+			.verify = test_clock_set_rate_verify,
+		},
+		{
+			.name = "SET RATE (auto)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_SET_RATE,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = set_rate_auto_reqdata,
+				.request_data_len = sizeof(set_rate_auto_reqdata),
+				.expected_data = success_expdata,
+				.expected_data_len = sizeof(success_expdata),
+			},
+			.priv = (void *)&expect_match_platform,
+			.init = test_clock_set_rate_init,
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+			.verify = test_clock_set_rate_verify,
 		},
 		{
 			.name = "SET RATE (bad match)",
@@ -575,8 +713,33 @@ static struct rpmi_test_scenario scenario_clock_default = {
 	},
 };
 
+/* A linear clock must describe its ranges as (min, max, step) triples */
+static int test_clock_create_bad_linear(void)
+{
+	struct rpmi_clock_data bad_data[TEST_CLK_COUNT];
+	struct rpmi_service_group *grp;
+	int failed;
+
+	rpmi_env_memcpy(bad_data, test_clock_data, sizeof(bad_data));
+	bad_data[TEST_CLK_BUS].rate_count = 2;
+
+	grp = rpmi_service_group_clock_create(TEST_CLK_COUNT, bad_data,
+					      &test_clock_ops, NULL);
+	failed = grp != NULL;
+	if (grp)
+		rpmi_service_group_clock_destroy(grp);
+
+	printf("TEST: %-50s \t : %s!\n", "CREATE (linear clock, rate_count 2)",
+	       failed ? "Failed" : "Succeeded");
+	return failed;
+}
+
 int main(int argc, char *argv[])
 {
+	int ret;
+
 	printf("Test Clock Service Group\n");
-	return test_scenario_execute(&scenario_clock_default);
+	ret = test_clock_create_bad_linear();
+	ret |= test_scenario_execute(&scenario_clock_default);
+	return ret;
 }
