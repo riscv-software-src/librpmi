@@ -118,6 +118,23 @@ static struct test_clk_attrs_expdata get_attrs_cpu_expdata = {
 	.name = "clk_cpu",
 };
 
+static rpmi_uint32_t clk_bus_reqdata[] = {
+	TEST_CLK_BUS,
+};
+
+static struct test_clk_attrs_expdata get_attrs_bus_expdata = {
+	.status = RPMI_SUCCESS,
+	.flags = 1,		/* linear range format */
+	.rate_count = 1,	/* one linear range */
+	.transition_latency = TEST_CLK_BUS_LATENCY,
+	.name = "clk_bus",
+};
+
+static rpmi_uint32_t get_bus_rates_bad_index_reqdata[] = {
+	TEST_CLK_BUS,
+	2,
+};
+
 static rpmi_uint32_t invalid_param_expdata[] = {
 	RPMI_ERR_INVALID_PARAM,
 };
@@ -145,9 +162,9 @@ static rpmi_uint32_t get_bus_rates_reqdata[] = {
 
 static rpmi_uint32_t get_bus_rates_expdata[] = {
 	RPMI_SUCCESS,
-	0,
-	0,
-	3,
+	0,	/* FLAGS */
+	0,	/* REMAINING */
+	1,	/* RETURNED: one linear range */
 	RATE_LO(TEST_CLK_BUS_MIN_RATE),
 	RATE_HI(TEST_CLK_BUS_MIN_RATE),
 	RATE_LO(TEST_CLK_BUS_MAX_RATE),
@@ -404,7 +421,7 @@ static struct rpmi_test_scenario scenario_clock_default = {
 	.init = test_clock_scenario_init,
 	.cleanup = test_scenario_default_cleanup,
 
-	.num_tests = 18,
+	.num_tests = 20,
 	.tests = {
 		{
 			.name = "ENABLE NOTIFICATION TEST (notifications not supported)",
@@ -460,6 +477,20 @@ static struct rpmi_test_scenario scenario_clock_default = {
 			.init_expected_data = test_init_expected_data_from_attrs,
 		},
 		{
+			.name = "GET ATTRIBUTES (linear)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_GET_ATTRIBUTES,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = clk_bus_reqdata,
+				.request_data_len = sizeof(clk_bus_reqdata),
+				.expected_data = &get_attrs_bus_expdata,
+				.expected_data_len = sizeof(get_attrs_bus_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
 			.name = "GET SUPPORTED RATES (discrete)",
 			.attrs = {
 				.servicegroup_id = RPMI_SRVGRP_CLOCK,
@@ -483,6 +514,20 @@ static struct rpmi_test_scenario scenario_clock_default = {
 				.request_data_len = sizeof(get_bus_rates_reqdata),
 				.expected_data = get_bus_rates_expdata,
 				.expected_data_len = sizeof(get_bus_rates_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "GET SUPPORTED RATES (linear, bad index)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_GET_SUPPORTED_RATES,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = get_bus_rates_bad_index_reqdata,
+				.request_data_len = sizeof(get_bus_rates_bad_index_reqdata),
+				.expected_data = invalid_param_expdata,
+				.expected_data_len = sizeof(invalid_param_expdata),
 			},
 			.init_request_data = test_init_request_data_from_attrs,
 			.init_expected_data = test_init_expected_data_from_attrs,
@@ -668,8 +713,33 @@ static struct rpmi_test_scenario scenario_clock_default = {
 	},
 };
 
+/* A linear clock must describe its ranges as (min, max, step) triples */
+static int test_clock_create_bad_linear(void)
+{
+	struct rpmi_clock_data bad_data[TEST_CLK_COUNT];
+	struct rpmi_service_group *grp;
+	int failed;
+
+	rpmi_env_memcpy(bad_data, test_clock_data, sizeof(bad_data));
+	bad_data[TEST_CLK_BUS].rate_count = 2;
+
+	grp = rpmi_service_group_clock_create(TEST_CLK_COUNT, bad_data,
+					      &test_clock_ops, NULL);
+	failed = grp != NULL;
+	if (grp)
+		rpmi_service_group_clock_destroy(grp);
+
+	printf("TEST: %-50s \t : %s!\n", "CREATE (linear clock, rate_count 2)",
+	       failed ? "Failed" : "Succeeded");
+	return failed;
+}
+
 int main(int argc, char *argv[])
 {
+	int ret;
+
 	printf("Test Clock Service Group\n");
-	return test_scenario_execute(&scenario_clock_default);
+	ret = test_clock_create_bad_linear();
+	ret |= test_scenario_execute(&scenario_clock_default);
+	return ret;
 }
