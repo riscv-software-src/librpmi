@@ -1386,7 +1386,13 @@ struct rpmi_clock_data {
 	rpmi_uint32_t		parent_id;
 	/* Clock transition latency(milli-seconds) */
 	rpmi_uint32_t		transition_latency_ms;
-	/* Number of rates supported as per the clock format type */
+	/*
+	 * Number of entries in clock_rate_array.
+	 * For discrete type the rate count is total number of
+	 * rates supported. For linear format every three entries
+	 * describe one linear range as (min, max, step), so rate_count
+	 * must be a non-zero multiple of 3.
+	 */
 	rpmi_uint32_t		rate_count;
 	/* Clock rate format type */
 	enum rpmi_clock_type	clock_type;
