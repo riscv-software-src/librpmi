@@ -953,23 +953,19 @@ rpmi_cppc_fastchan_create(rpmi_uint32_t hart_count,
 	 * with each other
 	 */
 
-	if (perf_request_shmem_offset == perf_feedback_shmem_offset) {
+	if (perf_request_shmem_offset <= perf_feedback_shmem_offset &&
+		perf_feedback_shmem_offset - perf_request_shmem_offset <
+		fc_perf_request_region_size) {
 		DPRINTF("%s: Perf request region overlaps with Perf Feedback region\n",
-		__func__);
+			__func__);
 		return NULL;
 	}
 
-	if (perf_request_shmem_offset < perf_feedback_shmem_offset &&
-		perf_feedback_shmem_offset < fc_perf_request_region_size) {
+	if (perf_feedback_shmem_offset <= perf_request_shmem_offset &&
+		perf_request_shmem_offset - perf_feedback_shmem_offset <
+		fc_perf_feedback_region_size) {
 		DPRINTF("%s: Perf request region overlaps with Perf Feedback region\n",
-		__func__);
-		return NULL;
-	}
-
-	if (perf_feedback_shmem_offset < perf_request_shmem_offset &&
-		perf_request_shmem_offset < fc_perf_feedback_region_size) {
-		DPRINTF("%s: Perf request region overlaps with Perf Feedback region\n",
-		__func__);
+			__func__);
 		return NULL;
 	}
 
