@@ -307,6 +307,20 @@ static enum rpmi_error rpmi_clock_get_rate(struct rpmi_clock_group *clkgrp,
 }
 
 /**
+ * Free a clock tree and the locks of its clocks.
+ */
+static void rpmi_clock_tree_free(struct rpmi_clock *clock_tree,
+				 rpmi_uint32_t clock_count)
+{
+	rpmi_uint32_t clkid;
+
+	for (clkid = 0; clkid < clock_count; clkid++)
+		rpmi_env_free_lock(clock_tree[clkid].lock);
+
+	rpmi_env_free(clock_tree);
+}
+
+/**
  * Verify the clock rate format in the provided clock data
  */
 static rpmi_bool_t rpmi_clock_data_valid(const struct rpmi_clock_data *clock_data)
@@ -369,7 +383,7 @@ rpmi_clock_tree_init(rpmi_uint32_t clock_count,
 		if(ret) {
 			DPRINTF("%s: failed to get clk-%u state and rate\n",
 							__func__, clkid);
-			rpmi_env_free(clock_tree);
+			rpmi_clock_tree_free(clock_tree, clock_count);
 			return NULL;
 		}
 
@@ -874,7 +888,7 @@ void rpmi_service_group_clock_destroy(struct rpmi_service_group *group)
 		rpmi_env_free_lock(clkgrp->clock_tree[clkid].lock);
 	}
 
-	rpmi_env_free(clkgrp->clock_tree);
+	rpmi_clock_tree_free(clkgrp->clock_tree, clkgrp->clock_count);
 	rpmi_env_free_lock(group->lock);
 	rpmi_env_free(group->priv);
 }
