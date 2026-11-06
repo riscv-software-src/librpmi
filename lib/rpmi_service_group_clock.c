@@ -40,8 +40,6 @@ struct rpmi_clock {
 	rpmi_uint32_t id;
 	/* Clock enable count on behalf of child clocks */
 	rpmi_uint32_t enable_count;
-	/* Current clock state */
-	enum rpmi_clock_state current_state;
 	/* Parent clock instance pointer */
 	struct rpmi_clock *parent;
 	/* Child clock count */
@@ -198,35 +196,36 @@ static enum rpmi_error __rpmi_clock_set_state(struct rpmi_clock_group *clkgrp,
 	struct rpmi_dlist *pos;
 
 	if (state == RPMI_CLK_STATE_DISABLED) {
-		/* If clock already disabled? use the cached state */
-		if (clk->current_state == RPMI_CLK_STATE_DISABLED) {
+		/* Return early if the clock is already disabled */
+		if (clk->enable_count == 0)
 			return RPMI_SUCCESS;
-		}
 
 		/* Check if all child clocks are disabled, otherwise deny */
 		if (clk->child_count) {
 			rpmi_list_for_each(pos, &clk->child_clock) {
 				struct rpmi_clock *cc = to_rpmi_clock(pos);
-				if (cc->current_state == RPMI_CLK_STATE_ENABLED)
+				if (cc->enable_count > 0)
 					return RPMI_ERR_DENIED;
 			}
 		}
 
-		ret = clkgrp->ops->set_state(clkgrp->ops_priv, clk->id, state);
-		if (ret)
-			return ret;
+		if (clk->enable_count == 1) {
+			ret = clkgrp->ops->set_state(clkgrp->ops_priv, clk->id, state);
+			if (ret)
+				return ret;
+		}
 
-		clk->current_state = state;
 		clk->enable_count -= 1;
 
 		/* FIXME: We are only traversing clock sub-tree of requested
 		 * clock. Need to traverse the parents to check if the disable
 		 * condition is met or not and disable if rules are met */
-	}
-	else if (state == RPMI_CLK_STATE_ENABLED) {
+	} else if (state == RPMI_CLK_STATE_ENABLED) {
 		/* If clock is already enabled? use the cached state */
-		if (clk->current_state == RPMI_CLK_STATE_ENABLED)
+		if (clk->enable_count > 0) {
+			clk->enable_count += 1;
 			return RPMI_SUCCESS;
+		}
 
 		/* Enable all parents recursively up to the root */
 		if (clk->parent) {
@@ -239,7 +238,6 @@ static enum rpmi_error __rpmi_clock_set_state(struct rpmi_clock_group *clkgrp,
 		if (ret)
 			return ret;
 
-		clk->current_state = state;
 		clk->enable_count += 1;
 	}
 
@@ -338,11 +336,7 @@ rpmi_clock_tree_init(rpmi_uint32_t clock_count,
 			return NULL;
 		}
 
-		clock->current_state = state;
-
-		if (state == RPMI_CLK_STATE_ENABLED) {
-			clock->enable_count += 1;
-		}
+		clock->enable_count = (state == RPMI_CLK_STATE_ENABLED) ? 1 : 0;
 
 		clock->lock = rpmi_env_alloc_lock();
 	}

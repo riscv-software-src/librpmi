@@ -154,6 +154,25 @@ static rpmi_uint32_t set_config_enable_reqdata[] = {
 	1,
 };
 
+static rpmi_uint32_t clk_bus_reqdata[] = {
+	TEST_CLK_BUS,
+};
+
+static rpmi_uint32_t set_config_bus_enable_reqdata[] = {
+	TEST_CLK_BUS,
+	1,
+};
+
+static rpmi_uint32_t set_config_bus_disable_reqdata[] = {
+	TEST_CLK_BUS,
+	0,
+};
+
+static rpmi_uint32_t get_config_disabled_expdata[] = {
+	RPMI_SUCCESS,
+	0,
+};
+
 static rpmi_uint32_t success_expdata[] = {
 	RPMI_SUCCESS,
 };
@@ -348,7 +367,7 @@ static struct rpmi_test_scenario scenario_clock_default = {
 	.init = test_clock_scenario_init,
 	.cleanup = test_scenario_default_cleanup,
 
-	.num_tests = 16,
+	.num_tests = 23,
 	.tests = {
 		{
 			.name = "ENABLE NOTIFICATION TEST (notifications not supported)",
@@ -568,6 +587,104 @@ static struct rpmi_test_scenario scenario_clock_default = {
 				.request_data_len = sizeof(clk_invalid_reqdata),
 				.expected_data = invalid_param_expdata,
 				.expected_data_len = sizeof(invalid_param_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "SET CONFIG (enable already enabled clock)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_SET_CONFIG,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = set_config_bus_enable_reqdata,
+				.request_data_len = sizeof(set_config_bus_enable_reqdata),
+				.expected_data = success_expdata,
+				.expected_data_len = sizeof(success_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "SET CONFIG (disable, enable count 2 -> 1)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_SET_CONFIG,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = set_config_bus_disable_reqdata,
+				.request_data_len = sizeof(set_config_bus_disable_reqdata),
+				.expected_data = success_expdata,
+				.expected_data_len = sizeof(success_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "GET CONFIG (still enabled after refcounted disable)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_GET_CONFIG,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = clk_bus_reqdata,
+				.request_data_len = sizeof(clk_bus_reqdata),
+				.expected_data = get_config_enabled_expdata,
+				.expected_data_len = sizeof(get_config_enabled_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "SET CONFIG (disable, enable count 1 -> 0)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_SET_CONFIG,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = set_config_bus_disable_reqdata,
+				.request_data_len = sizeof(set_config_bus_disable_reqdata),
+				.expected_data = success_expdata,
+				.expected_data_len = sizeof(success_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "GET CONFIG (disabled after last disable)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_GET_CONFIG,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = clk_bus_reqdata,
+				.request_data_len = sizeof(clk_bus_reqdata),
+				.expected_data = get_config_disabled_expdata,
+				.expected_data_len = sizeof(get_config_disabled_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "SET CONFIG (disable already disabled clock)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_SET_CONFIG,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = set_config_bus_disable_reqdata,
+				.request_data_len = sizeof(set_config_bus_disable_reqdata),
+				.expected_data = success_expdata,
+				.expected_data_len = sizeof(success_expdata),
+			},
+			.init_request_data = test_init_request_data_from_attrs,
+			.init_expected_data = test_init_expected_data_from_attrs,
+		},
+		{
+			.name = "GET CONFIG (still disabled)",
+			.attrs = {
+				.servicegroup_id = RPMI_SRVGRP_CLOCK,
+				.service_id = RPMI_CLK_SRV_GET_CONFIG,
+				.flags = RPMI_MSG_NORMAL_REQUEST,
+				.request_data = clk_bus_reqdata,
+				.request_data_len = sizeof(clk_bus_reqdata),
+				.expected_data = get_config_disabled_expdata,
+				.expected_data_len = sizeof(get_config_disabled_expdata),
 			},
 			.init_request_data = test_init_request_data_from_attrs,
 			.init_expected_data = test_init_expected_data_from_attrs,
