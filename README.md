@@ -1,14 +1,16 @@
-## librpmi - RPMI Protocol Implementation
+## libRPMI - RPMI Protocol Implementation
+
+![librpmi logo](docs/assets/librpmi-logo.png)
 
 ## Introduction
-The librpmi is an implementation of [RISC-V Platform Management Interface](https://github.com/riscv-non-isa/riscv-rpmi).
+The libRPMI is an implementation of [RISC-V Platform Management Interface](https://github.com/riscv-non-isa/riscv-rpmi).
 
-The librpmi implements RPMI shared memory transport, RPMI message protocol and
+The libRPMI implements RPMI shared memory transport, RPMI message protocol and
 various Service groups and Services as defined in the RPMI specification.
 
 <img src="docs/assets/librpmi-arch.png" alt="librpmi high level architecture" width="600"/>
 
-The librpmi can be used by - 
+The libRPMI can be used by - 
 1. RISC-V platform vendors to implement RPMI services in their
 platform microcontroller firmware.
 
@@ -37,13 +39,13 @@ separate OpenSBI domain
   - Comprehensive API documentation (HTML and PDF via Doxygen)
 
 ## Development
-The librpmi supports GNU Make and comes with a simple Makefile that generates
+The libRPMI supports GNU Make and comes with a simple Makefile that generates
 `librpmi.a`, shared library objects (`librpmi.so.*`), and test applications
 under the `build` directory.
 
 ### librpmi.a and shared library objects
 ```
-// defaut without debug logs and tests, compiler optimizations are on
+// default without debug logs and tests, compiler optimizations are on
 make
 
 // Enable debug logs and build tests, compiler optimizations are off
@@ -57,13 +59,55 @@ By default, `make` generates:
 - `build/librpmi.so.<major>.<minor>.<patch>`
 - symlinks `build/librpmi.so.<soversion>` and `build/librpmi.so`
 
-The platform vendors may also integrate librpmi sources directly into the
+The platform vendors may also integrate libRPMI sources directly into the
 platform microcontroller firmware and extend firmware build system to
-build the librpmi sources rather than using `librpmi.a`.
+build the libRPMI sources rather than using `librpmi.a`.
+
+### Porting
+The libRPMI does not use the C library and calls the environment functions
+defined in `include/librpmi_env.h` instead. Most of these functions have a
+simple default implementation in the header itself and the platform firmware
+must provide the remaining functions such as -
+1. `rpmi_env_zalloc()` and `rpmi_env_free()` for memory allocation
+2. `rpmi_env_writel()` and `rpmi_env_readl()` for MMIO
+3. `rpmi_env_printf()` for debug logs
+
+The test framework under `test` directory implements these functions using
+the standard C library and can be used as a reference.
+
+## Usage
+The platform firmware creates a shared memory transport, a RPMI context and
+the service groups it wants to support. The Base service group is part of the
+RPMI context and is always available.
+```c
+// shared memory used for the RPMI queues
+shmem = rpmi_shmem_create("rpmi_shmem", shmem_base, shmem_size,
+                          &rpmi_shmem_simple_ops, NULL);
+
+// shared memory transport with slot size and queue sizes
+trans = rpmi_transport_shmem_create("rpmi_trans", slot_size,
+                                    a2p_req_queue_size, p2a_req_queue_size,
+                                    shmem);
+
+// RPMI context for M-mode
+cntx = rpmi_context_create("rpmi_cntx", trans, RPMI_SRVGRP_ID_MAX_COUNT,
+                           RPMI_PRIVILEGE_M_MODE, 0, NULL);
+
+// create service groups and add to the RPMI context
+grp = rpmi_service_group_sysreset_create(sysreset_type_count, sysreset_types,
+                                         &sysreset_ops, NULL);
+rpmi_context_add_group(cntx, grp);
+
+// process the requests from application processor and service group events
+rpmi_context_process_a2p_request(cntx);
+rpmi_context_process_all_events(cntx);
+```
+Refer: [librpmi.h](include/librpmi.h) for the complete API and the tests under
+`test` directory for more examples.
 
 ## Packaging
 The repository can build Debian and RPM packages for systems that want to
-consume librpmi as an installed library instead of integrating the source tree
+consume libRPMI as an installed library instead of integrating the source tree
 or manually copying build artifacts. These packages provide a repeatable way to
 install the runtime library, development files, and source content needed by
 downstream projects such as emulators, hypervisors, firmware build flows, and
@@ -107,8 +151,8 @@ sudo dnf install build/rpmbuild/RPMS/*/*.rpm
 ```
 
 ## Documentation
-The librpmi supports doxygen which can generate both html and pdf
-documentation under `build\docs` directory.
+The libRPMI supports doxygen which can generate both html and pdf
+documentation under `build/docs` directory.
 ```
 make docs
 ```
@@ -127,6 +171,8 @@ make check
 ```
 Refer: [README in test folder](test/README.md)
 
+The tests are also run by GitHub actions for every pull request.
+
 ## Project process
 
 - [Contributing guide](CONTRIBUTING.md)
@@ -135,4 +181,4 @@ Refer: [README in test folder](test/README.md)
 
 ## License
 
-The librpmi is provided under [2-Clause BSD License](COPYING.BSD)
+The libRPMI is provided under [2-Clause BSD License](COPYING.BSD)
