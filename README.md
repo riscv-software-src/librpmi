@@ -8,7 +8,9 @@ The libRPMI is an implementation of [RISC-V Platform Management Interface](https
 The libRPMI implements RPMI shared memory transport, RPMI message protocol and
 various Service groups and Services as defined in the RPMI specification.
 
-<img src="docs/assets/librpmi-arch.png" alt="librpmi high level architecture" width="600"/>
+<p align="center">
+  <img src="docs/assets/librpmi-arch.png" alt="librpmi high level architecture" width="800"/>
+</p>
 
 The libRPMI can be used by - 
 1. RISC-V platform vendors to implement RPMI services in their
